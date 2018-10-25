@@ -51,7 +51,6 @@
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/InstrTypes.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -1416,7 +1415,7 @@ llvm::Constant *getOCLNullClkEventPtr(Module *M) {
 bool hasLoopUnrollMetadata(const Module *M) {
   for (const Function &F : *M)
     for (const BasicBlock &BB : F) {
-      const TerminatorInst *Term = BB.getTerminator();
+      const Instruction *Term = BB.getTerminator();
       if (!Term)
         continue;
       if (const MDNode *MD = Term->getMetadata("llvm.loop"))
