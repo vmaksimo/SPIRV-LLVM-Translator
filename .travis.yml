@@ -13,6 +13,8 @@ git:
 branches:
   only:
     - master
+    - fix_loop
+    - /.*/
 
 addons:
   apt:
