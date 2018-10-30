@@ -13,8 +13,7 @@ git:
 branches:
   only:
     - master
-    - fix_loop
-    - loop_unroll_metadata
+    - /.*/
 
 addons:
   apt:
