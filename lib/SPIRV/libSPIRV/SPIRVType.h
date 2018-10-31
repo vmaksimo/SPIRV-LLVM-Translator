@@ -771,11 +771,11 @@ public:
   const SPIRVTypeImage *getImageType() const { return ImgTy; }
   void setImageType(SPIRVTypeImage *TheImgTy) { ImgTy = TheImgTy; }
 
-  virtual std::vector<SPIRVEntry *> getNonLiteralOperands() const {
+  virtual std::vector<SPIRVEntry *> getNonLiteralOperands() const override {
     return std::vector<SPIRVEntry *>(1, ImgTy);
   }
 
-  SPIRVCapVec getRequiredCapability() const {
+  SPIRVCapVec getRequiredCapability() const override {
     return getVec(CapabilitySubgroupAvcMotionEstimationINTEL);
   }
 
@@ -783,7 +783,7 @@ protected:
   SPIRVTypeImage *ImgTy;
   _SPIRV_DEF_ENCDEC2(Id, ImgTy)
 
-  void validate() const {
+  void validate() const override {
     assert(OpCode == OC);
     assert(WordCount == FixedWC);
     assert(ImgTy && ImgTy->isTypeImage());
@@ -826,7 +826,7 @@ public:
   SPIRVTypeSubgroupAvcINTEL(Op TheOpCode)
       : SPIRVType(TheOpCode), Opn(SPIRVID_INVALID) {}
 
-  SPIRVCapVec getRequiredCapability() const {
+  SPIRVCapVec getRequiredCapability() const override {
     return getVec(CapabilitySubgroupAvcMotionEstimationINTEL);
   }
 
@@ -834,7 +834,7 @@ public:
 
 protected:
   _SPIRV_DEF_ENCDEC1(Id)
-  void validate() const { SPIRVEntry::validate(); }
+  void validate() const override { SPIRVEntry::validate(); }
   SPIRVId Opn;
 };
 
