@@ -38,8 +38,8 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "OCLTypeToSPIRV.h"
-#include "OCLUtil.h"
+#include "SPIRVWriter.h"
+#include "LLVMToSPIRVDbgTran.h"
 #include "SPIRVBasicBlock.h"
 #include "SPIRVEntry.h"
 #include "SPIRVEnum.h"
@@ -55,9 +55,7 @@
 
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SetVector.h"
-#include "llvm/ADT/StringSwitch.h"
 #include "llvm/ADT/Triple.h"
-#include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -75,8 +73,7 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ToolOutputFile.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/Utils.h" // loop-simplify pass
 
 #include <cstdlib>
 #include <functional>
@@ -126,183 +123,22 @@ struct OCLBuiltinSPIRVTransInfo {
   }
 };
 
-class LLVMToSPIRVDbgTran {
-public:
-  LLVMToSPIRVDbgTran(Module *TM = nullptr, SPIRVModule *TBM = nullptr)
-      : BM(TBM), M(TM) {}
+LLVMToSPIRV::LLVMToSPIRV(SPIRVModule *SMod)
+    : ModulePass(ID), M(nullptr), Ctx(nullptr), BM(SMod), SrcLang(0),
+      SrcLangVer(0) {
+  DbgTran = make_unique<LLVMToSPIRVDbgTran>(nullptr, SMod, this);
+}
 
-  void setModule(Module *Mod) { M = Mod; }
-  void setSPIRVModule(SPIRVModule *SMod) { BM = SMod; }
+bool LLVMToSPIRV::runOnModule(Module &Mod) {
+  M = &Mod;
+  Ctx = &M->getContext();
+  DbgTran->setModule(M);
+  assert(BM && "SPIR-V module not initialized");
+  translate();
+  return true;
+}
 
-  void transDbgInfo(Value *V, SPIRVValue *BV) {
-    if (auto I = dyn_cast<Instruction>(V)) {
-      auto DL = I->getDebugLoc();
-      if (DL) {
-        auto File = BM->getString(getFullPath(DL.get()));
-        BM->addLine(BV, File->getId(), DL->getLine(), DL->getColumn());
-      }
-    } else if (auto F = dyn_cast<Function>(V)) {
-      if (auto DIS = F->getSubprogram()) {
-        auto File = BM->getString(getFullPath(DIS));
-        BM->addLine(BV, File->getId(), DIS->getLine(), 0);
-      }
-    }
-  }
-
-private:
-  SPIRVModule *BM;
-  Module *M;
-};
-
-class LLVMToSPIRV : public ModulePass {
-public:
-  LLVMToSPIRV(SPIRVModule *SMod = nullptr)
-      : ModulePass(ID), M(nullptr), Ctx(nullptr), BM(SMod),
-        ExtSetId(SPIRVID_INVALID), SrcLang(0), SrcLangVer(0),
-        DbgTran(nullptr, SMod) {}
-
-  StringRef getPassName() const override { return "LLVMToSPIRV"; }
-
-  bool runOnModule(Module &Mod) override {
-    M = &Mod;
-    Ctx = &M->getContext();
-    DbgTran.setModule(M);
-    assert(BM && "SPIR-V module not initialized");
-    translate();
-    return true;
-  }
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<OCLTypeToSPIRV>();
-  }
-
-  static char ID;
-
-  SPIRVType *transType(Type *T);
-  SPIRVType *transSPIRVOpaqueType(Type *T);
-
-  SPIRVValue *getTranslatedValue(Value *) const;
-
-  // Translation functions
-  bool transAddressingMode();
-  bool transAlign(Value *V, SPIRVValue *BV);
-  std::vector<SPIRVValue *> transArguments(CallInst *, SPIRVBasicBlock *);
-  std::vector<SPIRVWord> transArguments(CallInst *, SPIRVBasicBlock *,
-                                        SPIRVEntry *);
-  bool transSourceLanguage();
-  bool transExtension();
-  bool transBuiltinSet();
-  SPIRVValue *transIntrinsicInst(IntrinsicInst *Intrinsic, SPIRVBasicBlock *BB);
-  SPIRVValue *transCallInst(CallInst *Call, SPIRVBasicBlock *BB);
-  bool transDecoration(Value *V, SPIRVValue *BV);
-  SPIRVWord transFunctionControlMask(CallInst *);
-  SPIRVWord transFunctionControlMask(Function *);
-  SPIRVFunction *transFunctionDecl(Function *F);
-  bool transGlobalVariables();
-
-  Op transBoolOpCode(SPIRVValue *Opn, Op OC);
-  // Translate LLVM module to SPIR-V module.
-  // Returns true if succeeds.
-  bool translate();
-  bool transExecutionMode();
-  SPIRVValue *transConstant(Value *V);
-  SPIRVValue *transValue(Value *V, SPIRVBasicBlock *BB,
-                         bool CreateForward = true);
-  SPIRVValue *transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
-                                          bool CreateForward = true);
-
-  typedef DenseMap<Type *, SPIRVType *> LLVMToSPIRVTypeMap;
-  typedef DenseMap<Value *, SPIRVValue *> LLVMToSPIRVValueMap;
-
-private:
-  Module *M;
-  LLVMContext *Ctx;
-  SPIRVModule *BM;
-  LLVMToSPIRVTypeMap TypeMap;
-  LLVMToSPIRVValueMap ValueMap;
-  // ToDo: support multiple builtin sets. Currently assume one builtin set.
-  SPIRVId ExtSetId;
-  SPIRVWord SrcLang;
-  SPIRVWord SrcLangVer;
-  LLVMToSPIRVDbgTran DbgTran;
-
-  SPIRVType *mapType(Type *T, SPIRVType *BT) {
-    TypeMap[T] = BT;
-    SPIRVDBG(dbgs() << "[mapType] " << *T << " => "; spvdbgs() << *BT << '\n');
-    return BT;
-  }
-
-  SPIRVValue *mapValue(Value *V, SPIRVValue *BV) {
-    auto Loc = ValueMap.find(V);
-    if (Loc != ValueMap.end()) {
-      if (Loc->second == BV)
-        return BV;
-      assert(Loc->second->isForward() &&
-             "LLVM Value is mapped to different SPIRV Values");
-      auto Forward = static_cast<SPIRVForward *>(Loc->second);
-      BM->replaceForward(Forward, BV);
-    }
-    ValueMap[V] = BV;
-    SPIRVDBG(dbgs() << "[mapValue] " << *V << " => "; spvdbgs() << *BV << "\n");
-    return BV;
-  }
-
-  SPIRVType *getSPIRVType(Type *T) { return TypeMap[T]; }
-
-  SPIRVValue *getSPIRVValue(Value *V) { return ValueMap[V]; }
-
-  SPIRVErrorLog &getErrorLog() { return BM->getErrorLog(); }
-
-  llvm::IntegerType *getSizetType();
-  std::vector<SPIRVValue *> transValue(const std::vector<Value *> &Values,
-                                       SPIRVBasicBlock *BB);
-  std::vector<SPIRVWord> transValue(const std::vector<Value *> &Values,
-                                    SPIRVBasicBlock *BB, SPIRVEntry *Entry);
-
-  SPIRVInstruction *transBinaryInst(BinaryOperator *B, SPIRVBasicBlock *BB);
-  SPIRVInstruction *transCmpInst(CmpInst *Cmp, SPIRVBasicBlock *BB);
-
-  void dumpUsers(Value *V);
-
-  template <class ExtInstKind>
-  bool oclGetExtInstIndex(const std::string &MangledName,
-                          const std::string &DemangledName,
-                          SPIRVWord *EntryPoint);
-  void
-  oclGetMutatedArgumentTypesByBuiltin(llvm::FunctionType *FT,
-                                      std::map<unsigned, Type *> &ChangedType,
-                                      Function *F);
-
-  bool isBuiltinTransToInst(Function *F);
-  bool isBuiltinTransToExtInst(Function *F,
-                               SPIRVExtInstSetKind *BuiltinSet = nullptr,
-                               SPIRVWord *EntryPoint = nullptr,
-                               SmallVectorImpl<std::string> *Dec = nullptr);
-  bool oclIsKernel(Function *F);
-
-  bool transOCLKernelMetadata();
-
-  SPIRVInstruction *transBuiltinToInst(const std::string &DemangledName,
-                                       const std::string &MangledName,
-                                       CallInst *CI, SPIRVBasicBlock *BB);
-  SPIRVInstruction *transBuiltinToInstWithoutDecoration(Op OC, CallInst *CI,
-                                                        SPIRVBasicBlock *BB);
-  void mutateFuncArgType(const std::map<unsigned, Type *> &ChangedType,
-                         Function *F);
-
-  SPIRVValue *oclTransSpvcCastSampler(CallInst *CI, SPIRVBasicBlock *BB);
-
-  SPIRV::SPIRVInstruction *transUnaryInst(UnaryInstruction *U,
-                                          SPIRVBasicBlock *BB);
-
-  /// Add a 32 bit integer constant.
-  /// \return Id of the constant.
-  SPIRVId addInt32(int);
-  void transFunction(Function *I);
-  SPIRV::SPIRVLinkageTypeKind transLinkageType(const GlobalValue *GV);
-};
-
-SPIRVValue *LLVMToSPIRV::getTranslatedValue(Value *V) const {
+SPIRVValue *LLVMToSPIRV::getTranslatedValue(const Value *V) const {
   auto Loc = ValueMap.find(V);
   if (Loc != ValueMap.end())
     return Loc->second;
@@ -343,9 +179,8 @@ bool LLVMToSPIRV::isBuiltinTransToExtInst(Function *F,
   SPIRVExtInstSetKind Set = SPIRVEIS_Count;
   if (!SPIRVExtSetShortNameMap::rfind(ExtSetName, &Set))
     return false;
-  assert(Set == BM->getBuiltinSet(ExtSetId) &&
-         "Invalid extended instruction set");
-  assert(Set == SPIRVEIS_OpenCL && "Unsupported extended instruction set");
+  assert((Set == SPIRVEIS_OpenCL || Set == SPIRVEIS_Debug) &&
+         "Unsupported extended instruction set");
 
   auto ExtOpName = S.substr(Loc + 1);
   auto Splited = ExtOpName.split(kSPIRVPostfix::ExtDivider);
@@ -472,7 +307,13 @@ SPIRVType *LLVMToSPIRV::transType(Type *T) {
         return mapType(T, transType(getSamplerType(M)));
       if (STName.startswith(kSPIRVTypeName::PrefixAndDelim))
         return transSPIRVOpaqueType(T);
-      else if (OCLOpaqueTypeOpCodeMap::find(STName, &OpCode)) {
+
+      if (STName.startswith(kOCLSubgroupsAVCIntel::TypePrefix))
+        return mapType(T,
+                       BM->addSubgroupAvcINTELType(
+                           OCLSubgroupINTELTypeOpCodeMap::map(ST->getName())));
+
+      if (OCLOpaqueTypeOpCodeMap::find(STName, &OpCode)) {
         switch (OpCode) {
         default:
           return mapType(T, BM->addOpaqueGenericType(OpCode));
@@ -481,7 +322,9 @@ SPIRVType *LLVMToSPIRV::transType(Type *T) {
         case OpTypeQueue:
           return mapType(T, BM->addQueueType());
         }
-      } else if (isPointerToOpaqueStructType(T)) {
+      }
+
+      if (isPointerToOpaqueStructType(T)) {
         return mapType(
             T, BM->addPointerType(SPIRSPIRVAddrSpaceMap::map(
                                       static_cast<SPIRAddressSpace>(AddrSpc)),
@@ -598,6 +441,14 @@ SPIRVType *LLVMToSPIRV::transSPIRVOpaqueType(Type *T) {
         T, BM->addSampledImageType(static_cast<SPIRVTypeImage *>(
                transType(getSPIRVTypeByChangeBaseTypeName(
                    M, T, kSPIRVTypeName::SampledImg, kSPIRVTypeName::Image)))));
+  } else if (TN == kSPIRVTypeName::VmeImageINTEL) {
+    // This type is the same as SampledImageType, but consumed by Subgroup AVC
+    // Intel extension instructions.
+    return mapType(
+        T,
+        BM->addVmeImageINTELType(static_cast<SPIRVTypeImage *>(
+            transType(getSPIRVTypeByChangeBaseTypeName(
+                M, T, kSPIRVTypeName::VmeImageINTEL, kSPIRVTypeName::Image)))));
   } else if (TN == kSPIRVTypeName::Sampler)
     return mapType(T, BM->addSamplerType());
   else if (TN == kSPIRVTypeName::DeviceEvent)
@@ -663,7 +514,6 @@ SPIRVFunction *LLVMToSPIRV::transFunctionDecl(Function *F) {
     BF->addDecorate(DecorationFuncParamAttr, FunctionParameterAttributeZext);
   if (Attrs.hasAttribute(AttributeList::ReturnIndex, Attribute::SExt))
     BF->addDecorate(DecorationFuncParamAttr, FunctionParameterAttributeSext);
-  DbgTran.transDbgInfo(F, BF);
   SPIRVDBG(dbgs() << "[transFunction] " << *F << " => ";
            spvdbgs() << *BF << '\n';)
   return BF;
@@ -808,6 +658,7 @@ SPIRVInstruction *LLVMToSPIRV::transBinaryInst(BinaryOperator *B,
   SPIRVInstruction *BI = BM->addBinaryInst(
       transBoolOpCode(Op0, OpCodeMap::map(LLVMOC)), transType(B->getType()),
       Op0, transValue(B->getOperand(1), BB), BB);
+  checkFpContract(B, BB);
   return BI;
 }
 
@@ -883,9 +734,12 @@ SPIRVValue *LLVMToSPIRV::transValueWithoutDecoration(Value *V,
       }
       Inst->dropAllReferences();
     }
+    // Translate initializer first.
+    SPIRVValue *BVarInit =
+        (Init && !isa<UndefValue>(Init)) ? transValue(Init, nullptr) : nullptr;
+
     auto BVar = static_cast<SPIRVVariable *>(BM->addVariable(
-        transType(Ty), GV->isConstant(), transLinkageType(GV),
-        (Init && !isa<UndefValue>(Init)) ? transValue(Init, nullptr) : nullptr,
+        transType(Ty), GV->isConstant(), transLinkageType(GV), BVarInit,
         GV->getName(),
         SPIRSPIRVAddrSpaceMap::map(
             static_cast<SPIRAddressSpace>(Ty->getAddressSpace())),
@@ -1004,18 +858,50 @@ SPIRVValue *LLVMToSPIRV::transValueWithoutDecoration(Value *V,
                              Pairs, BB));
   }
 
-  if (auto Branch = dyn_cast<BranchInst>(V)) {
-    if (Branch->isUnconditional())
-      return mapValue(V, BM->addBranchInst(static_cast<SPIRVLabel *>(transValue(
-                                               Branch->getSuccessor(0), BB)),
-                                           BB));
+  if (BranchInst *Branch = dyn_cast<BranchInst>(V)) {
+    SPIRVLabel *SuccessorTrue =
+        static_cast<SPIRVLabel *>(transValue(Branch->getSuccessor(0), BB));
+
+    /// Clang attaches !llvm.loop metadata to "latch" BB. This kind of blocks
+    /// has an edge directed to the loop header. Thus latch BB matching to
+    /// "Continue Target" per the SPIR-V spec. This statement is true only after
+    /// applying the loop-simplify pass to the LLVM module.
+    /// For "for" and "while" loops latch BB is terminated by an
+    /// unconditional branch. Also for this kind of loops "Merge Block" can
+    /// be found as block targeted by false edge of the "Header" BB.
+    /// For "do while" loop the latch is terminated by a conditional branch
+    /// with true edge going to the header and the false edge going out of
+    /// the loop, which corresponds to a "Merge Block" per the SPIR-V spec.
+    std::vector<SPIRVWord> Parameters;
+    spv::LoopControlMask LoopControl = getLoopControl(Branch, Parameters);
+
+    if (Branch->isUnconditional()) {
+      // For "for" and "while" loops llvm.loop metadata is attached to
+      // an unconditional branch instruction.
+      if (LoopControl != spv::LoopControlMaskNone) {
+        // SuccessorTrue is the loop header BB.
+        const SPIRVInstruction *Term = SuccessorTrue->getTerminateInstr();
+        if (Term && Term->getOpCode() == OpBranchConditional) {
+          const auto *Br = static_cast<const SPIRVBranchConditional *>(Term);
+          BM->addLoopMergeInst(Br->getFalseLabel()->getId(), // Merge Block
+                               BB->getId(),                  // Continue Target
+                               LoopControl, Parameters, SuccessorTrue);
+        }
+      }
+      return mapValue(V, BM->addBranchInst(SuccessorTrue, BB));
+    }
+    // For "do-while" loops llvm.loop metadata is attached to a conditional
+    // branch instructions
+    SPIRVLabel *SuccessorFalse =
+        static_cast<SPIRVLabel *>(transValue(Branch->getSuccessor(1), BB));
+    if (LoopControl != spv::LoopControlMaskNone)
+      // SuccessorTrue is the loop header BB.
+      BM->addLoopMergeInst(SuccessorFalse->getId(), // Merge Block
+                           BB->getId(),             // Continue Target
+                           LoopControl, Parameters, SuccessorTrue);
     return mapValue(
-        V,
-        BM->addBranchConditionalInst(
-            transValue(Branch->getCondition(), BB),
-            static_cast<SPIRVLabel *>(transValue(Branch->getSuccessor(0), BB)),
-            static_cast<SPIRVLabel *>(transValue(Branch->getSuccessor(1), BB)),
-            BB));
+        V, BM->addBranchConditionalInst(transValue(Branch->getCondition(), BB),
+                                        SuccessorTrue, SuccessorFalse, BB));
   }
 
   if (auto Phi = dyn_cast<PHINode>(V)) {
@@ -1109,13 +995,43 @@ SPIRVValue *LLVMToSPIRV::transValueWithoutDecoration(Value *V,
   return nullptr;
 }
 
+SPIRVType *LLVMToSPIRV::mapType(Type *T, SPIRVType *BT) {
+  TypeMap[T] = BT;
+  SPIRVDBG(dbgs() << "[mapType] " << *T << " => "; spvdbgs() << *BT << '\n');
+  return BT;
+}
+
+SPIRVValue *LLVMToSPIRV::mapValue(Value *V, SPIRVValue *BV) {
+  auto Loc = ValueMap.find(V);
+  if (Loc != ValueMap.end()) {
+    if (Loc->second == BV)
+      return BV;
+    assert(Loc->second->isForward() &&
+           "LLVM Value is mapped to different SPIRV Values");
+    auto Forward = static_cast<SPIRVForward *>(Loc->second);
+    BM->replaceForward(Forward, BV);
+  }
+  ValueMap[V] = BV;
+  SPIRVDBG(dbgs() << "[mapValue] " << *V << " => "; spvdbgs() << BV << "\n");
+  return BV;
+}
+
 bool LLVMToSPIRV::transDecoration(Value *V, SPIRVValue *BV) {
   if (!transAlign(V, BV))
     return false;
   if ((isa<AtomicCmpXchgInst>(V) && cast<AtomicCmpXchgInst>(V)->isVolatile()) ||
       (isa<AtomicRMWInst>(V) && cast<AtomicRMWInst>(V)->isVolatile()))
     BV->setVolatile(true);
-  DbgTran.transDbgInfo(V, BV);
+
+  if (auto BVO = dyn_cast_or_null<OverflowingBinaryOperator>(V)) {
+    if (BVO->hasNoSignedWrap()) {
+      BV->setNoSignedWrap(true);
+    }
+    if (BVO->hasNoUnsignedWrap()) {
+      BV->setNoUnsignedWrap(true);
+    }
+  }
+
   return true;
 }
 
@@ -1133,14 +1049,14 @@ bool LLVMToSPIRV::transAlign(Value *V, SPIRVValue *BV) {
 
 /// Do this after source language is set.
 bool LLVMToSPIRV::transBuiltinSet() {
-  SPIRVWord Ver = 0;
-  (void)Ver;
-  assert((BM->getSourceLanguage(&Ver) == SourceLanguageOpenCL_C ||
-          BM->getSourceLanguage(&Ver) == SourceLanguageOpenCL_CPP) &&
-         "not supported");
-  std::stringstream SS;
-  SS << "OpenCL.std";
-  return BM->importBuiltinSet(SS.str(), &ExtSetId);
+  SPIRVId EISId;
+  if (!BM->importBuiltinSet("OpenCL.std", &EISId))
+    return false;
+  if (SPIRVMDWalker(*M).getNamedMD("llvm.dbg.cu")) {
+    if (!BM->importBuiltinSet("SPIRV.debug", &EISId))
+      return false;
+  }
+  return true;
 }
 
 /// Translate sampler* spcv.cast(i32 arg) or
@@ -1208,6 +1124,7 @@ SPIRVValue *LLVMToSPIRV::transIntrinsicInst(IntrinsicInst *II,
     // For llvm.fmuladd.* fusion is not guaranteed. If a fused multiply-add
     // is required the corresponding llvm.fma.* intrinsic function should be
     // used instead.
+    BB->getParent()->setContractedFMulAddFound();
     SPIRVType *Ty = transType(II->getType());
     SPIRVValue *Mul =
         BM->addBinaryInst(OpFMul, Ty, transValue(II->getArgOperand(0), BB),
@@ -1268,6 +1185,13 @@ SPIRVValue *LLVMToSPIRV::transIntrinsicInst(IntrinsicInst *II,
       Size = 0;
     return BM->addLifetimeInst(OC, transValue(II->getOperand(1), BB), Size, BB);
   }
+  // We don't want to mix translation of regular code and debug info, because
+  // it creates a mess, therefore translation of debug intrinsics is
+  // postponed until LLVMToSPIRVDbgTran::finalizeDebug...() methods.
+  case Intrinsic::dbg_declare:
+    return DbgTran->createDebugDeclarePlaceholder(cast<DbgDeclareInst>(II), BB);
+  case Intrinsic::dbg_value:
+    return DbgTran->createDebugValuePlaceholder(cast<DbgValueInst>(II), BB);
   default:
     // LLVM intrinsic functions shouldn't get to SPIRV, because they
     // would have no definition there.
@@ -1297,7 +1221,7 @@ SPIRVValue *LLVMToSPIRV::transCallInst(CallInst *CI, SPIRVBasicBlock *BB) {
                               &Dec))
     return addDecorations(
         BM->addExtInst(
-            transType(CI->getType()), ExtSetId, ExtOp,
+            transType(CI->getType()), BM->getExtInstSetId(ExtSetKind), ExtOp,
             transArguments(CI, BB,
                            SPIRVEntry::createUnique(ExtSetKind, ExtOp).get()),
             BB),
@@ -1406,7 +1330,7 @@ void LLVMToSPIRV::mutateFuncArgType(
 }
 
 void LLVMToSPIRV::transFunction(Function *I) {
-  transFunctionDecl(I);
+  SPIRVFunction *BF = transFunctionDecl(I);
   // Creating all basic blocks before creating any instruction.
   for (auto &FI : *I) {
     transValue(&FI, nullptr);
@@ -1417,6 +1341,12 @@ void LLVMToSPIRV::transFunction(Function *I) {
     for (auto &BI : FI) {
       transValue(&BI, BB, false);
     }
+  }
+
+  if (BF->getModule()->isEntryPoint(spv::ExecutionModelKernel, BF->getId()) &&
+      BF->shouldFPContractBeDisabled()) {
+    BF->addExecutionMode(BF->getModule()->add(
+        new SPIRVExecutionMode(BF, spv::ExecutionModeContractionOff)));
   }
 }
 
@@ -1468,6 +1398,7 @@ bool LLVMToSPIRV::translate() {
   BM->optimizeDecorates();
   BM->resolveUnknownStructFields();
   BM->createForwardPointers();
+  DbgTran->transDebugMetadata();
   return true;
 }
 
@@ -1554,6 +1485,17 @@ bool LLVMToSPIRV::transOCLKernelMetadata() {
 
     SPIRVFunction *BF = static_cast<SPIRVFunction *>(getTranslatedValue(&F));
     assert(BF && "Kernel function should be translated first");
+
+    // Create 'OpString' as a workaround to store information about
+    // *orignal* (typedef'ed, unsigned integers) type names of kernel arguments.
+    // OpString "kernel_arg_type.%kernel_name%.typename0,typename1,..."
+    if (auto *KernelArgType = F.getMetadata(SPIR_MD_KERNEL_ARG_TYPE)) {
+      std::string KernelArgTypesStr =
+          std::string(SPIR_MD_KERNEL_ARG_TYPE) + "." + F.getName().str() + ".";
+      for (const auto &TyOp : KernelArgType->operands())
+        KernelArgTypesStr += cast<MDString>(TyOp)->getString().str() + ",";
+      BM->getString(KernelArgTypesStr);
+    }
 
     if (auto *KernelArgTypeQual = F.getMetadata(SPIR_MD_KERNEL_ARG_TYPE_QUAL)) {
       foreachKernelArgMD(
@@ -1723,6 +1665,7 @@ LLVMToSPIRV::transLinkageType(const GlobalValue *GV) {
     return SPIRVLinkageTypeKind::LinkageTypeInternal;
   return SPIRVLinkageTypeKind::LinkageTypeExport;
 }
+
 } // namespace SPIRV
 
 char LLVMToSPIRV::ID = 0;
@@ -1752,10 +1695,12 @@ void addPassesForSPIRV(legacy::PassManager &PassMgr) {
   PassMgr.add(createSPIRVLowerMemmove());
 }
 
-bool llvm::writeSpirv(Module *M, llvm::raw_ostream &OS, std::string &ErrMsg) {
+bool llvm::writeSpirv(Module *M, std::ostream &OS, std::string &ErrMsg) {
   std::unique_ptr<SPIRVModule> BM(SPIRVModule::createSPIRVModule());
   legacy::PassManager PassMgr;
   addPassesForSPIRV(PassMgr);
+  if (hasLoopUnrollMetadata(M))
+    PassMgr.add(createLoopSimplifyPass());
   PassMgr.add(createLLVMToSPIRV(BM.get()));
   PassMgr.run(*M);
 

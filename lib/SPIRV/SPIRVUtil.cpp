@@ -56,7 +56,6 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/ToolOutputFile.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include <functional>
 #include <sstream>
@@ -627,6 +626,7 @@ CallInst *mutateCallInst(
   }
   auto NewCI = addCallInst(M, NewName, CI->getType(), Args, Attrs, CI, Mangle,
                            InstName, TakeFuncName);
+  NewCI->setDebugLoc(CI->getDebugLoc());
   LLVM_DEBUG(dbgs() << " => " << *NewCI << '\n');
   CI->replaceAllUsesWith(NewCI);
   CI->eraseFromParent();
@@ -653,6 +653,7 @@ Instruction *mutateCallInst(
                            InstName + ".tmp", TakeFuncName);
   auto NewI = RetMutate(NewCI);
   NewI->takeName(CI);
+  NewI->setDebugLoc(CI->getDebugLoc());
   LLVM_DEBUG(dbgs() << " => " << *NewI << '\n');
   CI->replaceAllUsesWith(NewI);
   CI->eraseFromParent();
@@ -793,7 +794,11 @@ Type *getVoidFuncPtrType(Module *M, unsigned AddrSpace) {
 }
 
 ConstantInt *getInt64(Module *M, int64_t Value) {
-  return ConstantInt::get(Type::getInt64Ty(M->getContext()), Value, true);
+  return ConstantInt::getSigned(Type::getInt64Ty(M->getContext()), Value);
+}
+
+ConstantInt *getUInt64(Module *M, uint64_t Value) {
+  return ConstantInt::get(Type::getInt64Ty(M->getContext()), Value, false);
 }
 
 Constant *getFloat32(Module *M, float Value) {
@@ -806,6 +811,16 @@ ConstantInt *getInt32(Module *M, int Value) {
 
 ConstantInt *getUInt32(Module *M, unsigned Value) {
   return ConstantInt::get(Type::getInt32Ty(M->getContext()), Value, false);
+}
+
+ConstantInt *getInt(Module *M, int64_t Value) {
+  return Value >> 32 ? getInt64(M, Value)
+                     : getInt32(M, static_cast<int32_t>(Value));
+}
+
+ConstantInt *getUInt(Module *M, uint64_t Value) {
+  return Value >> 32 ? getUInt64(M, Value)
+                     : getUInt32(M, static_cast<uint32_t>(Value));
 }
 
 ConstantInt *getUInt16(Module *M, unsigned short Value) {
@@ -900,22 +915,54 @@ bool isDecoratedSPIRVFunc(const Function *F, std::string *UndecoratedName) {
 /// Get TypePrimitiveEnum for special OpenCL type except opencl.block.
 SPIR::TypePrimitiveEnum getOCLTypePrimitiveEnum(StringRef TyName) {
   return StringSwitch<SPIR::TypePrimitiveEnum>(TyName)
-      .Case("opencl.image1d_t", SPIR::PRIMITIVE_IMAGE_1D_T)
-      .Case("opencl.image1d_array_t", SPIR::PRIMITIVE_IMAGE_1D_ARRAY_T)
-      .Case("opencl.image1d_buffer_t", SPIR::PRIMITIVE_IMAGE_1D_BUFFER_T)
-      .Case("opencl.image2d_t", SPIR::PRIMITIVE_IMAGE_2D_T)
-      .Case("opencl.image2d_array_t", SPIR::PRIMITIVE_IMAGE_2D_ARRAY_T)
-      .Case("opencl.image3d_t", SPIR::PRIMITIVE_IMAGE_3D_T)
-      .Case("opencl.image2d_msaa_t", SPIR::PRIMITIVE_IMAGE_2D_MSAA_T)
-      .Case("opencl.image2d_array_msaa_t",
-            SPIR::PRIMITIVE_IMAGE_2D_ARRAY_MSAA_T)
-      .Case("opencl.image2d_msaa_depth_t",
-            SPIR::PRIMITIVE_IMAGE_2D_MSAA_DEPTH_T)
-      .Case("opencl.image2d_array_msaa_depth_t",
-            SPIR::PRIMITIVE_IMAGE_2D_ARRAY_MSAA_DEPTH_T)
-      .Case("opencl.image2d_depth_t", SPIR::PRIMITIVE_IMAGE_2D_DEPTH_T)
-      .Case("opencl.image2d_array_depth_t",
-            SPIR::PRIMITIVE_IMAGE_2D_ARRAY_DEPTH_T)
+      .Case("opencl.image1d_ro_t", SPIR::PRIMITIVE_IMAGE1D_RO_T)
+      .Case("opencl.image1d_array_ro_t", SPIR::PRIMITIVE_IMAGE1D_ARRAY_RO_T)
+      .Case("opencl.image1d_buffer_ro_t", SPIR::PRIMITIVE_IMAGE1D_BUFFER_RO_T)
+      .Case("opencl.image2d_ro_t", SPIR::PRIMITIVE_IMAGE2D_RO_T)
+      .Case("opencl.image2d_array_ro_t", SPIR::PRIMITIVE_IMAGE2D_ARRAY_RO_T)
+      .Case("opencl.image2d_depth_ro_t", SPIR::PRIMITIVE_IMAGE2D_DEPTH_RO_T)
+      .Case("opencl.image2d_array_depth_ro_t",
+            SPIR::PRIMITIVE_IMAGE2D_ARRAY_DEPTH_RO_T)
+      .Case("opencl.image2d_msaa_ro_t", SPIR::PRIMITIVE_IMAGE2D_MSAA_RO_T)
+      .Case("opencl.image2d_array_msaa_ro_t",
+            SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_RO_T)
+      .Case("opencl.image2d_msaa_depth_ro_t",
+            SPIR::PRIMITIVE_IMAGE2D_MSAA_DEPTH_RO_T)
+      .Case("opencl.image2d_array_msaa_depth_ro_t",
+            SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_DEPTH_RO_T)
+      .Case("opencl.image3d_ro_t", SPIR::PRIMITIVE_IMAGE3D_RO_T)
+      .Case("opencl.image1d_wo_t", SPIR::PRIMITIVE_IMAGE1D_WO_T)
+      .Case("opencl.image1d_array_wo_t", SPIR::PRIMITIVE_IMAGE1D_ARRAY_WO_T)
+      .Case("opencl.image1d_buffer_wo_t", SPIR::PRIMITIVE_IMAGE1D_BUFFER_WO_T)
+      .Case("opencl.image2d_wo_t", SPIR::PRIMITIVE_IMAGE2D_WO_T)
+      .Case("opencl.image2d_array_wo_t", SPIR::PRIMITIVE_IMAGE2D_ARRAY_WO_T)
+      .Case("opencl.image2d_depth_wo_t", SPIR::PRIMITIVE_IMAGE2D_DEPTH_WO_T)
+      .Case("opencl.image2d_array_depth_wo_t",
+            SPIR::PRIMITIVE_IMAGE2D_ARRAY_DEPTH_WO_T)
+      .Case("opencl.image2d_msaa_wo_t", SPIR::PRIMITIVE_IMAGE2D_MSAA_WO_T)
+      .Case("opencl.image2d_array_msaa_wo_t",
+            SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_WO_T)
+      .Case("opencl.image2d_msaa_depth_wo_t",
+            SPIR::PRIMITIVE_IMAGE2D_MSAA_DEPTH_WO_T)
+      .Case("opencl.image2d_array_msaa_depth_wo_t",
+            SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_DEPTH_WO_T)
+      .Case("opencl.image3d_wo_t", SPIR::PRIMITIVE_IMAGE3D_WO_T)
+      .Case("opencl.image1d_rw_t", SPIR::PRIMITIVE_IMAGE1D_RW_T)
+      .Case("opencl.image1d_array_rw_t", SPIR::PRIMITIVE_IMAGE1D_ARRAY_RW_T)
+      .Case("opencl.image1d_buffer_rw_t", SPIR::PRIMITIVE_IMAGE1D_BUFFER_RW_T)
+      .Case("opencl.image2d_rw_t", SPIR::PRIMITIVE_IMAGE2D_RW_T)
+      .Case("opencl.image2d_array_rw_t", SPIR::PRIMITIVE_IMAGE2D_ARRAY_RW_T)
+      .Case("opencl.image2d_depth_rw_t", SPIR::PRIMITIVE_IMAGE2D_DEPTH_RW_T)
+      .Case("opencl.image2d_array_depth_rw_t",
+            SPIR::PRIMITIVE_IMAGE2D_ARRAY_DEPTH_RW_T)
+      .Case("opencl.image2d_msaa_rw_t", SPIR::PRIMITIVE_IMAGE2D_MSAA_RW_T)
+      .Case("opencl.image2d_array_msaa_rw_t",
+            SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_RW_T)
+      .Case("opencl.image2d_msaa_depth_rw_t",
+            SPIR::PRIMITIVE_IMAGE2D_MSAA_DEPTH_RW_T)
+      .Case("opencl.image2d_array_msaa_depth_rw_t",
+            SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_DEPTH_RW_T)
+      .Case("opencl.image3d_rw_t", SPIR::PRIMITIVE_IMAGE3D_RW_T)
       .Case("opencl.event_t", SPIR::PRIMITIVE_EVENT_T)
       .Case("opencl.pipe_ro_t", SPIR::PRIMITIVE_PIPE_RO_T)
       .Case("opencl.pipe_wo_t", SPIR::PRIMITIVE_PIPE_WO_T)
@@ -1014,9 +1061,7 @@ static SPIR::RefParamType transTypeDesc(Type *Ty,
     } else if (auto StructTy = dyn_cast<StructType>(ET)) {
       LLVM_DEBUG(dbgs() << "ptr to struct: " << *Ty << '\n');
       auto TyName = StructTy->getStructName();
-      if (TyName.startswith(kSPR2TypeName::ImagePrefix) ||
-          TyName.startswith(kSPR2TypeName::PipeRO) ||
-          TyName.startswith(kSPR2TypeName::PipeWO)) {
+      if (TyName.startswith(kSPR2TypeName::OCLPrefix)) {
         auto DelimPos = TyName.find_first_of(kSPR2TypeName::Delimiter,
                                              strlen(kSPR2TypeName::OCLPrefix));
         if (DelimPos != StringRef::npos)
@@ -1229,6 +1274,24 @@ Type *getLLVMTypeForSPIRVImageSampledTypePostfix(StringRef Postfix,
   return nullptr;
 }
 
+std::string getImageBaseTypeName(StringRef Name) {
+  std::string ImageTyName = Name;
+
+  SmallVector<StringRef, 4> SubStrs;
+  const char Delims[] = {kSPR2TypeName::Delimiter, 0};
+  Name.split(SubStrs, Delims);
+  if (Name.startswith(kSPR2TypeName::OCLPrefix)) {
+    ImageTyName = SubStrs[1].str();
+  } else {
+    ImageTyName = SubStrs[0].str();
+  }
+
+  if (hasAccessQualifiedName(ImageTyName))
+    ImageTyName.erase(ImageTyName.size() - 5, 3);
+
+  return ImageTyName;
+}
+
 std::string mapOCLTypeNameToSPIRV(StringRef Name, StringRef Acc) {
   std::string BaseTy;
   std::string Postfixes;
@@ -1236,14 +1299,9 @@ std::string mapOCLTypeNameToSPIRV(StringRef Name, StringRef Acc) {
   if (!Acc.empty())
     OS << kSPIRVTypeName::PostfixDelim;
   if (Name.startswith(kSPR2TypeName::ImagePrefix)) {
-    SmallVector<StringRef, 4> SubStrs;
-    const char Delims[] = {kSPR2TypeName::Delimiter, 0};
-    Name.split(SubStrs, Delims);
-    std::string ImageTyName = SubStrs[1].str();
-    if (hasAccessQualifiedName(Name))
-      ImageTyName.erase(ImageTyName.size() - 5, 3);
+    std::string ImageTyName = getImageBaseTypeName(Name);
     auto Desc = map<SPIRVTypeImageDescriptor>(ImageTyName);
-    LLVM_DEBUG(dbgs() << "[trans image type] " << SubStrs[1] << " => "
+    LLVM_DEBUG(dbgs() << "[trans image type] " << Name << " => "
                       << "(" << (unsigned)Desc.Dim << ", " << Desc.Depth << ", "
                       << Desc.Arrayed << ", " << Desc.MS << ", " << Desc.Sampled
                       << ", " << Desc.Format << ")\n");
@@ -1410,6 +1468,41 @@ llvm::PointerType *getOCLClkEventPtrType(Module *M) {
 
 llvm::Constant *getOCLNullClkEventPtr(Module *M) {
   return Constant::getNullValue(getOCLClkEventPtrType(M));
+}
+
+bool hasLoopUnrollMetadata(const Module *M) {
+  for (const Function &F : *M)
+    for (const BasicBlock &BB : F) {
+      const Instruction *Term = BB.getTerminator();
+      if (!Term)
+        continue;
+      if (const MDNode *MD = Term->getMetadata("llvm.loop"))
+        for (const MDOperand &MDOp : MD->operands())
+          if (getMDOperandAsString(dyn_cast<MDNode>(MDOp), 0)
+                  .find("llvm.loop.unroll.") == 0)
+            return true;
+    }
+  return false;
+}
+
+spv::LoopControlMask getLoopControl(const BranchInst *Branch,
+                                    std::vector<SPIRVWord> &Parameters) {
+  if (!Branch)
+    return spv::LoopControlMaskNone;
+  MDNode *LoopMD = Branch->getMetadata("llvm.loop");
+  if (!LoopMD)
+    return spv::LoopControlMaskNone;
+  for (const MDOperand &MDOp : LoopMD->operands()) {
+    if (MDNode *Node = dyn_cast<MDNode>(MDOp)) {
+      std::string S = getMDOperandAsString(Node, 0);
+      if (S == "llvm.loop.unroll.disable")
+        return spv::LoopControlDontUnrollMask;
+      // TODO Express partial unrolling in SPIRV.
+      if (S == "llvm.loop.unroll.count" || S == "llvm.loop.unroll.full")
+        return spv::LoopControlUnrollMask;
+    }
+  }
+  return spv::LoopControlMaskNone;
 }
 
 } // namespace SPIRV

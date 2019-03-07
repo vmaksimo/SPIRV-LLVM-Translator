@@ -22,7 +22,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     )
   endif(LLVM_INCLUDE_TESTS)
 
-  find_package(LLVM 8.0.0 REQUIRED
+  find_package(LLVM 9.0.0 REQUIRED
     COMPONENTS
       Analysis
       BitReader
@@ -43,6 +43,15 @@ else(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   set(BUILD_EXTERNAL NO)
 endif(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 
+if(BUILD_EXTERNAL)
+  find_program(CCACHE_EXE_FOUND ccache)
+  if(CCACHE_EXE_FOUND)
+    message(STATUS "Found ccache: ${CCACHE_EXE_FOUND}")
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+  endif()
+endif()
+
 set(LLVM_SPIRV_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_subdirectory(lib/SPIRV)
@@ -58,7 +67,6 @@ install(
     ${CMAKE_INSTALL_PREFIX}/include/LLVMSPIRVLib
 )
 
-get_target_property(LLVMSPIRVlib_LIBDIR LLVMSPIRVLib BINARY_DIR)
 configure_file(LLVMSPIRVLib.pc.in ${CMAKE_BINARY_DIR}/LLVMSPIRVLib.pc @ONLY)
 install(
   FILES

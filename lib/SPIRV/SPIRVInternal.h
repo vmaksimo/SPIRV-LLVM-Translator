@@ -294,6 +294,7 @@ const static char Sampler[] = "Sampler";
 const static char ConstantSampler[] = "ConstantSampler";
 const static char PipeStorage[] = "PipeStorage";
 const static char ConstantPipeStorage[] = "ConstantPipeStorage";
+const static char VmeImageINTEL[] = "VmeImageINTEL";
 } // namespace kSPIRVTypeName
 
 namespace kSPR2TypeName {
@@ -732,6 +733,14 @@ ConstantInt *getInt32(Module *M, int Value);
 /// Get a 32 bit unsigned integer constant.
 ConstantInt *getUInt32(Module *M, unsigned Value);
 
+/// Get 32 bit integer constant if the value fits in 32 bits,
+/// return 64 bit integer constant otherwise
+ConstantInt *getInt(Module *M, int64_t Value);
+
+/// Get 32 bit unsigned integer constant if the value fits in 32 bits,
+/// return 64 bit unsigned integer constant otherwise
+ConstantInt *getUInt(Module *M, uint64_t Value);
+
 /// Get a 16 bit unsigned integer constant.
 ConstantInt *getUInt16(Module *M, unsigned short Value);
 
@@ -830,6 +839,10 @@ Type *getSPIRVImageTypeFromOCL(Module *M, Type *T);
 Type *getLLVMTypeForSPIRVImageSampledTypePostfix(StringRef Postfix,
                                                  LLVMContext &Ctx);
 
+/// Return the unqualified and unsuffixed base name of an image type.
+/// E.g. opencl.image2d_ro_t.3 -> image2d_t
+std::string getImageBaseTypeName(StringRef Name);
+
 /// Map OpenCL opaque type name to SPIR-V type name.
 std::string mapOCLTypeNameToSPIRV(StringRef Name, StringRef Acc = "");
 
@@ -901,6 +914,13 @@ template <> inline void SPIRVMap<std::string, Op, SPIRVOpaqueType>::init() {
   add(kSPIRVTypeName::SampledImg, OpTypeSampledImage);
 }
 
+// Check if the module contains llvm.loop.unroll.* metadata
+bool hasLoopUnrollMetadata(const Module *M);
+
+// If the branch instruction has !llvm.loop metadata, go through its operands
+// and find Loop Control mask and possible parameters.
+spv::LoopControlMask getLoopControl(const BranchInst *Branch,
+                                    std::vector<SPIRVWord> &Parameters);
 } // namespace SPIRV
 
 #endif // SPIRV_SPIRVINTERNAL_H

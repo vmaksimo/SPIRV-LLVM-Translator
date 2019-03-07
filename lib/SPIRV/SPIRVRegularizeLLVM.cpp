@@ -52,7 +52,6 @@
 #include "llvm/PassSupport.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include <set>
 
@@ -125,18 +124,13 @@ bool SPIRVRegularizeLLVM::regularize() {
       for (auto II = BI->begin(), IE = BI->end(); II != IE; ++II) {
         if (auto Call = dyn_cast<CallInst>(II)) {
           Call->setTailCall(false);
-          if (Call->getCalledFunction()->isIntrinsic())
+          Function *CF = Call->getCalledFunction();
+          if (CF && CF->isIntrinsic())
             removeFnAttr(Context, Call, Attribute::NoUnwind);
         }
 
         // Remove optimization info not supported by SPIRV
         if (auto BO = dyn_cast<BinaryOperator>(II)) {
-          if (isa<OverflowingBinaryOperator>(BO)) {
-            if (BO->hasNoUnsignedWrap())
-              BO->setHasNoUnsignedWrap(false);
-            if (BO->hasNoSignedWrap())
-              BO->setHasNoSignedWrap(false);
-          }
           if (isa<PossiblyExactOperator>(BO) && BO->isExact())
             BO->setIsExact(false);
         }

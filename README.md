@@ -26,9 +26,9 @@ The translator can be built with the latest(nightly) package of LLVM. For Ubuntu
 ```
 sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main"
 sudo apt-get update
-sudo apt-get install llvm-7-dev
+sudo apt-get install llvm-9-dev
 ```
-The intalled version of LLVM will be used by default for out-of-tree build of the translator.
+The installed version of LLVM will be used by default for out-of-tree build of the translator.
 ```
 git clone https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git
 mkdir SPIRV-LLVM-Translator/build && cd SPIRV-LLVM-Translator/build
@@ -70,6 +70,7 @@ Execute the following command to run translator tests:
 ```
 llvm-lit test
 ```
+This requires that the `-DLLVM_INCLUDE_TESTS=ON` argument was passed to CMake during the build step.
 
 ## Run Instructions for `llvm-spirv`
 

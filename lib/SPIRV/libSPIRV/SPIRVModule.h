@@ -74,6 +74,7 @@ class SPIRVTypeVoid;
 class SPIRVTypeDeviceEvent;
 class SPIRVTypeQueue;
 class SPIRVTypePipe;
+class SPIRVTypeVmeImageINTEL;
 class SPIRVValue;
 class SPIRVVariable;
 class SPIRVDecorateGeneric;
@@ -138,6 +139,8 @@ public:
   virtual unsigned short getGeneratorId() const = 0;
   virtual unsigned short getGeneratorVer() const = 0;
   virtual SPIRVWord getSPIRVVersion() const = 0;
+  virtual const std::vector<SPIRVExtInst *> &getDebugInstVec() const = 0;
+  virtual const std::vector<SPIRVString *> &getStringVec() const = 0;
 
   // Module changing functions
   virtual bool importBuiltinSet(const std::string &, SPIRVId *) = 0;
@@ -224,6 +227,8 @@ public:
   virtual SPIRVTypeDeviceEvent *addDeviceEventType() = 0;
   virtual SPIRVTypeQueue *addQueueType() = 0;
   virtual SPIRVTypePipe *addPipeType() = 0;
+  virtual SPIRVType *addSubgroupAvcINTELType(Op) = 0;
+  virtual SPIRVTypeVmeImageINTEL *addVmeImageINTELType(SPIRVTypeImage *) = 0;
   virtual void createForwardPointers() = 0;
 
   // Constants creation functions
@@ -260,10 +265,14 @@ public:
   virtual SPIRVInstruction *addBranchInst(SPIRVLabel *, SPIRVBasicBlock *) = 0;
   virtual SPIRVInstruction *addExtInst(SPIRVType *, SPIRVWord, SPIRVWord,
                                        const std::vector<SPIRVWord> &,
-                                       SPIRVBasicBlock *) = 0;
+                                       SPIRVBasicBlock *,
+                                       SPIRVInstruction * = nullptr) = 0;
   virtual SPIRVInstruction *addExtInst(SPIRVType *, SPIRVWord, SPIRVWord,
                                        const std::vector<SPIRVValue *> &,
-                                       SPIRVBasicBlock *) = 0;
+                                       SPIRVBasicBlock *,
+                                       SPIRVInstruction * = nullptr) = 0;
+  virtual SPIRVEntry *addDebugInfo(SPIRVWord, SPIRVType *,
+                                   const std::vector<SPIRVWord> &) = 0;
   virtual void addCapability(SPIRVCapabilityKind) = 0;
   template <typename T> void addCapabilities(const T &Caps) {
     for (auto I : Caps)
@@ -328,10 +337,9 @@ public:
   virtual SPIRVInstruction *addSelectionMergeInst(SPIRVId MergeBlock,
                                                   SPIRVWord SelectionControl,
                                                   SPIRVBasicBlock *BB) = 0;
-  virtual SPIRVInstruction *addLoopMergeInst(SPIRVId MergeBlock,
-                                             SPIRVId ContinueTarget,
-                                             SPIRVWord LoopControl,
-                                             SPIRVBasicBlock *BB) = 0;
+  virtual SPIRVInstruction *addLoopMergeInst(
+      SPIRVId MergeBlock, SPIRVId ContinueTarget, SPIRVWord LoopControl,
+      std::vector<SPIRVWord> LoopControlParameters, SPIRVBasicBlock *BB) = 0;
   virtual SPIRVInstruction *addStoreInst(SPIRVValue *, SPIRVValue *,
                                          const std::vector<SPIRVWord> &,
                                          SPIRVBasicBlock *) = 0;
@@ -363,6 +371,8 @@ public:
                                                        SPIRVValue *,
                                                        SPIRVValue *,
                                                        SPIRVBasicBlock *) = 0;
+  virtual SPIRVId getExtInstSetId(SPIRVExtInstSetKind Kind) const = 0;
+
   // I/O functions
   friend spv_ostream &operator<<(spv_ostream &O, SPIRVModule &M);
   friend std::istream &operator>>(std::istream &I, SPIRVModule &M);
@@ -372,18 +382,6 @@ protected:
   bool ValidateCapability;
 };
 
-class SPIRVDbgInfo {
-public:
-  SPIRVDbgInfo(SPIRVModule *TM);
-  std::string getEntryPointFileStr(SPIRVExecutionModelKind, unsigned);
-  std::string getFunctionFileStr(SPIRVFunction *);
-  unsigned getFunctionLineNo(SPIRVFunction *);
-
-private:
-  std::unordered_map<SPIRVFunction *, SPIRVLine *> FuncMap;
-  const std::string ModuleFileStr;
-  SPIRVModule *M;
-};
 
 #ifdef _SPIRV_SUPPORT_TEXT_FMT
 

@@ -50,7 +50,6 @@
 #include "llvm/PassSupport.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
 using namespace SPIRV;
@@ -138,7 +137,6 @@ void TransOCLMD::visit(Module *M) {
   if (EraseOCLMD)
     B.eraseNamedMD(kSPIR2MD::Extensions).eraseNamedMD(kSPIR2MD::OptFeatures);
 
-  bool HasFPContract = W.getNamedMD(kSPIR2MD::FPContract);
   if (EraseOCLMD)
     B.eraseNamedMD(kSPIR2MD::FPContract);
 
@@ -165,10 +163,6 @@ void TransOCLMD::visit(Module *M) {
 
     // Specifing execution modes for the Kernel and adding it to the list
     // of ExecutionMode instructions.
-
-    // !{void (i32 addrspace(1)*)* @kernel, i32 31}
-    if (!HasFPContract)
-      EM.addOp().add(&Kernel).add(spv::ExecutionModeContractionOff).done();
 
     // !{void (i32 addrspace(1)*)* @kernel, i32 17, i32 X, i32 Y, i32 Z}
     if (MDNode *WGSize = Kernel.getMetadata(kSPIR2MD::WGSize)) {

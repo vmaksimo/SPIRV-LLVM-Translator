@@ -77,6 +77,7 @@ enum SPIRVInstructionSchemaKind {
 
 enum SPIRVExtInstSetKind {
   SPIRVEIS_OpenCL,
+  SPIRVEIS_Debug,
   SPIRVEIS_Count,
 };
 
@@ -114,6 +115,7 @@ typedef std::vector<SPIRVCapabilityKind> SPIRVCapVec;
 
 template <> inline void SPIRVMap<SPIRVExtInstSetKind, std::string>::init() {
   add(SPIRVEIS_OpenCL, "OpenCL.std");
+  add(SPIRVEIS_Debug, "SPIRV.debug");
 }
 typedef SPIRVMap<SPIRVExtInstSetKind, std::string> SPIRVBuiltinSetNameMap;
 
@@ -176,6 +178,11 @@ template <> inline void SPIRVMap<SPIRVCapabilityKind, SPIRVCapVec>::init() {
   ADD_VEC_INIT(CapabilityStorageImageReadWithoutFormat, {CapabilityShader});
   ADD_VEC_INIT(CapabilityStorageImageWriteWithoutFormat, {CapabilityShader});
   ADD_VEC_INIT(CapabilityMultiViewport, {CapabilityGeometry});
+  ADD_VEC_INIT(CapabilitySubgroupAvcMotionEstimationINTEL, {CapabilityGroups});
+  ADD_VEC_INIT(CapabilitySubgroupAvcMotionEstimationIntraINTEL,
+               {CapabilitySubgroupAvcMotionEstimationINTEL});
+  ADD_VEC_INIT(CapabilitySubgroupAvcMotionEstimationChromaINTEL,
+               {CapabilitySubgroupAvcMotionEstimationIntraINTEL});
 }
 
 template <> inline void SPIRVMap<SPIRVExecutionModelKind, SPIRVCapVec>::init() {
@@ -230,7 +237,6 @@ template <> inline void SPIRVMap<SPIRVMemoryModelKind, SPIRVCapVec>::init() {
 }
 
 template <> inline void SPIRVMap<SPIRVStorageClassKind, SPIRVCapVec>::init() {
-  ADD_VEC_INIT(StorageClassInput, {CapabilityShader});
   ADD_VEC_INIT(StorageClassUniform, {CapabilityShader});
   ADD_VEC_INIT(StorageClassOutput, {CapabilityShader});
   ADD_VEC_INIT(StorageClassPrivate, {CapabilityShader});

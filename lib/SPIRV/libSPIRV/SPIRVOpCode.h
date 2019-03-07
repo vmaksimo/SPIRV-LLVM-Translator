@@ -106,7 +106,8 @@ inline bool isCvtFromUnsignedOpCode(Op OpCode) {
 }
 
 inline bool isOpaqueGenericTypeOpCode(Op OpCode) {
-  return (unsigned)OpCode >= OpTypeEvent && (unsigned)OpCode <= OpTypeQueue;
+  return ((unsigned)OpCode >= OpTypeEvent && (unsigned)OpCode <= OpTypeQueue) ||
+         OpCode == OpTypeSampler;
 }
 
 inline bool isGenericNegateOpCode(Op OpCode) {
@@ -138,9 +139,16 @@ inline bool isPipeOpCode(Op OpCode) {
   unsigned OC = OpCode;
   return OpReadPipe <= OC && OC <= OpGroupCommitWritePipe;
 }
+
+inline bool isSubgroupAvcINTELTypeOpCode(Op OpCode) {
+  unsigned OC = OpCode;
+  return OpTypeAvcImePayloadINTEL <= OC && OC <= OpTypeAvcSicResultINTEL;
+}
+
 inline bool isTypeOpCode(Op OpCode) {
   unsigned OC = OpCode;
-  return (OpTypeVoid <= OC && OC <= OpTypePipe) || OC == OpTypePipeStorage;
+  return (OpTypeVoid <= OC && OC <= OpTypePipe) || OC == OpTypePipeStorage ||
+         isSubgroupAvcINTELTypeOpCode(OpCode) || OC == OpTypeVmeImageINTEL;
 }
 
 inline bool isConstantOpCode(Op OpCode) {
@@ -150,7 +158,8 @@ inline bool isConstantOpCode(Op OpCode) {
 }
 
 inline bool isModuleScopeAllowedOpCode(Op OpCode) {
-  return OpCode == OpVariable || isConstantOpCode(OpCode);
+  return OpCode == OpVariable || OpCode == OpExtInst ||
+         isConstantOpCode(OpCode);
 }
 
 inline bool isIntelSubgroupOpCode(Op OpCode) {

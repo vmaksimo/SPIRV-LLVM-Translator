@@ -51,7 +51,6 @@
 #include "llvm/PassSupport.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
 using namespace SPIRV;
@@ -72,6 +71,10 @@ namespace OCLUtil {
 
 #ifndef SPIRV_CLK_EVENT_T_ADDR_SPACE
 #define SPIRV_CLK_EVENT_T_ADDR_SPACE SPIRV_OCL_SPECIAL_TYPES_DEFAULT_ADDR_SPACE
+#endif
+
+#ifndef SPIRV_SAMPLER_T_ADDR_SPACE
+#define SPIRV_SAMPLER_T_ADDR_SPACE SPIRV_OCL_SPECIAL_TYPES_DEFAULT_ADDR_SPACE
 #endif
 
 #ifndef SPIRV_RESERVE_ID_T_ADDR_SPACE
@@ -326,6 +329,9 @@ SPIRAddressSpace getOCLOpaqueTypeAddrSpace(Op OpCode) {
   case OpTypeImage:
   case OpTypeSampledImage:
     return SPIRV_IMAGE_ADDR_SPACE;
+  case OpConstantSampler:
+  case OpTypeSampler:
+    return SPIRV_SAMPLER_T_ADDR_SPACE;
   default:
     assert(false && "No address space is determined for some OCL type");
     return SPIRV_OCL_SPECIAL_TYPES_DEFAULT_ADDR_SPACE;
@@ -364,18 +370,42 @@ getOCLOpaqueTypeAddrSpace(SPIR::TypePrimitiveEnum Prim) {
   case SPIR::PRIMITIVE_PIPE_RO_T:
   case SPIR::PRIMITIVE_PIPE_WO_T:
     return mapAddrSpaceEnums(SPIRV_PIPE_ADDR_SPACE);
-  case SPIR::PRIMITIVE_IMAGE_1D_T:
-  case SPIR::PRIMITIVE_IMAGE_1D_ARRAY_T:
-  case SPIR::PRIMITIVE_IMAGE_1D_BUFFER_T:
-  case SPIR::PRIMITIVE_IMAGE_2D_T:
-  case SPIR::PRIMITIVE_IMAGE_2D_ARRAY_T:
-  case SPIR::PRIMITIVE_IMAGE_3D_T:
-  case SPIR::PRIMITIVE_IMAGE_2D_MSAA_T:
-  case SPIR::PRIMITIVE_IMAGE_2D_ARRAY_MSAA_T:
-  case SPIR::PRIMITIVE_IMAGE_2D_MSAA_DEPTH_T:
-  case SPIR::PRIMITIVE_IMAGE_2D_ARRAY_MSAA_DEPTH_T:
-  case SPIR::PRIMITIVE_IMAGE_2D_DEPTH_T:
-  case SPIR::PRIMITIVE_IMAGE_2D_ARRAY_DEPTH_T:
+  case SPIR::PRIMITIVE_IMAGE1D_RO_T:
+  case SPIR::PRIMITIVE_IMAGE1D_ARRAY_RO_T:
+  case SPIR::PRIMITIVE_IMAGE1D_BUFFER_RO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_RO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_RO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_DEPTH_RO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_DEPTH_RO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_MSAA_RO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_RO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_MSAA_DEPTH_RO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_DEPTH_RO_T:
+  case SPIR::PRIMITIVE_IMAGE3D_RO_T:
+  case SPIR::PRIMITIVE_IMAGE1D_WO_T:
+  case SPIR::PRIMITIVE_IMAGE1D_ARRAY_WO_T:
+  case SPIR::PRIMITIVE_IMAGE1D_BUFFER_WO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_WO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_WO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_DEPTH_WO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_DEPTH_WO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_MSAA_WO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_WO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_MSAA_DEPTH_WO_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_DEPTH_WO_T:
+  case SPIR::PRIMITIVE_IMAGE3D_WO_T:
+  case SPIR::PRIMITIVE_IMAGE1D_RW_T:
+  case SPIR::PRIMITIVE_IMAGE1D_ARRAY_RW_T:
+  case SPIR::PRIMITIVE_IMAGE1D_BUFFER_RW_T:
+  case SPIR::PRIMITIVE_IMAGE2D_RW_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_RW_T:
+  case SPIR::PRIMITIVE_IMAGE2D_DEPTH_RW_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_DEPTH_RW_T:
+  case SPIR::PRIMITIVE_IMAGE2D_MSAA_RW_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_RW_T:
+  case SPIR::PRIMITIVE_IMAGE2D_MSAA_DEPTH_RW_T:
+  case SPIR::PRIMITIVE_IMAGE2D_ARRAY_MSAA_DEPTH_RW_T:
+  case SPIR::PRIMITIVE_IMAGE3D_RW_T:
     return mapAddrSpaceEnums(SPIRV_IMAGE_ADDR_SPACE);
   default:
     llvm_unreachable("No address space is determined for a SPIR primitive");
@@ -634,6 +664,15 @@ bool isSpecialTypeInitializer(Instruction *Inst) {
   return isSamplerInitializer(Inst) || isPipeStorageInitializer(Inst);
 }
 
+bool isSamplerTy(Type *Ty) {
+  auto PTy = dyn_cast<PointerType>(Ty);
+  if (!PTy)
+    return false;
+
+  auto STy = dyn_cast<StructType>(PTy->getElementType());
+  return STy && STy->hasName() && STy->getName() == kSPR2TypeName::Sampler;
+}
+
 bool isPipeBI(const StringRef MangledName) {
   return MangledName == "write_pipe_2" || MangledName == "read_pipe_2" ||
          MangledName == "write_pipe_4" || MangledName == "read_pipe_4" ||
@@ -667,6 +706,33 @@ bool isKernelQueryBI(const StringRef MangledName) {
          MangledName == "__get_kernel_sub_group_count_for_ndrange_impl" ||
          MangledName == "__get_kernel_max_sub_group_size_for_ndrange_impl" ||
          MangledName == "__get_kernel_preferred_work_group_size_multiple_impl";
+}
+
+// Checks if we have the following (most common for fp contranction) pattern
+// in LLVM IR:
+// %mul = fmul float %a, %b
+// %add = fadd float %mul, %c
+// This pattern indicates that fp contraction could have been disabled by
+// // #pragma OPENCL FP_CONTRACT OFF. Otherwise the current version of clang
+// would generate:
+// %0 = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
+// TODO We need a more reliable mechanism to expres the FP_CONTRACT pragma
+// in LLVM IR. Fox example adding the 'contract' attribute to fp operations
+// by default (according the OpenCL spec fp contraction is enabled by default).
+void checkFpContract(BinaryOperator *B, SPIRVBasicBlock *BB) {
+  if (B->getOpcode() != Instruction::FAdd &&
+      B->getOpcode() != Instruction::FSub)
+    return;
+  // Ok, this is fadd or fsub. Now check its operands.
+  for (auto *Op : B->operand_values()) {
+    if (auto *I = dyn_cast<Instruction>(Op)) {
+      if (I->getOpcode() == Instruction::FMul) {
+        SPIRVFunction *BF = BB->getParent();
+        BF->setUncontractedFMulAddFound();
+        break;
+      }
+    }
+  }
 }
 } // namespace OCLUtil
 
