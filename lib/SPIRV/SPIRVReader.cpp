@@ -109,8 +109,6 @@ const static char *Restrict = "restrict";
 const static char *Pipe = "pipe";
 } // namespace kOCLTypeQualifierName
 
-typedef std::pair<unsigned, AttributeList> AttributeWithIndex;
-
 static bool isOpenCLKernel(SPIRVFunction *BF) {
   return BF->getModule()->isEntryPoint(ExecutionModelKernel, BF->getId());
 }
@@ -168,13 +166,6 @@ static void addOCLKernelArgumentMetadata(
   BF->foreachArgument(
       [&](SPIRVFunctionParameter *Arg) { ValueVec.push_back(Func(Arg)); });
   Fn->setMetadata(MDName, MDNode::get(*Context, ValueVec));
-}
-
-Type *SPIRVToLLVM::getTranslatedType(SPIRVType *BV) {
-  auto Loc = TypeMap.find(BV);
-  if (Loc != TypeMap.end())
-    return Loc->second;
-  return nullptr;
 }
 
 Value *SPIRVToLLVM::getTranslatedValue(SPIRVValue *BV) {
@@ -1258,8 +1249,11 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     auto BR = static_cast<SPIRVBranch *>(BV);
     auto BI = BranchInst::Create(
         dyn_cast<BasicBlock>(transValue(BR->getTargetLabel(), F, BB)), BB);
-    if (auto LM = static_cast<SPIRVLoopMerge *>(BR->getPrevious()))
+    auto Prev = BR->getPrevious();
+    if (Prev && Prev->getOpCode() == OpLoopMerge) {
+      auto LM = static_cast<SPIRVLoopMerge *>(Prev);
       setLLVMLoopMetadata(LM, BI);
+    }
     return mapValue(BV, BI);
   }
 
@@ -1269,8 +1263,11 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
         dyn_cast<BasicBlock>(transValue(BR->getTrueLabel(), F, BB)),
         dyn_cast<BasicBlock>(transValue(BR->getFalseLabel(), F, BB)),
         transValue(BR->getCondition(), F, BB), BB);
-    if (auto LM = static_cast<SPIRVLoopMerge *>(BR->getPrevious()))
+    auto Prev = BR->getPrevious();
+    if (Prev && Prev->getOpCode() == OpLoopMerge) {
+      auto LM = static_cast<SPIRVLoopMerge *>(Prev);
       setLLVMLoopMetadata(LM, BC);
+    }
     return mapValue(BV, BC);
   }
 
@@ -2204,6 +2201,8 @@ void generateIntelFPGAAnnotation(const SPIRVEntry *E,
     Out << "{bankwidth:" << Result << '}';
   if (E->hasDecorate(DecorationNumbanksINTEL, 0, &Result))
     Out << "{numbanks:" << Result << '}';
+  if (E->hasDecorate(DecorationMaxconcurrencyINTEL, 0, &Result))
+    Out << "{max_concurrency:" << Result << '}';
 }
 
 void generateIntelFPGAAnnotationForStructMember(
@@ -2223,6 +2222,9 @@ void generateIntelFPGAAnnotationForStructMember(
     Out << "{bankwidth:" << Result << '}';
   if (E->hasMemberDecorate(DecorationNumbanksINTEL, 0, MemberNumber, &Result))
     Out << "{numbanks:" << Result << '}';
+  if (E->hasMemberDecorate(DecorationMaxconcurrencyINTEL, 0, MemberNumber,
+                           &Result))
+    Out << "{max_concurrency:" << Result << '}';
 }
 
 void SPIRVToLLVM::transIntelFPGADecorations(SPIRVValue *BV, Value *V) {
@@ -2897,11 +2899,15 @@ Instruction *SPIRVToLLVM::transOCLRelational(SPIRVInstruction *I,
 
 bool llvm::readSpirv(LLVMContext &C, std::istream &IS, Module *&M,
                      std::string &ErrMsg) {
-  M = new Module("", C);
   std::unique_ptr<SPIRVModule> BM(SPIRVModule::createSPIRVModule());
 
   IS >> *BM;
+  if (!BM->isModuleValid()) {
+    M = nullptr;
+    return false;
+  }
 
+  M = new Module("", C);
   SPIRVToLLVM BTL(M, BM.get());
   bool Succeed = true;
   if (!BTL.translate()) {
