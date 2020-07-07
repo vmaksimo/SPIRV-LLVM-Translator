@@ -2734,6 +2734,11 @@ SPIRVInstruction *LLVMToSPIRV::transBuiltinToInst(StringRef DemangledName,
           ExtensionID::SPV_INTEL_arbitrary_precision_floating_point))
     return nullptr;
 
+  if (OpFixedSqrtINTEL <= OC && OC <= OpFixedExpINTEL &&
+      !BM->isAllowedToUseExtension(
+          ExtensionID::SPV_INTEL_arbitrary_precision_fixed_point))
+    return nullptr;
+
   auto Inst = transBuiltinToInstWithoutDecoration(OC, CI, BB);
   addDecorations(Inst, Dec);
   return Inst;
@@ -3163,6 +3168,45 @@ LLVMToSPIRV::transBuiltinToInstWithoutDecoration(Op OC, CallInst *CI,
 
     return BM->addArbFloatPointIntelInst(OC, transType(ResTy), InA, InB,
                                          Literals, BB);
+  }
+  case OpFixedSqrtINTEL:
+  case OpFixedRecipINTEL:
+  case OpFixedRsqrtINTEL:
+  case OpFixedSinINTEL:
+  case OpFixedCosINTEL:
+  case OpFixedSinCosINTEL:
+  case OpFixedSinPiINTEL:
+  case OpFixedCosPiINTEL:
+  case OpFixedSinCosPiINTEL:
+  case OpFixedLogINTEL:
+  case OpFixedExpINTEL: {
+    // LLVM fixed point functions return value:
+    // iN
+    // Arguments:
+    // A(iN), S(i1), I(i32), rI(i32), Quantization(i32), Overflow(i32)
+    // where A - integer input of any width.
+
+    // SPIR-V fixed point instruction contains:
+    // <id>ResTy Res<id> <id>InTy In<id> \
+    // Literal S Literal I Literal rI Literal Q Literal O
+
+    Type *ResTy = CI->getType();
+    SPIRVValue *Input =
+        transValue(CI->getOperand(0) /* A - integer input of any width */, BB);
+
+    std::vector<Value *> Operands = {
+        CI->getOperand(1) /* S - bool value, indicator of signedness */,
+        CI->getOperand(2) /* I - location of the fixed-point of the input */,
+        CI->getOperand(3) /* rI - location of the fixed-point of the result*/,
+        CI->getOperand(4) /* Quantization mode */,
+        CI->getOperand(5) /* Overflow mode */};
+    std::vector<SPIRVWord> Literals;
+    for (auto *O : Operands) {
+      Literals.push_back(cast<llvm::ConstantInt>(O)->getZExtValue());
+    }
+
+    return BM->addFixedPointIntelInst(OC, transType(ResTy), Input, Literals,
+                                      BB);
   }
   default: {
     if (isCvtOpCode(OC) && OC != OpGenericCastToPtrExplicit) {

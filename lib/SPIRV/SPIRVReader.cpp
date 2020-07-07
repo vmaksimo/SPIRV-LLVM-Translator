@@ -2493,6 +2493,19 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     return mapValue(
         BV, transArbFloatInst(static_cast<SPIRVInstruction *>(BV), BB, true));
 
+  case OpFixedSqrtINTEL:
+  case OpFixedRecipINTEL:
+  case OpFixedRsqrtINTEL:
+  case OpFixedSinINTEL:
+  case OpFixedCosINTEL:
+  case OpFixedSinCosINTEL:
+  case OpFixedSinPiINTEL:
+  case OpFixedCosPiINTEL:
+  case OpFixedSinCosPiINTEL:
+  case OpFixedLogINTEL:
+  case OpFixedExpINTEL:
+    return mapValue(
+        BV, transFixedPointInst(static_cast<SPIRVInstruction *>(BV), BB));
   default: {
     auto OC = BV->getOpCode();
     if (isSPIRVCmpInstTransToLLVMInst(static_cast<SPIRVInstruction *>(BV))) {
@@ -2627,6 +2640,55 @@ CallInst *SPIRVToLLVM::transArbFloatInst(SPIRVInstruction *BI, BasicBlock *BB,
   Func->setCallingConv(CallingConv::SPIR_FUNC);
   if (isFuncNoUnwind())
     Func->addFnAttr(Attribute::NoUnwind);
+
+  return CallInst::Create(Func, Args, "", BB);
+}
+
+CallInst *SPIRVToLLVM::transFixedPointInst(SPIRVInstruction *BI,
+                                           BasicBlock *BB) {
+  // LLVM fixed point functions return value:
+  // iN
+  // Arguments:
+  // A(iN), S(i1), I(i32), rI(i32), Quantization(i32), Overflow(i32)
+
+  // SPIR-V fixed point instruction contains:
+  // <id>ResTy Res<id> <id>InTy In<id> \
+  // Literal S Literal I Literal rI Literal Q Literal O
+
+  Type *RetTy = transType(BI->getType());
+  auto Inst = static_cast<SPIRVFixedPointIntelInst *>(BI);
+
+  IntegerType *Int32Ty = IntegerType::get(*Context, 32);
+  IntegerType *Int1Ty = IntegerType::get(*Context, 1);
+
+  SmallVector<Type *, 7> ArgTys = {transType(Inst->getOperand(1)->getType()),
+                                   Int1Ty,
+                                   Int32Ty,
+                                   Int32Ty,
+                                   Int32Ty,
+                                   Int32Ty};
+
+  FunctionType *FT = FunctionType::get(RetTy, ArgTys, false);
+
+  Op OpCode = Inst->getOpCode();
+  Function *Func = Function::Create(FT, GlobalValue::ExternalLinkage,
+                                    SPIRVFixedPointIntelMap::rmap(OpCode), M);
+  Func->setCallingConv(CallingConv::SPIR_FUNC);
+  if (isFuncNoUnwind())
+    Func->addFnAttr(Attribute::NoUnwind);
+
+  // Words contain:
+  // <id>InTy In<id> Literal S Literal I Literal rI Literal Q Literal O
+  auto Words = Inst->getOpWords();
+  std::vector<Value *> Args = {
+      transValue(Inst->getOperand(1), BB->getParent(), BB) /* A - input */,
+      ConstantInt::get(Int1Ty, Words[2]) /* S - indicator of signedness */,
+      ConstantInt::get(Int32Ty,
+                       Words[3]) /* I - fixed-point location of the input */,
+      ConstantInt::get(Int32Ty,
+                       Words[4]) /* rI - fixed-point location of the result*/,
+      ConstantInt::get(Int32Ty, Words[5]) /* Quantization mode */,
+      ConstantInt::get(Int32Ty, Words[6]) /* Overflow mode */};
 
   return CallInst::Create(Func, Args, "", BB);
 }

@@ -110,6 +110,7 @@ public:
                               BasicBlock *BB);
   CallInst *transArbFloatInst(SPIRVInstruction *BI, BasicBlock *BB,
                               bool IsBinaryInst = false);
+  CallInst *transFixedPointInst(SPIRVInstruction *BI, BasicBlock *BB);
   bool transNonTemporalMetadata(Instruction *I);
   bool transSourceLanguage();
   bool transSourceExtension();

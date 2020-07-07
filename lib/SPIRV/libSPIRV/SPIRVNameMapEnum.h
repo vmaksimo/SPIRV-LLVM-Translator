@@ -548,6 +548,8 @@ template <> inline void SPIRVMap<Capability, std::string>::init() {
   add(CapabilityIndirectReferencesINTEL, "IndirectReferencesINTEL");
   add(CapabilityKernelAttributesINTEL, "KernelAttributesINTEL");
   add(CapabilityFPGAKernelAttributesINTEL, "FPGAKernelAttributesINTEL");
+  add(CapabilityArbitraryPrecisionFixedPointINTEL,
+      "ArbitraryPrecisionFixedPointINTEL");
   add(CapabilityIOPipeINTEL, "IOPipeINTEL");
   add(CapabilityOptimizationHintsINTEL, "OptimizationHintsINTEL");
   add(CapabilityGroupNonUniform, "GroupNonUniform");

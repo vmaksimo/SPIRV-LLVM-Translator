@@ -368,6 +368,10 @@ public:
                                               SPIRVValue *InA, SPIRVValue *InB,
                                               const std::vector<SPIRVWord> &Ops,
                                               SPIRVBasicBlock *BB) override;
+  SPIRVInstruction *addFixedPointIntelInst(Op OC, SPIRVType *ResTy,
+                                           SPIRVValue *Input,
+                                           const std::vector<SPIRVWord> &Ops,
+                                           SPIRVBasicBlock *BB) override;
   SPIRVInstruction *addSelectionMergeInst(SPIRVId MergeBlock,
                                           SPIRVWord SelectionControl,
                                           SPIRVBasicBlock *BB) override;
@@ -1426,6 +1430,15 @@ SPIRVInstruction *SPIRVModuleImpl::addArbFloatPointIntelInst(
     TheOps.push_back(InB->getId());
   TheOps.insert(TheOps.end(), OpsItr, Ops.end());
 
+  return addInstruction(
+      SPIRVInstTemplateBase::create(OC, ResTy, getId(), TheOps, BB, this), BB);
+}
+
+SPIRVInstruction *SPIRVModuleImpl::addFixedPointIntelInst(
+    Op OC, SPIRVType *ResTy, SPIRVValue *Input,
+    const std::vector<SPIRVWord> &Ops, SPIRVBasicBlock *BB) {
+  std::vector<SPIRVWord> TheOps =
+      getVec(Input->getType()->getId(), getVec(Input->getId(), Ops));
   return addInstruction(
       SPIRVInstTemplateBase::create(OC, ResTy, getId(), TheOps, BB, this), BB);
 }
