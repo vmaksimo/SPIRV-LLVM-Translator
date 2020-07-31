@@ -3181,13 +3181,13 @@ LLVMToSPIRV::transBuiltinToInstWithoutDecoration(Op OC, CallInst *CI,
   case OpFixedLogINTEL:
   case OpFixedExpINTEL: {
     // LLVM fixed point functions return value:
-    // iN
+    // iN (arbitrary precision integer of N bits length)
     // Arguments:
     // A(iN), S(i1), I(i32), rI(i32), Quantization(i32), Overflow(i32)
     // where A - integer input of any width.
 
     // SPIR-V fixed point instruction contains:
-    // <id>ResTy Res<id> <id>InTy In<id> \
+    // <id>ResTy Res<id> In<id> \
     // Literal S Literal I Literal rI Literal Q Literal O
 
     Type *ResTy = CI->getType();

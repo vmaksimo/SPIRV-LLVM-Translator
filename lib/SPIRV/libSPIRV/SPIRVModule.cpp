@@ -1437,8 +1437,7 @@ SPIRVInstruction *SPIRVModuleImpl::addArbFloatPointIntelInst(
 SPIRVInstruction *SPIRVModuleImpl::addFixedPointIntelInst(
     Op OC, SPIRVType *ResTy, SPIRVValue *Input,
     const std::vector<SPIRVWord> &Ops, SPIRVBasicBlock *BB) {
-  std::vector<SPIRVWord> TheOps =
-      getVec(Input->getType()->getId(), getVec(Input->getId(), Ops));
+  std::vector<SPIRVWord> TheOps = getVec(Input->getId(), Ops);
   return addInstruction(
       SPIRVInstTemplateBase::create(OC, ResTy, getId(), TheOps, BB, this), BB);
 }

@@ -100,6 +100,7 @@
 ; RUN: llvm-spirv -r %t.spv -o %t.bc
 ; RUN: llvm-dis < %t.bc | FileCheck %s --check-prefix=CHECK-LLVM
 
+; CHECK-SPIRV: 2 Capability Kernel
 ; CHECK-SPIRV: 2 Capability ArbitraryPrecisionIntegersINTEL
 ; CHECK-SPIRV: 2 Capability ArbitraryPrecisionFixedPointINTEL
 ; CHECK-SPIRV: 12 Extension "SPV_INTEL_arbitrary_precision_fixed_point"
@@ -126,54 +127,54 @@
 ; CHECK-SPIRV: 4 TypeInt [[Ty_34:[0-9]+]] 34 0
 
 ; CHECK-SPIRV: 6 Load [[Ty_13]] [[Sqrt_InId:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedSqrtINTEL [[Ty_5]] [[#]] [[Ty_13]] [[Sqrt_InId]] 0 2 2 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedSqrtINTEL
+; CHECK-SPIRV-NEXT: 9 FixedSqrtINTEL [[Ty_5]] [[#]] [[Sqrt_InId]] 0 2 2 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedSqrtINTEL
 ; CHECK-SPIRV: 6 Load [[Ty_5]] [[Sqrt_InId_B:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedSqrtINTEL [[Ty_13]] [[#]] [[Ty_5]] [[Sqrt_InId_B]] 0 2 2 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedSqrtINTEL
+; CHECK-SPIRV-NEXT: 9 FixedSqrtINTEL [[Ty_13]] [[#]] [[Sqrt_InId_B]] 0 2 2 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedSqrtINTEL
 ; CHECK-SPIRV: 6 Load [[Ty_5]] [[Sqrt_InId_C:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedSqrtINTEL [[Ty_13]] [[#]] [[Ty_5]] [[Sqrt_InId_C]] 0 2 2 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedSqrtINTEL
+; CHECK-SPIRV-NEXT: 9 FixedSqrtINTEL [[Ty_13]] [[#]] [[Sqrt_InId_C]] 0 2 2 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedSqrtINTEL
 
 ; CHECK-SPIRV: 6 Load [[Ty_3]] [[Recip_InId:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedRecipINTEL [[Ty_8]] [[#]] [[Ty_3]] [[Recip_InId]] 1 4 4 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedRecipINTEL
+; CHECK-SPIRV-NEXT: 9 FixedRecipINTEL [[Ty_8]] [[#]] [[Recip_InId]] 1 4 4 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedRecipINTEL
 
 ; CHECK-SPIRV: 6 Load [[Ty_11]] [[Rsqrt_InId:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedRsqrtINTEL [[Ty_10]] [[#]] [[Ty_11]] [[Rsqrt_InId]] 0 8 6 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedRsqrtINTEL
+; CHECK-SPIRV-NEXT: 9 FixedRsqrtINTEL [[Ty_10]] [[#]] [[Rsqrt_InId]] 0 8 6 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedRsqrtINTEL
 
 ; CHECK-SPIRV: 6 Load [[Ty_17]] [[Sin_InId:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedSinINTEL [[Ty_11]] [[#]] [[Ty_17]] [[Sin_InId]] 1 7 5 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedSinINTEL
+; CHECK-SPIRV-NEXT: 9 FixedSinINTEL [[Ty_11]] [[#]] [[Sin_InId]] 1 7 5 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedSinINTEL
 
 ; CHECK-SPIRV: 6 Load [[Ty_35]] [[Cos_InId:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedCosINTEL [[Ty_28]] [[#]] [[Ty_35]] [[Cos_InId]] 0 9 3 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedCosINTEL
+; CHECK-SPIRV-NEXT: 9 FixedCosINTEL [[Ty_28]] [[#]] [[Cos_InId]] 0 9 3 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedCosINTEL
 
 ; CHECK-SPIRV: 6 Load [[Ty_31]] [[SinCos_InId:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedSinCosINTEL [[Ty_40]] [[#]] [[Ty_31]] [[SinCos_InId]] 1 10 12 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedSinCosINTEL
+; CHECK-SPIRV-NEXT: 9 FixedSinCosINTEL [[Ty_40]] [[#]] [[SinCos_InId]] 1 10 12 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedSinCosINTEL
 
 ; CHECK-SPIRV: 6 Load [[Ty_60]] [[SinPi_InId:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedSinPiINTEL [[Ty_5]] [[#]] [[Ty_60]] [[SinPi_InId]] 0 2 2 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedSinPiINTEL
+; CHECK-SPIRV-NEXT: 9 FixedSinPiINTEL [[Ty_5]] [[#]] [[SinPi_InId]] 0 2 2 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedSinPiINTEL
 
 ; CHECK-SPIRV: 6 Load [[Ty_28]] [[CosPi_InId:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedCosPiINTEL [[Ty_16]] [[#]] [[Ty_28]] [[CosPi_InId]] 0 8 5 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedCosPiINTEL
+; CHECK-SPIRV-NEXT: 9 FixedCosPiINTEL [[Ty_16]] [[#]] [[CosPi_InId]] 0 8 5 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedCosPiINTEL
 
 ; CHECK-SPIRV: 6 Load [[Ty_13]] [[SinCosPi_InId:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedSinCosPiINTEL [[Ty_10]] [[#]] [[Ty_13]] [[SinCosPi_InId]] 0 2 2 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedSinCosPiINTEL
+; CHECK-SPIRV-NEXT: 9 FixedSinCosPiINTEL [[Ty_10]] [[#]] [[SinCosPi_InId]] 0 2 2 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedSinCosPiINTEL
 
 ; CHECK-SPIRV: 6 Load [[Ty_64]] [[Log_InId:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedLogINTEL [[Ty_44]] [[#]] [[Ty_64]] [[Log_InId]] 1 24 22 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedLogINTEL
+; CHECK-SPIRV-NEXT: 9 FixedLogINTEL [[Ty_44]] [[#]] [[Log_InId]] 1 24 22 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedLogINTEL
 
 ; CHECK-SPIRV: 6 Load [[Ty_44]] [[Exp_InId:[0-9]+]]
-; CHECK-SPIRV-NEXT: 10 FixedExpINTEL [[Ty_34]] [[#]] [[Ty_44]] [[Exp_InId]] 0 20 20 0 0
-; CHECK-SPIRV-NEGATIVE-NOT: 10 FixedExpINTEL
+; CHECK-SPIRV-NEXT: 9 FixedExpINTEL [[Ty_34]] [[#]] [[Exp_InId]] 0 20 20 0 0
+; CHECK-SPIRV-NEGATIVE-NOT: 9 FixedExpINTEL
 
 ; CHECK-LLVM: call i5 @intel_arbitrary_fixed_sqrt.i5.i13(i13 %[[#]], i1 false, i32 2, i32 2, i32 0, i32 0)
 ; CHECK-LLVM: call i13 @intel_arbitrary_fixed_sqrt.i13.i5(i5 %[[#]], i1 false, i32 2, i32 2, i32 0, i32 0)
@@ -219,7 +220,7 @@ $_Z3logILi64ELi44ELb1ELi24ELi22EEvv = comdat any
 $_Z3expILi44ELi34ELb0ELi20ELi20EEvv = comdat any
 
 ; Function Attrs: norecurse
-define dso_local spir_kernel void @_ZTSZ4mainE15kernel_function() #0 !kernel_arg_addr_space !3 !kernel_arg_access_qual !3 !kernel_arg_type !3 !kernel_arg_base_type !3 !kernel_arg_type_qual !3 !kernel_arg_host_accessible !3 !kernel_arg_pipe_depth !3 !kernel_arg_pipe_io !3 !kernel_arg_buffer_location !3 {
+define dso_local spir_kernel void @_ZTSZ4mainE15kernel_function() #0 !kernel_arg_addr_space !4 !kernel_arg_access_qual !4 !kernel_arg_type !4 !kernel_arg_base_type !4 !kernel_arg_type_qual !4 {
 entry:
   %0 = alloca %"class._ZTSZ4mainE3$_0.anon", align 1
   %1 = bitcast %"class._ZTSZ4mainE3$_0.anon"* %0 to i8*
@@ -525,26 +526,23 @@ declare dso_local spir_func i44 @_Z21__spirv_FixedLogINTELILi64ELi44EEU7_ExtIntI
 ; Function Attrs: nounwind
 declare dso_local spir_func i34 @_Z21__spirv_FixedExpINTELILi44ELi34EEU7_ExtIntIXT0_EEiU7_ExtIntIXT_EEibiiii(i44, i1 zeroext, i32, i32, i32, i32) #4
 
-attributes #0 = { norecurse "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "sycl-module-id"="ap_fixed.cpp" "uniform-work-group-size"="true" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #0 = { norecurse "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "sycl-module-id"="ap_fixed.cpp" "uniform-work-group-size"="true" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #1 = { argmemonly nounwind willreturn }
-attributes #2 = { inlinehint norecurse "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #3 = { norecurse nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { inlinehint norecurse "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { norecurse nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #5 = { nounwind }
 
 !llvm.module.flags = !{!0}
 !opencl.spir.version = !{!1}
 !spirv.Source = !{!2}
-!opencl.used.extensions = !{!3}
-!opencl.used.optional.core.features = !{!3}
-!opencl.compiler.options = !{!3}
-!llvm.ident = !{!4}
+!llvm.ident = !{!3}
 
 !0 = !{i32 1, !"wchar_size", i32 4}
 !1 = !{i32 1, i32 2}
 !2 = !{i32 4, i32 100000}
-!3 = !{}
-!4 = !{!"Intel(R) oneAPI DPC++ Compiler 2021.1 (YYYY.x.0.MMDD)"}
+!3 = !{!"clang version 11.0.0"}
+!4 = !{}
 !5 = !{!6, !6, i64 0}
 !6 = !{!"any pointer", !7, i64 0}
 !7 = !{!"omnipotent char", !8, i64 0}

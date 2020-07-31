@@ -2726,17 +2726,17 @@ protected:
 #define _SPIRV_OP(x, ...)                                                      \
   typedef SPIRVInstTemplate<SPIRVFixedPointIntelInst, Op##x, __VA_ARGS__>      \
       SPIRV##x;
-_SPIRV_OP(FixedSqrtINTEL, true, 10)
-_SPIRV_OP(FixedRecipINTEL, true, 10)
-_SPIRV_OP(FixedRsqrtINTEL, true, 10)
-_SPIRV_OP(FixedSinINTEL, true, 10)
-_SPIRV_OP(FixedCosINTEL, true, 10)
-_SPIRV_OP(FixedSinCosINTEL, true, 10)
-_SPIRV_OP(FixedSinPiINTEL, true, 10)
-_SPIRV_OP(FixedCosPiINTEL, true, 10)
-_SPIRV_OP(FixedSinCosPiINTEL, true, 10)
-_SPIRV_OP(FixedLogINTEL, true, 10)
-_SPIRV_OP(FixedExpINTEL, true, 10)
+_SPIRV_OP(FixedSqrtINTEL, true, 9)
+_SPIRV_OP(FixedRecipINTEL, true, 9)
+_SPIRV_OP(FixedRsqrtINTEL, true, 9)
+_SPIRV_OP(FixedSinINTEL, true, 9)
+_SPIRV_OP(FixedCosINTEL, true, 9)
+_SPIRV_OP(FixedSinCosINTEL, true, 9)
+_SPIRV_OP(FixedSinPiINTEL, true, 9)
+_SPIRV_OP(FixedCosPiINTEL, true, 9)
+_SPIRV_OP(FixedSinCosPiINTEL, true, 9)
+_SPIRV_OP(FixedLogINTEL, true, 9)
+_SPIRV_OP(FixedExpINTEL, true, 9)
 #undef _SPIRV_OP
 
 class SPIRVAtomicInstBase : public SPIRVInstTemplateBase {
