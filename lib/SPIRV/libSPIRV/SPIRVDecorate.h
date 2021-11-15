@@ -174,6 +174,10 @@ public:
       return ExtensionID::SPV_INTEL_fpga_invocation_pipelining_attributes;
     case internal::DecorationRuntimeAlignedINTEL:
       return ExtensionID::SPV_INTEL_runtime_aligned;
+    case internal::DecorationHostAccessINTEL:
+    case internal::DecorationInitModeINTEL:
+    case internal::DecorationImplementInCSRINTEL:
+      return ExtensionID::SPV_INTEL_global_variable_decorations;
     default:
       return {};
     }
@@ -696,6 +700,30 @@ public:
   SPIRVDecoratePipelineEnableINTEL(SPIRVEntry *TheTarget, SPIRVWord Enable)
       : SPIRVDecorate(spv::internal::DecorationPipelineEnableINTEL, TheTarget,
                       Enable){};
+};
+
+class SPIRVDecorateHostAccessINTEL : public SPIRVDecorate {
+public:
+  // Complete constructor for SPIRVHostAccessINTEL
+  SPIRVDecorateHostAccessINTEL(SPIRVEntry *TheTarget, SPIRVWord AccessMode,
+                               const std::string &VarName)
+      : SPIRVDecorate(spv::internal::DecorationHostAccessINTEL, TheTarget){};
+};
+
+class SPIRVDecorateInitModeINTEL : public SPIRVDecorate {
+public:
+  // Complete constructor for SPIRVInitModeINTEL
+  SPIRVDecorateInitModeINTEL(SPIRVEntry *TheTarget, SPIRVWord Trigger)
+      : SPIRVDecorate(spv::internal::DecorationInitModeINTEL, TheTarget,
+                      Trigger){};
+};
+
+class SPIRVDecorateImplementInCSRINTEL : public SPIRVDecorate {
+public:
+  // Complete constructor for SPIRVImplementInCSRINTEL
+  SPIRVDecorateImplementInCSRINTEL(SPIRVEntry *TheTarget, SPIRVWord Value)
+      : SPIRVDecorate(spv::internal::DecorationImplementInCSRINTEL, TheTarget,
+                      Value){};
 };
 
 } // namespace SPIRV
