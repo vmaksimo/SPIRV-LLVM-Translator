@@ -3649,7 +3649,10 @@ bool SPIRVToLLVM::transDecoration(SPIRVValue *BV, Value *V) {
 
   transIntelFPGADecorations(BV, V);
   transMemAliasingINTELDecorations(BV, V);
-  transVarDecorationsToMetadata(BV, V);
+
+  // Decoration metadata is only enabled in SPIR-V friendly mode
+  if (BM->getDesiredBIsRepresentation() == BIsRepresentation::SPIRVFriendlyIR)
+    transVarDecorationsToMetadata(BV, V);
 
   // Decoration metadata is only enabled in SPIR-V friendly mode
   if (BM->getDesiredBIsRepresentation() == BIsRepresentation::SPIRVFriendlyIR)
@@ -3813,7 +3816,10 @@ bool SPIRVToLLVM::transMetadata() {
     transOCLMetadata(BF);
     transVectorComputeMetadata(BF);
     transFPGAFunctionMetadata(BF, F);
-    transFunctionDecorationsToMetadata(BF, F);
+
+    // Decoration metadata is only enabled in SPIR-V friendly mode
+    if (BM->getDesiredBIsRepresentation() == BIsRepresentation::SPIRVFriendlyIR)
+      transFunctionDecorationsToMetadata(BF, F);
 
     // Decoration metadata is only enabled in SPIR-V friendly mode
     if (BM->getDesiredBIsRepresentation() == BIsRepresentation::SPIRVFriendlyIR)

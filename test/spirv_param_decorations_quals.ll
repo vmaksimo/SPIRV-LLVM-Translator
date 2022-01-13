@@ -1,11 +1,8 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc -spirv-text -o - | FileCheck %s --check-prefix=CHECK-SPIRV
 ; RUN: llvm-spirv %t.bc -o %t.spv
-<<<<<<< HEAD
 ; RUN: llvm-spirv -r %t.spv --spirv-target-env=SPV-IR -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-SPV-IR
-=======
->>>>>>> Add test for merged param type qualifiers
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM
 
@@ -39,7 +36,6 @@ entry:
 !9 = !{!8}
 !10 = !{!9}
 
-<<<<<<< HEAD
 ; CHECK-SPV-IR: define spir_kernel void @k(i32 addrspace(1)* noalias %a) {{.*}} !kernel_arg_type_qual ![[KernelArgTypeQual:[0-9]+]] {{.*}} !spirv.ParameterDecorations ![[ParamDecoListId:[0-9]+]] {
 ; CHECK-SPV-IR-DAG: ![[ParamDecoListId]] = !{![[ParamDecoId:[0-9]+]]}
 ; CHECK-SPV-IR-DAG: ![[ParamDecoId]] = !{![[VolatileDecoId:[0-9]+]], ![[NoAliasDecoId:[0-9]+]]}
@@ -49,11 +45,3 @@ entry:
 
 ; CHECK-LLVM-NOT: define spir_kernel void @k({{.*}}) {{.*}} !spirv.ParameterDecorations ![[ParamDecoListId:[0-9]+]] {
 ; CHECK-LLVM: define spir_kernel void @k(i32 addrspace(1)* noalias %a) {{.*}} !kernel_arg_type_qual ![[KernelArgTypeQual:[0-9]+]] {{.*}} {
-=======
-; CHECK-LLVM: define spir_kernel void @k(i32 addrspace(1)* noalias %a) {{.*}} !kernel_arg_type_qual ![[KernelArgTypeQual:[0-9]+]] {{.*}} !spirv.ParameterDecorations ![[ParamDecoListId:[0-9]+]] {
-; CHECK-LLVM-DAG: ![[ParamDecoListId]] = !{![[ParamDecoId:[0-9]+]]}
-; CHECK-LLVM-DAG: ![[ParamDecoId]] = !{![[VolatileDecoId:[0-9]+]], ![[NoAliasDecoId:[0-9]+]]}
-; CHECK-LLVM-DAG: ![[NoAliasDecoId]] = !{i32 38, i32 4}
-; CHECK-LLVM-DAG: ![[VolatileDecoId]] = !{i32 21}
->>>>>>> Add test for merged param type qualifiers
-; CHECK-LLVM-DAG: ![[KernelArgTypeQual]] = !{!"volatile restrict"}
