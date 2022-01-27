@@ -707,7 +707,12 @@ public:
   // Complete constructor for SPIRVHostAccessINTEL
   SPIRVDecorateHostAccessINTEL(SPIRVEntry *TheTarget, SPIRVWord AccessMode,
                                const std::string &VarName)
-      : SPIRVDecorate(spv::internal::DecorationHostAccessINTEL, TheTarget){};
+      : SPIRVDecorate(spv::internal::DecorationHostAccessINTEL, TheTarget,
+                      AccessMode) {
+    for (auto &I : getVec(VarName))
+      Literals.push_back(I);
+    WordCount += Literals.size();
+  };
 };
 
 class SPIRVDecorateInitModeINTEL : public SPIRVDecorate {
