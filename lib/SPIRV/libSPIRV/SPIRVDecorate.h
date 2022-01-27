@@ -714,6 +714,11 @@ public:
     WordCount += Literals.size();
   };
 
+  SPIRVWord getAccessMode() const { return Literals.front(); }
+  std::string getVarName() const {
+    return getString(Literals.cbegin() + 1, Literals.cend());
+  }
+
   static void encodeLiterals(SPIRVEncoder &Encoder,
                              const std::vector<SPIRVWord> &Literals) {
 #ifdef _SPIRV_SUPPORT_TEXT_FMT
@@ -736,7 +741,8 @@ public:
       Decoder >> Name;
       //   std::copy_n(getVec(Buf).begin(), Literals.size(), Literals.begin());
       Literals.front() = Mode;
-      std::copy_n(getVec(Name).begin(), Literals.size() - 1, Literals.end());
+      std::copy_n(getVec(Name).begin(), Literals.size() - 1,
+                  Literals.begin() + 1);
 
     } else
 #endif
