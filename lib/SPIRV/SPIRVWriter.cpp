@@ -2112,6 +2112,8 @@ static void transMetadataDecorations(Metadata *MD, SPIRVEntry *Target) {
       ONE_INT_DECORATION_CASE(InitiationIntervalINTEL, spv::internal, SPIRVWord)
       ONE_INT_DECORATION_CASE(MaxConcurrencyINTEL, spv::internal, SPIRVWord)
       ONE_INT_DECORATION_CASE(PipelineEnableINTEL, spv::internal, SPIRVWord)
+      ONE_INT_DECORATION_CASE(InitModeINTEL, spv::internal, SPIRVWord)
+      ONE_INT_DECORATION_CASE(ImplementInCSRINTEL, spv::internal, SPIRVWord)
       TWO_INT_DECORATION_CASE(FunctionRoundingModeINTEL, spv, SPIRVWord,
                               FPRoundingMode);
       TWO_INT_DECORATION_CASE(FunctionDenormModeINTEL, spv, SPIRVWord,
@@ -2151,6 +2153,21 @@ static void transMetadataDecorations(Metadata *MD, SPIRVEntry *Target) {
           Target, Name->getString().str(), TypeKind));
       break;
     }
+    case spv::internal::DecorationHostAccessINTEL: {
+      assert(NumOperands == 3 &&
+             "HostAccessINTEL requires exactly 3 extra operand");
+      auto *AccessMode =
+          mdconst::dyn_extract<ConstantInt>(DecoMD->getOperand(1));
+      assert(AccessMode &&
+             "HostAccessINTEL requires first extra operand to be an int");
+      auto *Name = dyn_cast<MDString>(DecoMD->getOperand(2));
+      assert(Name &&
+             "HostAccessINTEL requires second extra operand to be a string");
+      Target->addDecorate(new SPIRVDecorateHostAccessINTEL(
+          Target, AccessMode->getZExtValue(), Name->getString().str()));
+      break;
+    }
+
     default: {
       if (NumOperands == 1) {
         Target->addDecorate(new SPIRVDecorate(DecoKind, Target));
@@ -3716,27 +3733,7 @@ bool LLVMToSPIRVBase::transGlobalVariables() {
       continue;
     } else if (MDNode *IO = ((*I).getMetadata("io_pipe_id")))
       transGlobalIOPipeStorage(&(*I), IO);
-    else if ((*I).hasAttribute(StringRef("sycl-unique-id"))) {
-      StringRef HostAccessKind = "host_access",
-                ImplInCSRKind = "implement_in_csr", InitModeKind = "init_mode";
-      SPIRVValue *SV = transValue(&(*I), nullptr);
-
-      if ((*I).hasAttribute(HostAccessKind)) {
-        auto Attr = (*I).getAttribute(HostAccessKind);
-        StringRef Str = Attr.getValueAsString();
-        SV->addDecorate(internal::DecorationHostAccessINTEL);
-      }
-      if ((*I).hasAttribute(InitModeKind)) {
-        auto Attr = (*I).getAttribute(InitModeKind);
-        StringRef Str = Attr.getValueAsString();
-        SV->addDecorate(internal::DecorationInitModeINTEL);
-      }
-      if ((*I).hasAttribute(ImplInCSRKind)) {
-        auto Attr = (*I).getAttribute(ImplInCSRKind);
-        StringRef Str = Attr.getValueAsString();
-        SV->addDecorate(internal::DecorationImplementInCSRINTEL);
-      }
-    } else if (!transValue(&(*I), nullptr))
+    else if (!transValue(&(*I), nullptr))
       return false;
   }
   return true;

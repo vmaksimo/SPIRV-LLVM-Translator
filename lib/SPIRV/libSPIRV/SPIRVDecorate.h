@@ -707,12 +707,41 @@ public:
   // Complete constructor for SPIRVHostAccessINTEL
   SPIRVDecorateHostAccessINTEL(SPIRVEntry *TheTarget, SPIRVWord AccessMode,
                                const std::string &VarName)
-      : SPIRVDecorate(spv::internal::DecorationHostAccessINTEL, TheTarget,
-                      AccessMode) {
+      : SPIRVDecorate(spv::internal::DecorationHostAccessINTEL, TheTarget) {
+    Literals.push_back(AccessMode);
     for (auto &I : getVec(VarName))
       Literals.push_back(I);
     WordCount += Literals.size();
   };
+
+  static void encodeLiterals(SPIRVEncoder &Encoder,
+                             const std::vector<SPIRVWord> &Literals) {
+#ifdef _SPIRV_SUPPORT_TEXT_FMT
+    if (SPIRVUseTextFormat) {
+      Encoder << Literals.front();
+      std::string Name = getString(Literals.cbegin() + 1, Literals.cend());
+      Encoder << Name;
+    } else
+#endif
+      Encoder << Literals;
+  }
+
+  static void decodeLiterals(SPIRVDecoder &Decoder,
+                             std::vector<SPIRVWord> &Literals) {
+#ifdef _SPIRV_SUPPORT_TEXT_FMT
+    if (SPIRVUseTextFormat) {
+      SPIRVWord Mode;
+      Decoder >> Mode;
+      std::string Name;
+      Decoder >> Name;
+      //   std::copy_n(getVec(Buf).begin(), Literals.size(), Literals.begin());
+      Literals.front() = Mode;
+      std::copy_n(getVec(Name).begin(), Literals.size() - 1, Literals.end());
+
+    } else
+#endif
+      Decoder >> Literals;
+  }
 };
 
 class SPIRVDecorateInitModeINTEL : public SPIRVDecorate {
