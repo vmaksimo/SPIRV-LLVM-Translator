@@ -3716,7 +3716,27 @@ bool LLVMToSPIRVBase::transGlobalVariables() {
       continue;
     } else if (MDNode *IO = ((*I).getMetadata("io_pipe_id")))
       transGlobalIOPipeStorage(&(*I), IO);
-    else if (!transValue(&(*I), nullptr))
+    else if ((*I).hasAttribute(StringRef("sycl-unique-id"))) {
+      StringRef HostAccessKind = "host_access",
+                ImplInCSRKind = "implement_in_csr", InitModeKind = "init_mode";
+      SPIRVValue *SV = transValue(&(*I), nullptr);
+
+      if ((*I).hasAttribute(HostAccessKind)) {
+        auto Attr = (*I).getAttribute(HostAccessKind);
+        StringRef Str = Attr.getValueAsString();
+        SV->addDecorate(internal::DecorationHostAccessINTEL);
+      }
+      if ((*I).hasAttribute(InitModeKind)) {
+        auto Attr = (*I).getAttribute(InitModeKind);
+        StringRef Str = Attr.getValueAsString();
+        SV->addDecorate(internal::DecorationInitModeINTEL);
+      }
+      if ((*I).hasAttribute(ImplInCSRKind)) {
+        auto Attr = (*I).getAttribute(ImplInCSRKind);
+        StringRef Str = Attr.getValueAsString();
+        SV->addDecorate(internal::DecorationImplementInCSRINTEL);
+      }
+    } else if (!transValue(&(*I), nullptr))
       return false;
   }
   return true;
