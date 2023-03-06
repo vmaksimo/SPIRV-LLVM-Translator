@@ -283,6 +283,12 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgEntryImpl(const MDNode *MDN) {
       else
         return getDebugInfoNone();
 
+    case dwarf::DW_TAG_string_type:
+      if (BM->getDebugInfoEIS() == SPIRVEIS_NonSemantic_Kernel_DebugInfo_100)
+        return transDbgStringType(cast<DIStringType>(DIEntry));
+      else
+        return getDebugInfoNone();
+
     case dwarf::DW_TAG_const_type:
     case dwarf::DW_TAG_restrict_type:
     case dwarf::DW_TAG_volatile_type:
@@ -683,6 +689,43 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgSubrangeType(const DISubrange *ST) {
   for (int Idx = CountIdx; Idx < OperandCount; ++Idx)
     TransOperand(Idx);
   return BM->addDebugInfo(SPIRVDebug::TypeSubrange, getVoidTy(), Ops);
+}
+
+SPIRVEntry *LLVMToSPIRVDbgTran::transDbgStringType(const DIStringType *ST) {
+  using namespace SPIRVDebug::Operand::TypeString;
+  SPIRVWordVec Ops(MinOperandCount);
+  Ops[BaseTypeIdx] = ST->getEncoding();
+  Ops[DataLocationIdx] = 0;
+
+  auto TransOperand = [&](llvm::Metadata *DIMD) -> SPIRVWord {
+    if (auto *DIExpr = dyn_cast_or_null<DIExpression>(DIMD))
+      return transDbgExpression(DIExpr)->getId();
+    if (auto *DIVar = dyn_cast_or_null<DIVariable>(DIMD)) {
+      if (const DILocalVariable *LV = dyn_cast<DILocalVariable>(DIVar))
+        return transDbgLocalVariable(LV)->getId();
+      if (const DIGlobalVariable *GV = dyn_cast<DIGlobalVariable>(DIVar))
+        return transDbgGlobalVariable(GV)->getId();
+    }
+    return getDebugInfoNoneId();
+  };
+
+  Ops[SizeIdx] = ST->getSizeInBits();
+  if (!ST->getSizeInBits()) {
+    auto *DIMD = ST->getRawStringLength();
+    if (auto *DIExpr = dyn_cast_or_null<DIExpression>(DIMD))
+      Ops[SizeIdx] = transDbgExpression(DIExpr)->getId();
+    if (auto *DIVar = dyn_cast_or_null<DIVariable>(DIMD)) {
+      if (const DILocalVariable *LV = dyn_cast<DILocalVariable>(DIVar))
+        Ops[SizeIdx] = transDbgLocalVariable(LV)->getId();
+      if (const DIGlobalVariable *GV = dyn_cast<DIGlobalVariable>(DIVar))
+        Ops[SizeIdx] = transDbgGlobalVariable(GV)->getId();
+    }
+  }
+  Ops[LengthAddrIdx] = TransOperand(ST->getRawStringLocationExp());
+  if (ST->getRawStringLengthExp()) {
+    Ops.push_back(TransOperand(ST->getRawStringLengthExp()));
+  }
+  return BM->addDebugInfo(SPIRVDebug::TypeString, getVoidTy(), Ops);
 }
 
 SPIRVEntry *LLVMToSPIRVDbgTran::transDbgTypeDef(const DIDerivedType *DT) {

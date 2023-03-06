@@ -409,6 +409,9 @@ SPIRVToLLVMDbgTran::transTypeSubrange(const SPIRVExtInst *DebugInst) {
                                      TranslatedOps[2], TranslatedOps[3]);
 }
 
+DIStringType *
+SPIRVToLLVMDbgTran::transTypeString(const SPIRVExtInst *DebugInst) {}
+
 DINode *SPIRVToLLVMDbgTran::transTypeMember(const SPIRVExtInst *DebugInst) {
   using namespace SPIRVDebug::Operand::TypeMember;
   const SPIRVWordVec &Ops = DebugInst->getArguments();
@@ -966,6 +969,9 @@ MDNode *SPIRVToLLVMDbgTran::transDebugInstImpl(const SPIRVExtInst *DebugInst) {
 
   case SPIRVDebug::TypeSubrange:
     return transTypeSubrange(DebugInst);
+
+  case SPIRVDebug::TypeString:
+    return transTypeString(DebugInst);
 
   case SPIRVDebug::TypeVector:
     return transTypeVector(DebugInst);
