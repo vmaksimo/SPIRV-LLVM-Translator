@@ -147,6 +147,8 @@ private:
 
   DINode *transFunctionDecl(const SPIRVExtInst *DebugInst);
 
+  MDNode *transEntryPoint(const SPIRVExtInst *DebugInst);
+
   MDNode *transGlobalVariable(const SPIRVExtInst *DebugInst);
 
   DINode *transLocalVariable(const SPIRVExtInst *DebugInst);

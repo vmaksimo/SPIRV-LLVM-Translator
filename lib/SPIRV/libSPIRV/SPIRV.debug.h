@@ -55,6 +55,7 @@ enum Instruction {
   ModuleINTEL                   = 36,
   InstCount                     = 37,
   FunctionDefinition            = 101,
+  EntryPoint                    = 107,
   Module                        = 200,
   TypeSubrange                  = 201,
   TypeArrayDynamic              = 202,
@@ -557,6 +558,16 @@ enum {
   FunctionIdx     = 0,
   DefinitionIdx   = 1,
   OperandCount    = 2
+};
+}
+
+namespace EntryPoint {
+enum {
+  EntryPointIdx        = 0,
+  CompilationUnitIdx   = 1,
+  CompilerSignatureIdx = 2,
+  CommandLineArgsIdx   = 3,
+  OperandCount         = 4
 };
 }
 
