@@ -705,7 +705,8 @@ DINode *SPIRVToLLVMDbgTran::transLexicalBlockDiscriminator(
                                                         Disc);
 }
 
-DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst) {
+DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst,
+                                          bool IsMainSubprogram) {
   using namespace SPIRVDebug::Operand::Function;
   const SPIRVWordVec &Ops = DebugInst->getArguments();
   assert(Ops.size() >= MinOperandCount && "Invalid number of operands");
@@ -742,16 +743,17 @@ DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst) {
   bool IsDefinition = SPIRVDebugFlags & SPIRVDebug::FlagIsDefinition;
   bool IsOptimized = SPIRVDebugFlags & SPIRVDebug::FlagIsOptimized;
   bool IsLocal = SPIRVDebugFlags & SPIRVDebug::FlagIsLocal;
-  bool IsMainSubprogram =
+  bool IsMainSubprogramFlag =
+      IsMainSubprogram ||
       BM->isEntryPoint(spv::ExecutionModelKernel, Ops[FunctionIdIdx]);
 
   // if (DebugInst->getExtSetKind() != SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
 
   // }
 
-  DISubprogram::DISPFlags SPFlags =
-      DISubprogram::toSPFlags(IsLocal, IsDefinition, IsOptimized,
-                              DISubprogram::SPFlagNonvirtual, IsMainSubprogram);
+  DISubprogram::DISPFlags SPFlags = DISubprogram::toSPFlags(
+      IsLocal, IsDefinition, IsOptimized, DISubprogram::SPFlagNonvirtual,
+      IsMainSubprogramFlag);
 
   SPIRVWord ScopeLine =
       getConstantValueOrLiteral(Ops, ScopeLineIdx, DebugInst->getExtSetKind());
@@ -905,11 +907,11 @@ MDNode *SPIRVToLLVMDbgTran::transEntryPoint(const SPIRVExtInst *DebugInst) {
   if (DebugInst->getExtSetKind() != SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
     return nullptr;
   }
-  return nullptr;
+  // return nullptr;
   using namespace SPIRVDebug::Operand::EntryPoint;
   const SPIRVWordVec &Ops = DebugInst->getArguments();
   const size_t NumOps = Ops.size();
-  assert(NumOps != OperandCount && "Invalid number of operands");
+  assert(NumOps == OperandCount && "Invalid number of operands");
 
   // EntryPointIdx        = 0,
   // CompilationUnitIdx   = 1,
@@ -917,17 +919,28 @@ MDNode *SPIRVToLLVMDbgTran::transEntryPoint(const SPIRVExtInst *DebugInst) {
   // CommandLineArgsIdx   = 3,
 
   SPIRVExtInst *EP = BM->get<SPIRVExtInst>(Ops[EntryPointIdx]);
-  DISubprogram *D = transDebugInst(EP);
-  SPIRVWord SPIRVDebugFlags = DebugInst->getArguments()[FlagsIdx];
-  bool IsDefinition = SPIRVDebugFlags & SPIRVDebug::FlagIsDefinition;
-  bool IsOptimized = SPIRVDebugFlags & SPIRVDebug::FlagIsOptimized;
-  bool IsLocal = SPIRVDebugFlags & SPIRVDebug::FlagIsLocal;
-  bool IsMainSubprogram = true;
+  DISubprogram *D = transDebugInst<DISubprogram>(EP);
+  DINode *NewF = transFunction(EP, true /*IsMainSubprogram*/);
+  // D->replaceAllUsesWith(NewF);
+  // D->replaceWithDistinct(NewF);
+  DebugInstCache[EP] = NewF;
+  return NewF;
 
-  DISubprogram::DISPFlags SPFlags =
-      DISubprogram::toSPFlags(IsLocal, IsDefinition, IsOptimized,
-                              DISubprogram::SPFlagNonvirtual, IsMainSubprogram);
+  // using namespace SPIRVDebug::Operand::Function;
+  // SPIRVWord SPIRVDebugFlags = EP->getArguments()[FlagsIdx];
+  // bool IsDefinition = SPIRVDebugFlags & SPIRVDebug::FlagIsDefinition;
+  // bool IsOptimized = SPIRVDebugFlags & SPIRVDebug::FlagIsOptimized;
+  // bool IsLocal = SPIRVDebugFlags & SPIRVDebug::FlagIsLocal;
+  // bool IsMainSubprogram = true;
 
+  // DISubprogram::DISPFlags SPFlags =
+  //     DISubprogram::toSPFlags(IsLocal, IsDefinition, IsOptimized,
+  //                             DISubprogram::SPFlagNonvirtual,
+  //                             IsMainSubprogram);
+  // auto NewD = D->cloneWithFlags(SPFlags);
+  // DebugInstCache[EP] = NewD;
+  // return D;
+  // D->replaceOperandWith()
   // if (DICompositeType *Comp = dyn_cast<DICompositeType>(D)) {
   //   Builder.replaceArrays(Comp, Comp->getElements(), TParams);
   //   return Comp;
@@ -940,9 +953,10 @@ MDNode *SPIRVToLLVMDbgTran::transEntryPoint(const SPIRVExtInst *DebugInst) {
   //   return D;
   // }
   // llvm_unreachable("Invalid template");
-  
+
   // DebugInstCache[DebugInst] = CT;
   // return CT;
+  return nullptr;
 }
 
 MDNode *SPIRVToLLVMDbgTran::transGlobalVariable(const SPIRVExtInst *DebugInst) {

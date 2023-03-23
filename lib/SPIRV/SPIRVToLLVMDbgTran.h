@@ -141,7 +141,8 @@ private:
   DINode *transLexicalBlock(const SPIRVExtInst *DebugInst);
   DINode *transLexicalBlockDiscriminator(const SPIRVExtInst *DebugInst);
 
-  DINode *transFunction(const SPIRVExtInst *DebugInst);
+  DINode *transFunction(const SPIRVExtInst *DebugInst,
+                        bool IsMainSubprogram = false);
   DINode *transFunctionDefinition(const SPIRVExtInst *DebugInst);
   void transFunctionBody(DISubprogram *DIS, SPIRVId FuncId);
 
