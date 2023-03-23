@@ -1158,6 +1158,7 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
     }
 
     DebugFunc = BM->addDebugInfo(SPIRVDebug::Function, getVoidTy(), Ops);
+    // QQ = BM->addDebugInfo(SPIRVDebug::FunctionDefinition, getVoidTy(), Ops);
     MDMap.insert(std::make_pair(Func, DebugFunc));
     // Functions local variable might be not refered to anywhere else, except
     // here.
