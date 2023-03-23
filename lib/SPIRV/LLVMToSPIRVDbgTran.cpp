@@ -1146,6 +1146,8 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
       transformToConstant(Ops, {ScopeLineIdx});
 
     Ops[FunctionIdIdx] = getDebugInfoNoneId();
+    // CHECK FOR ENTRY POINT HERE  -
+    // getCallingConv() == SPIR_KERNEL 
     for (const llvm::Function &F : M->functions()) {
       if (Func->describes(&F)) {
         SPIRVValue *SPIRVFunc = SPIRVWriter->getTranslatedValue(&F);
@@ -1181,30 +1183,27 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
     for (const DINode *Var : Func->getRetainedNodes())
       transDbgEntry(Var);
   }
+
   if (Func->isMainSubprogram()) {
-    if (BM->getDebugInfoEIS() == SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
-      using namespace SPIRVDebug::Operand::EntryPoint;
+      if (isNonSemanticDebugInfo()) {
       SPIRVWordVec Ops(SPIRVDebug::Operand::EntryPoint::OperandCount);
-      Ops[EntryPointIdx] = DebugFunc->getId();
 
       DICompileUnit *CU = Func->getUnit();
       StringRef Producer = CU->getProducer();
       StringRef Flags = CU->getFlags();
 
-      // = SPIRVWriter->getTranslatedValue(static_cast<Value *>(CU));
       auto It = MDMap.find(CU);
       SPIRVEntry *CUVal = It != MDMap.end() ? It->second : getDebugInfoNone();
-      // if (It != MDMap.end())
-      //   CUVal = It->second;
-      // else
-      //   CUVal = getDebugInfoNone();
       
+      using namespace SPIRVDebug::Operand::EntryPoint;
+      Ops[EntryPointIdx] = DebugFunc->getId();
       Ops[CompilationUnitIdx] = CUVal->getId();
       Ops[CompilerSignatureIdx] = BM->getString(Producer.str())->getId();
       Ops[CommandLineArgsIdx] = BM->getString(Flags.str())->getId();
       BM->addDebugInfo(SPIRVDebug::EntryPoint, getVoidTy(), Ops);
     }
   }
+
   // If the function has template parameters the function *is* a template.
   if (DITemplateParameterArray TPA = Func->getTemplateParams()) {
     DebugFunc = transDbgTemplateParams(TPA, DebugFunc);

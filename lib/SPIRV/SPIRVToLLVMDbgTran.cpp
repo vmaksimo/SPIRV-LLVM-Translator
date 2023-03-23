@@ -747,10 +747,6 @@ DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst,
       IsMainSubprogram ||
       BM->isEntryPoint(spv::ExecutionModelKernel, Ops[FunctionIdIdx]);
 
-  // if (DebugInst->getExtSetKind() != SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
-
-  // }
-
   DISubprogram::DISPFlags SPFlags = DISubprogram::toSPFlags(
       IsLocal, IsDefinition, IsOptimized, DISubprogram::SPFlagNonvirtual,
       IsMainSubprogramFlag);
@@ -780,6 +776,17 @@ DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst,
   llvm::DITemplateParameterArray TParamsArray = TParams.get();
 
   DISubprogram *DIS = nullptr;
+  // DO EARLY EXIT IF IT'S ENTRY POINT
+  if (DebugInst->getExtSetKind() == SPIRVEIS_NonSemantic_Shader_DebugInfo_200 &&
+      !IsMainSubprogram) {
+    DIS = getDIBuilder(DebugInst).createTempFunctionFwdDecl(Scope, Name, LinkageName, File,
+                                            LineNo, Ty, 0, Flags, SPFlags,
+                                            TParamsArray);
+    DebugInstCache[DebugInst] = DIS;
+    // SPIRVId RealFuncId = Ops[FunctionIdIdx];
+    // FuncMap[RealFuncId] = DIS;
+    return DIS;
+  }
   if (Scope && (isa<DICompositeType>(Scope) || isa<DINamespace>(Scope)) &&
       !IsDefinition)
     DIS = getDIBuilder(DebugInst).createMethod(Scope, Name, LinkageName, File,
@@ -904,59 +911,26 @@ DINode *SPIRVToLLVMDbgTran::transFunctionDecl(const SPIRVExtInst *DebugInst) {
 }
 
 MDNode *SPIRVToLLVMDbgTran::transEntryPoint(const SPIRVExtInst *DebugInst) {
-  if (DebugInst->getExtSetKind() != SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
+  if (!isNonSemanticDebugInfo(DebugInst->getExtSetKind()))
     return nullptr;
-  }
-  // return nullptr;
+
   using namespace SPIRVDebug::Operand::EntryPoint;
   const SPIRVWordVec &Ops = DebugInst->getArguments();
   const size_t NumOps = Ops.size();
   assert(NumOps == OperandCount && "Invalid number of operands");
 
-  // EntryPointIdx        = 0,
-  // CompilationUnitIdx   = 1,
-  // CompilerSignatureIdx = 2,
-  // CommandLineArgsIdx   = 3,
-
   SPIRVExtInst *EP = BM->get<SPIRVExtInst>(Ops[EntryPointIdx]);
-  DISubprogram *D = transDebugInst<DISubprogram>(EP);
-  DINode *NewF = transFunction(EP, true /*IsMainSubprogram*/);
+  // DISubprogram *D = transDebugInst<DISubprogram>(EP);
+  auto *D = transDebugInst<DINode>(EP);
+  MDNode *NewF = transFunction(EP, true /*IsMainSubprogram*/);
   // D->replaceAllUsesWith(NewF);
+  NewF = getDIBuilder(DebugInst).replaceTemporary(llvm::TempMDNode(D), NewF);
   // D->replaceWithDistinct(NewF);
-  DebugInstCache[EP] = NewF;
+  // DebugInstCache[EP] = NewF;
+  // DebugInstCache[DebugInst] = DIS;
+  // SPIRVId RealFuncId = Ops[FunctionIdIdx];
+  // FuncMap[Ops[EntryPointIdx]] = cast<DISubprogram>(NewF);
   return NewF;
-
-  // using namespace SPIRVDebug::Operand::Function;
-  // SPIRVWord SPIRVDebugFlags = EP->getArguments()[FlagsIdx];
-  // bool IsDefinition = SPIRVDebugFlags & SPIRVDebug::FlagIsDefinition;
-  // bool IsOptimized = SPIRVDebugFlags & SPIRVDebug::FlagIsOptimized;
-  // bool IsLocal = SPIRVDebugFlags & SPIRVDebug::FlagIsLocal;
-  // bool IsMainSubprogram = true;
-
-  // DISubprogram::DISPFlags SPFlags =
-  //     DISubprogram::toSPFlags(IsLocal, IsDefinition, IsOptimized,
-  //                             DISubprogram::SPFlagNonvirtual,
-  //                             IsMainSubprogram);
-  // auto NewD = D->cloneWithFlags(SPFlags);
-  // DebugInstCache[EP] = NewD;
-  // return D;
-  // D->replaceOperandWith()
-  // if (DICompositeType *Comp = dyn_cast<DICompositeType>(D)) {
-  //   Builder.replaceArrays(Comp, Comp->getElements(), TParams);
-  //   return Comp;
-  // }
-  // if (isa<DISubprogram>(D)) {
-  //   // This constant matches with one used in
-  //   // DISubprogram::getRawTemplateParams()
-  //   const unsigned TemplateParamsIndex = 9;
-  //   D->replaceOperandWith(TemplateParamsIndex, TParams.get());
-  //   return D;
-  // }
-  // llvm_unreachable("Invalid template");
-
-  // DebugInstCache[DebugInst] = CT;
-  // return CT;
-  return nullptr;
 }
 
 MDNode *SPIRVToLLVMDbgTran::transGlobalVariable(const SPIRVExtInst *DebugInst) {
@@ -1287,6 +1261,7 @@ MDNode *SPIRVToLLVMDbgTran::transDebugInstImpl(const SPIRVExtInst *DebugInst) {
     return transFunctionDefinition(DebugInst);
 
   case SPIRVDebug::EntryPoint:
+    // return nullptr;
     return transEntryPoint(DebugInst);
 
   case SPIRVDebug::GlobalVariable:
