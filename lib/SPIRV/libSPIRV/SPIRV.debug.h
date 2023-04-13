@@ -548,6 +548,14 @@ enum {
 };
 }
 
+namespace FunctionDefinition {
+enum {
+  FunctionIdx     = 0,
+  DefinitionIdx   = 1,
+  OperandCount    = 2
+};
+}
+
 namespace LexicalBlock {
 enum {
   SourceIdx       = 0,

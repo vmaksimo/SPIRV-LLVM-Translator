@@ -1156,6 +1156,9 @@ MDNode *SPIRVToLLVMDbgTran::transDebugInstImpl(const SPIRVExtInst *DebugInst) {
 
   case SPIRVDebug::FunctionDeclaration:
     return transFunctionDecl(DebugInst);
+  
+  case SPIRVDebug::FunctionDefinition:
+    return nullptr;
 
   case SPIRVDebug::GlobalVariable:
     return transGlobalVariable(DebugInst);
