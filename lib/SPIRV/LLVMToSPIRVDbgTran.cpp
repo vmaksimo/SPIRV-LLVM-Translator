@@ -1135,26 +1135,32 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
     if (isNonSemanticDebugInfo())
       transformToConstant(Ops, {ScopeLineIdx});
 
-    Ops[FunctionIdIdx] = getDebugInfoNoneId();
-    for (const llvm::Function &F : M->functions()) {
-      if (Func->describes(&F)) {
-        SPIRVValue *SPIRVFunc = SPIRVWriter->getTranslatedValue(&F);
-        assert(SPIRVFunc && "All function must be already translated");
-        Ops[FunctionIdIdx] = SPIRVFunc->getId();
-        SPVFunc = SPIRVFunc;
-        break;
-      }
-    }
 
-    if (DISubprogram *FuncDecl = Func->getDeclaration())
-      Ops.push_back(transDbgEntry(FuncDecl)->getId());
-    else {
-      Ops.push_back(getDebugInfoNoneId());
-      if (BM->getDebugInfoEIS() == SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
-        // Translate targetFuncName mostly for Fortran trampoline function if it
-        // is the case
-        StringRef TargetFunc = Func->getTargetFuncName();
-        if (!TargetFunc.empty())
+      Ops[FunctionIdIdx] = getDebugInfoNoneId();
+      for (const llvm::Function &F : M->functions()) {
+        if (Func->describes(&F)) {
+          SPIRVValue *SPIRVFunc = SPIRVWriter->getTranslatedValue(&F);
+          assert(SPIRVFunc && "All function must be already translated");
+          Ops[FunctionIdIdx] = SPIRVFunc->getId();
+          SPVFunc = SPIRVFunc;
+          break;
+        }
+      }
+      // For NonSemantic.Shader.DebugInfo we store Function Id index as a
+      // separate DebugFunctionDefinition instruction.
+      if (isNonSemanticDebugInfo())
+        Ops.pop_back();
+
+      if (DISubprogram *FuncDecl = Func->getDeclaration())
+        Ops.push_back(transDbgEntry(FuncDecl)->getId());
+      else {
+        Ops.push_back(getDebugInfoNoneId());
+        if (BM->getDebugInfoEIS() ==
+            SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
+          // Translate targetFuncName mostly for Fortran trampoline function if
+          // it is the case
+          StringRef TargetFunc = Func->getTargetFuncName();
+          if (!TargetFunc.empty())
           Ops.push_back(BM->getString(TargetFunc.str())->getId());
       }
     }
@@ -1172,13 +1178,12 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
   if (DITemplateParameterArray TPA = Func->getTemplateParams()) {
     DebugFunc = transDbgTemplateParams(TPA, DebugFunc);
   }
-
-  auto *Q = transDebugFunctionDefinition(SPVFunc, DebugFunc);
-  if (Q)
-    return Q;
+  if (isNonSemanticDebugInfo())
+  //  if (auto *Def = 
+   transDebugFunctionDefinition(SPVFunc, DebugFunc);
+    // return Def;
+  
   return DebugFunc;
- 
-  // return DebugFunc;
 }
 
 SPIRVEntry *

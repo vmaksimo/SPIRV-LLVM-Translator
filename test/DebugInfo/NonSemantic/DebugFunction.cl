@@ -21,11 +21,13 @@ void kernel k() {
 // CHECK-SPIRV: String [[foo:[0-9]+]] "foo"
 // CHECK-SPIRV: String [[k:[0-9]+]] "k"
 // CHECK-SPIRV: [[CU:[0-9]+]] {{[0-9]+}} DebugCompilationUnit
-// CHECK-SPIRV: DebugFunction [[foo]] {{.*}} [[CU]] {{.*}} [[foo_id:[0-9]+]] {{[0-9]+}} {{$}}
-// CHECK-SPIRV: DebugFunction [[k]] {{.*}} [[CU]] {{.*}} [[k_id:[0-9]+]] {{[0-9]+}} {{$}}
+// CHECK-SPIRV: [[#FuncFoo:]] [[#]] DebugFunction [[foo]] {{.*}} [[CU]]
+// CHECK-SPIRV: [[#FuncK:]] [[#]] DebugFunction [[k]] {{.*}} [[CU]]
 
-// CHECK-SPIRV: Function {{[0-9]+}} [[foo_id]]
+// CHECK-SPIRV: Function {{[0-9]+}} [[#foo_id:]]
+// CHECK-SPIRV: DebugFunctionDefinition [[#FuncFoo]] [[#foo_id]]
 // CHECK-LLVM: define spir_func float @_Z3fooi(i32 %i) #{{[0-9]+}} !dbg !{{[0-9]+}} {
 
-// CHECK-SPIRV: Function {{[0-9]+}} [[k_id]]
+// CHECK-SPIRV: Function {{[0-9]+}} [[#k_id:]]
+// CHECK-SPIRV: DebugFunctionDefinition [[#FuncK]] [[#k_id]]
 // CHECK-LLVM: define spir_kernel void @k() #{{[0-9]+}} !dbg !{{[0-9]+}}
