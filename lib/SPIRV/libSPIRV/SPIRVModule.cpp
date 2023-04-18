@@ -654,7 +654,8 @@ void SPIRVModuleImpl::layoutEntry(SPIRVEntry *E) {
         EI->getExtOp() != SPIRVDebug::Declare &&
         EI->getExtOp() != SPIRVDebug::Value &&
         EI->getExtOp() != SPIRVDebug::Scope &&
-        EI->getExtOp() != SPIRVDebug::NoScope) {
+        EI->getExtOp() != SPIRVDebug::NoScope){ //&&
+        // EI->getExtOp() != SPIRVDebug::FunctionDefinition) {
       DebugInstVec.push_back(EI);
     }
     if (EI->getExtSetKind() == SPIRVEIS_NonSemantic_AuxData)
