@@ -1176,7 +1176,7 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
   if (DITemplateParameterArray TPA = Func->getTemplateParams()) {
     DebugFunc = transDbgTemplateParams(TPA, DebugFunc);
   }
-  if (isNonSemanticDebugInfo())
+  if (isNonSemanticDebugInfo() && SPVFunc)
   //  if (auto *Def = 
    transDebugFunctionDefinition(SPVFunc, DebugFunc);
     // return Def;
@@ -1194,12 +1194,20 @@ LLVMToSPIRVDbgTran::transDebugFunctionDefinition(SPIRVValue *SPVFunc,
   using namespace SPIRVDebug::Operand::FunctionDefinition;
   SPIRVWordVec Ops(OperandCount);
   Ops[FunctionIdx] = DbgFunc->getId();
-  Ops[DefinitionIdx] = SPVFunc->getId();
-  SPIRVFunction *func = static_cast<SPIRVFunction *>(SPVFunc);
-  SPIRVBasicBlock *BB =
-      func->getNumBasicBlock() ? func->getBasicBlock(0) : nullptr;
-  return BM->addExtInst(getVoidTy(), ExtSetId, SPIRVDebug::FunctionDefinition,
-                        Ops, BB, BB->getInst(0));
+  if (SPVFunc) {
+    Ops[DefinitionIdx] = SPVFunc->getId();
+    SPIRVFunction *func = static_cast<SPIRVFunction *>(SPVFunc);
+    SPIRVBasicBlock *BB =
+        func->getNumBasicBlock() ? func->getBasicBlock(0) : nullptr;
+    return BM->addExtInst(getVoidTy(), ExtSetId, SPIRVDebug::FunctionDefinition,
+                          Ops, BB, BB->getInst(0));
+  }
+  return nullptr;
+  // } else {
+  //   // Dirty hack to fix reverse translation
+  //   Ops[DefinitionIdx] = getDebugInfoNoneId();
+  //   return BM->addDebugInfo(SPIRVDebug::FunctionDefinition, getVoidTy(), Ops);
+  // }
 }
 
 // Location information

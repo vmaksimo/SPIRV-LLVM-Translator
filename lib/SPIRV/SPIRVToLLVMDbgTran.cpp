@@ -775,7 +775,9 @@ SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst,
   } else {
     RealFuncId = Ops[FunctionIdIdx];
   }
-  // SPIRVId RealFuncId = Ops[FunctionIdIdx];
+  if (RealFuncId == SPIRVID_INVALID)
+    return DIS;
+
   FuncMap[RealFuncId] = DIS;
 
   // Function.
@@ -790,13 +792,36 @@ SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst,
   return DIS;
 }
 
+bool SPIRVToLLVMDbgTran::isFunctionDefinition(const SPIRVExtInst *DebugInst){
+  using namespace SPIRVDebug::Operand::Function;
+  const SPIRVWordVec &Ops = DebugInst->getArguments();
+  SPIRVWord SPIRVDebugFlags =
+  getConstantValueOrLiteral(Ops, FlagsIdx, DebugInst->getExtSetKind());
+  bool IsDefinition = SPIRVDebugFlags & SPIRVDebug::FlagIsDefinition;
+  return IsDefinition;
+}
+
 DINode *
 SPIRVToLLVMDbgTran::transFunctionDefinition(const SPIRVExtInst *DebugInst) {
   using namespace SPIRVDebug::Operand::FunctionDefinition;
   const SPIRVWordVec &Ops = DebugInst->getArguments();
   SPIRVExtInst *Func = BM->get<SPIRVExtInst>(Ops[FunctionIdx]);
+  DISubprogram *LLVMFunc = cast<DISubprogram>(DebugInstCache[Func]);
   SPIRVId DefinitionId = Ops[DefinitionIdx];
-  return transFunction(Func, DefinitionId);
+  SPIRVEntry *E = BM->getEntry(DefinitionId);
+
+  FuncMap[DefinitionId] = LLVMFunc;
+  //cast<DISubprogram>(SPIRVReader->getTranslatedValue(Func));
+
+  if (E->getOpCode() == OpFunction) {
+    SPIRVFunction *BF = static_cast<SPIRVFunction *>(E);
+    llvm::Function *F = SPIRVReader->transFunction(BF);
+    assert(F && "Translation of function failed!");
+    if (!F->hasMetadata("dbg"))
+      F->setMetadata("dbg", LLVMFunc);
+  }
+  return nullptr;
+  // return transFunction(Func, DefinitionId);
 }
 
 DINode *SPIRVToLLVMDbgTran::transFunctionDecl(const SPIRVExtInst *DebugInst) {
@@ -1173,9 +1198,9 @@ MDNode *SPIRVToLLVMDbgTran::transDebugInstImpl(const SPIRVExtInst *DebugInst) {
     return transLexicalBlockDiscriminator(DebugInst);
 
   case SPIRVDebug::Function: {
-    if (isNonSemanticDebugInfo(DebugInst->getExtSetKind()))
+    // if (isNonSemanticDebugInfo(DebugInst->getExtSetKind())) //&& isFunctionDefinition(DebugInst))
       // To be translated with transFunctionDefinition
-      return nullptr;
+      // return nullptr;
     return transFunction(DebugInst);
   }
 
