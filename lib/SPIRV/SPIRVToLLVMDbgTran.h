@@ -141,9 +141,13 @@ private:
   DINode *transLexicalBlock(const SPIRVExtInst *DebugInst);
   DINode *transLexicalBlockDiscriminator(const SPIRVExtInst *DebugInst);
 
-  DINode *transFunction(const SPIRVExtInst *DebugInst);
+  DINode *transFunction(
+      const SPIRVExtInst *DebugInst,
+      SPIRVId FuncId = SPIRVID_INVALID); // SPIRVEntry *Func = nullptr);
 
   DINode *transFunctionDecl(const SPIRVExtInst *DebugInst);
+
+  DINode *transFunctionDefinition(const SPIRVExtInst *DebugInst);
 
   MDNode *transGlobalVariable(const SPIRVExtInst *DebugInst);
 

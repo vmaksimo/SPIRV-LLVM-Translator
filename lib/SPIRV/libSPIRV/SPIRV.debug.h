@@ -542,8 +542,10 @@ enum {
   FlagsIdx        = 7,
   ScopeLineIdx    = 8,
   FunctionIdIdx   = 9,
+  DeclarationNonSemIdx = 9,
   DeclarationIdx  = 10,
-  TargetFunctionNameIdx  = 11,
+  // Only for NonSemantic.Schader.DebugInfo.200
+  TargetFunctionNameIdx  = 10,
   MinOperandCount = 10
 };
 }

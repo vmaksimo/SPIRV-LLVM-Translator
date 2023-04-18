@@ -682,7 +682,9 @@ DINode *SPIRVToLLVMDbgTran::transLexicalBlockDiscriminator(
   return Builder.createLexicalBlockFile(ParentScope, File, Disc);
 }
 
-DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst) {
+DINode *
+SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst,
+                                  SPIRVId FuncId) { // SPIRVEntry *Func) {
   using namespace SPIRVDebug::Operand::Function;
   const SPIRVWordVec &Ops = DebugInst->getArguments();
   assert(Ops.size() >= MinOperandCount && "Invalid number of operands");
@@ -730,7 +732,11 @@ DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst) {
 
   // Function declaration descriptor
   DISubprogram *FD = nullptr;
-  if (Ops.size() > DeclarationIdx) {
+  if (isNonSemanticDebugInfo(DebugInst->getExtSetKind()) &&
+      Ops.size() > DeclarationNonSemIdx) {
+    FD = transDebugInst<DISubprogram>(
+        BM->get<SPIRVExtInst>(Ops[DeclarationNonSemIdx]));
+  } else if (Ops.size() > DeclarationIdx) {
     FD = transDebugInst<DISubprogram>(
         BM->get<SPIRVExtInst>(Ops[DeclarationIdx]));
   }
@@ -754,7 +760,7 @@ DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst) {
     // Create targetFuncName mostly for Fortran trampoline function if it is
     // the case
     StringRef TargetFunction;
-    if (Ops.size() > TargetFunctionNameIdx) {
+    if (Ops.size() > MinOperandCount) {
       TargetFunction = getString(Ops[TargetFunctionNameIdx]);
     }
     DIS = Builder.createFunction(Scope, Name, LinkageName, File, LineNo, Ty,
@@ -763,11 +769,17 @@ DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst) {
                                  /*Annotations*/ nullptr, TargetFunction);
   }
   DebugInstCache[DebugInst] = DIS;
-  SPIRVId RealFuncId = Ops[FunctionIdIdx];
+  SPIRVId RealFuncId = SPIRVID_INVALID;
+  if (isNonSemanticDebugInfo(DebugInst->getExtSetKind())) {
+    RealFuncId = FuncId;
+  } else {
+    RealFuncId = Ops[FunctionIdIdx];
+  }
+  // SPIRVId RealFuncId = Ops[FunctionIdIdx];
   FuncMap[RealFuncId] = DIS;
 
   // Function.
-  SPIRVEntry *E = BM->getEntry(Ops[FunctionIdIdx]);
+  SPIRVEntry *E = BM->getEntry(RealFuncId);
   if (E->getOpCode() == OpFunction) {
     SPIRVFunction *BF = static_cast<SPIRVFunction *>(E);
     llvm::Function *F = SPIRVReader->transFunction(BF);
@@ -776,6 +788,15 @@ DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst) {
       F->setMetadata("dbg", DIS);
   }
   return DIS;
+}
+
+DINode *
+SPIRVToLLVMDbgTran::transFunctionDefinition(const SPIRVExtInst *DebugInst) {
+  using namespace SPIRVDebug::Operand::FunctionDefinition;
+  const SPIRVWordVec &Ops = DebugInst->getArguments();
+  SPIRVExtInst *Func = BM->get<SPIRVExtInst>(Ops[FunctionIdx]);
+  SPIRVId DefinitionId = Ops[DefinitionIdx];
+  return transFunction(Func, DefinitionId);
 }
 
 DINode *SPIRVToLLVMDbgTran::transFunctionDecl(const SPIRVExtInst *DebugInst) {
@@ -1151,14 +1172,18 @@ MDNode *SPIRVToLLVMDbgTran::transDebugInstImpl(const SPIRVExtInst *DebugInst) {
   case SPIRVDebug::LexicalBlockDiscriminator:
     return transLexicalBlockDiscriminator(DebugInst);
 
-  case SPIRVDebug::Function:
+  case SPIRVDebug::Function: {
+    if (isNonSemanticDebugInfo(DebugInst->getExtSetKind()))
+      // To be translated with transFunctionDefinition
+      return nullptr;
     return transFunction(DebugInst);
+  }
 
   case SPIRVDebug::FunctionDeclaration:
     return transFunctionDecl(DebugInst);
   
   case SPIRVDebug::FunctionDefinition:
-    return nullptr;
+    return transFunctionDefinition(DebugInst);
 
   case SPIRVDebug::GlobalVariable:
     return transGlobalVariable(DebugInst);
@@ -1229,6 +1254,7 @@ SPIRVToLLVMDbgTran::transDebugIntrinsic(const SPIRVExtInst *DebugInst,
   switch (DebugInst->getExtOp()) {
   case SPIRVDebug::Scope:
   case SPIRVDebug::NoScope:
+  case SPIRVDebug::FunctionDefinition:
     return nullptr;
   case SPIRVDebug::Declare: {
     using namespace SPIRVDebug::Operand::DebugDeclare;
