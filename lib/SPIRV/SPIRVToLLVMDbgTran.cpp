@@ -682,9 +682,7 @@ DINode *SPIRVToLLVMDbgTran::transLexicalBlockDiscriminator(
   return Builder.createLexicalBlockFile(ParentScope, File, Disc);
 }
 
-DINode *
-SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst,
-                                  SPIRVId FuncId) { // SPIRVEntry *Func) {
+DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst) {
   using namespace SPIRVDebug::Operand::Function;
   const SPIRVWordVec &Ops = DebugInst->getArguments();
   assert(Ops.size() >= MinOperandCount && "Invalid number of operands");
@@ -769,19 +767,21 @@ SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst,
                                  /*Annotations*/ nullptr, TargetFunction);
   }
   DebugInstCache[DebugInst] = DIS;
-  SPIRVId RealFuncId = SPIRVID_INVALID;
-  if (isNonSemanticDebugInfo(DebugInst->getExtSetKind())) {
-    RealFuncId = FuncId;
-  } else {
-    RealFuncId = Ops[FunctionIdIdx];
-  }
-  if (RealFuncId == SPIRVID_INVALID)
-    return DIS;
 
-  FuncMap[RealFuncId] = DIS;
+  // At this point, we don't have info about the function definition for
+  // NonSemantic.Shader debug info. If function definition is present, it'll be
+  // translated later within the function scope.
+  // For "default" debug info we do translate function body here.
+  if (!isNonSemanticDebugInfo(DebugInst->getExtSetKind()))
+    transFunctionBody(DIS, Ops[FunctionIdIdx]);
 
-  // Function.
-  SPIRVEntry *E = BM->getEntry(RealFuncId);
+  return DIS;
+}
+
+void SPIRVToLLVMDbgTran::transFunctionBody(DISubprogram *DIS, SPIRVId FuncId) {
+  FuncMap[FuncId] = DIS;
+
+  SPIRVEntry *E = BM->getEntry(FuncId);
   if (E->getOpCode() == OpFunction) {
     SPIRVFunction *BF = static_cast<SPIRVFunction *>(E);
     llvm::Function *F = SPIRVReader->transFunction(BF);
@@ -789,39 +789,18 @@ SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst,
     if (!F->hasMetadata("dbg"))
       F->setMetadata("dbg", DIS);
   }
-  return DIS;
-}
-
-bool SPIRVToLLVMDbgTran::isFunctionDefinition(const SPIRVExtInst *DebugInst){
-  using namespace SPIRVDebug::Operand::Function;
-  const SPIRVWordVec &Ops = DebugInst->getArguments();
-  SPIRVWord SPIRVDebugFlags =
-  getConstantValueOrLiteral(Ops, FlagsIdx, DebugInst->getExtSetKind());
-  bool IsDefinition = SPIRVDebugFlags & SPIRVDebug::FlagIsDefinition;
-  return IsDefinition;
 }
 
 DINode *
 SPIRVToLLVMDbgTran::transFunctionDefinition(const SPIRVExtInst *DebugInst) {
   using namespace SPIRVDebug::Operand::FunctionDefinition;
   const SPIRVWordVec &Ops = DebugInst->getArguments();
+
   SPIRVExtInst *Func = BM->get<SPIRVExtInst>(Ops[FunctionIdx]);
   DISubprogram *LLVMFunc = cast<DISubprogram>(DebugInstCache[Func]);
-  SPIRVId DefinitionId = Ops[DefinitionIdx];
-  SPIRVEntry *E = BM->getEntry(DefinitionId);
 
-  FuncMap[DefinitionId] = LLVMFunc;
-  //cast<DISubprogram>(SPIRVReader->getTranslatedValue(Func));
-
-  if (E->getOpCode() == OpFunction) {
-    SPIRVFunction *BF = static_cast<SPIRVFunction *>(E);
-    llvm::Function *F = SPIRVReader->transFunction(BF);
-    assert(F && "Translation of function failed!");
-    if (!F->hasMetadata("dbg"))
-      F->setMetadata("dbg", LLVMFunc);
-  }
+  transFunctionBody(LLVMFunc, Ops[DefinitionIdx]);
   return nullptr;
-  // return transFunction(Func, DefinitionId);
 }
 
 DINode *SPIRVToLLVMDbgTran::transFunctionDecl(const SPIRVExtInst *DebugInst) {
@@ -1197,16 +1176,12 @@ MDNode *SPIRVToLLVMDbgTran::transDebugInstImpl(const SPIRVExtInst *DebugInst) {
   case SPIRVDebug::LexicalBlockDiscriminator:
     return transLexicalBlockDiscriminator(DebugInst);
 
-  case SPIRVDebug::Function: {
-    // if (isNonSemanticDebugInfo(DebugInst->getExtSetKind())) //&& isFunctionDefinition(DebugInst))
-      // To be translated with transFunctionDefinition
-      // return nullptr;
+  case SPIRVDebug::Function:
     return transFunction(DebugInst);
-  }
 
   case SPIRVDebug::FunctionDeclaration:
     return transFunctionDecl(DebugInst);
-  
+
   case SPIRVDebug::FunctionDefinition:
     return transFunctionDefinition(DebugInst);
 

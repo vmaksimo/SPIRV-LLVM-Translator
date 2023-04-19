@@ -164,7 +164,7 @@ void LLVMToSPIRVDbgTran::finalizeDebugValue(
 }
 
 // Emitting DebugScope and OpLine instructions
-// Maybe useful for emitting debug definition nearby usual inst
+
 void LLVMToSPIRVDbgTran::transLocationInfo() {
   for (const Function &F : *M) {
     for (const BasicBlock &BB : F) {
@@ -1123,7 +1123,7 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
     transformToConstant(Ops, {LineIdx, ColumnIdx, FlagsIdx});
 
   SPIRVEntry *DebugFunc = nullptr;
-  SPIRVValue *SPVFunc = nullptr;
+  SPIRVValue *FuncDef = nullptr;
   if (!Func->isDefinition()) {
     DebugFunc =
         BM->addDebugInfo(SPIRVDebug::FunctionDeclaration, getVoidTy(), Ops);
@@ -1141,7 +1141,7 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
         SPIRVValue *SPIRVFunc = SPIRVWriter->getTranslatedValue(&F);
         assert(SPIRVFunc && "All function must be already translated");
         Ops[FunctionIdIdx] = SPIRVFunc->getId();
-        SPVFunc = SPIRVFunc;
+        FuncDef = SPIRVFunc;
         break;
       }
     }
@@ -1155,8 +1155,8 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
     else {
       Ops.push_back(getDebugInfoNoneId());
       if (BM->getDebugInfoEIS() == SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
-        // Translate targetFuncName mostly for Fortran trampoline function if
-        // it is the case
+        // Translate targetFuncName mostly for Fortran trampoline function if it
+        // is the case
         StringRef TargetFunc = Func->getTargetFuncName();
         if (!TargetFunc.empty())
           Ops.push_back(BM->getString(TargetFunc.str())->getId());
@@ -1164,7 +1164,6 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
     }
 
     DebugFunc = BM->addDebugInfo(SPIRVDebug::Function, getVoidTy(), Ops);
-    // QQ = BM->addDebugInfo(SPIRVDebug::FunctionDefinition, getVoidTy(), Ops);
     MDMap.insert(std::make_pair(Func, DebugFunc));
     // Functions local variable might be not refered to anywhere else, except
     // here.
@@ -1176,38 +1175,28 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
   if (DITemplateParameterArray TPA = Func->getTemplateParams()) {
     DebugFunc = transDbgTemplateParams(TPA, DebugFunc);
   }
-  if (isNonSemanticDebugInfo() && SPVFunc)
-  //  if (auto *Def = 
-   transDebugFunctionDefinition(SPVFunc, DebugFunc);
-    // return Def;
-  
+
+  if (isNonSemanticDebugInfo())
+    transDbgFuncDefinition(FuncDef, DebugFunc);
+
   return DebugFunc;
 }
 
-SPIRVEntry *
-LLVMToSPIRVDbgTran::transDebugFunctionDefinition(SPIRVValue *SPVFunc,
-                                                 SPIRVEntry *DbgFunc) {
-  if (!isNonSemanticDebugInfo())
+SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFuncDefinition(SPIRVValue *FuncDef,
+                                                       SPIRVEntry *DbgFunc) {
+  if (!isNonSemanticDebugInfo() || !FuncDef)
     return nullptr;
-  SPIRVId ExtSetId = BM->getExtInstSetId(BM->getDebugInfoEIS());
-  // SPIRVExtInst *DebugFunc = static_cast<SPIRVExtInst *>(DbgFunc);
+
   using namespace SPIRVDebug::Operand::FunctionDefinition;
   SPIRVWordVec Ops(OperandCount);
   Ops[FunctionIdx] = DbgFunc->getId();
-  if (SPVFunc) {
-    Ops[DefinitionIdx] = SPVFunc->getId();
-    SPIRVFunction *func = static_cast<SPIRVFunction *>(SPVFunc);
-    SPIRVBasicBlock *BB =
-        func->getNumBasicBlock() ? func->getBasicBlock(0) : nullptr;
-    return BM->addExtInst(getVoidTy(), ExtSetId, SPIRVDebug::FunctionDefinition,
-                          Ops, BB, BB->getInst(0));
-  }
-  return nullptr;
-  // } else {
-  //   // Dirty hack to fix reverse translation
-  //   Ops[DefinitionIdx] = getDebugInfoNoneId();
-  //   return BM->addDebugInfo(SPIRVDebug::FunctionDefinition, getVoidTy(), Ops);
-  // }
+  Ops[DefinitionIdx] = FuncDef->getId();
+  SPIRVFunction *F = static_cast<SPIRVFunction *>(FuncDef);
+  SPIRVBasicBlock *BB = F->getNumBasicBlock() ? F->getBasicBlock(0) : nullptr;
+  SPIRVId ExtSetId = BM->getExtInstSetId(BM->getDebugInfoEIS());
+
+  return BM->addExtInst(getVoidTy(), ExtSetId, SPIRVDebug::FunctionDefinition,
+                        Ops, BB, BB->getInst(0));
 }
 
 // Location information

@@ -141,14 +141,11 @@ private:
   DINode *transLexicalBlock(const SPIRVExtInst *DebugInst);
   DINode *transLexicalBlockDiscriminator(const SPIRVExtInst *DebugInst);
 
-  DINode *transFunction(
-      const SPIRVExtInst *DebugInst,
-      SPIRVId FuncId = SPIRVID_INVALID);
+  DINode *transFunction(const SPIRVExtInst *DebugInst);
+  DINode *transFunctionDefinition(const SPIRVExtInst *DebugInst);
+  void transFunctionBody(DISubprogram *DIS, SPIRVId FuncId);
 
   DINode *transFunctionDecl(const SPIRVExtInst *DebugInst);
-
-  bool isFunctionDefinition(const SPIRVExtInst *DebugInst);
-  DINode *transFunctionDefinition(const SPIRVExtInst *DebugInst);
 
   MDNode *transGlobalVariable(const SPIRVExtInst *DebugInst);
 

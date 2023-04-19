@@ -144,7 +144,6 @@ public:
   virtual SPIRVValue *getValue(SPIRVId TheId) const = 0;
   virtual std::vector<SPIRVValue *>
   getValues(const std::vector<SPIRVId> &) const = 0;
-  virtual SPIRVId getId(SPIRVId Id = SPIRVID_INVALID, unsigned Increment = 1) = 0;
   virtual std::vector<SPIRVId>
   getIds(const std::vector<SPIRVEntry *> &) const = 0;
   virtual std::vector<SPIRVId>
@@ -189,9 +188,6 @@ public:
     return Entry;
   }
   virtual SPIRVEntry *addEntry(SPIRVEntry *) = 0;
-  virtual SPIRVInstruction *
-  addInstruction(SPIRVInstruction *Inst, SPIRVBasicBlock *BB,
-                 SPIRVInstruction *InsertBefore = nullptr) = 0;
   virtual SPIRVBasicBlock *addBasicBlock(SPIRVFunction *,
                                          SPIRVId Id = SPIRVID_INVALID) = 0;
   virtual SPIRVString *getString(const std::string &Str) = 0;
