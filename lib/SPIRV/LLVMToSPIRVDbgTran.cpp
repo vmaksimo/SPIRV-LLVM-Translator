@@ -1134,6 +1134,7 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
 
   SPIRVEntry *DebugFunc = nullptr;
   SPIRVValue *FuncDef = nullptr;
+  bool IsEntryPointKernel = false;
   if (!Func->isDefinition()) {
     DebugFunc =
         BM->addDebugInfo(SPIRVDebug::FunctionDeclaration, getVoidTy(), Ops);
@@ -1146,10 +1147,11 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
       transformToConstant(Ops, {ScopeLineIdx});
 
     Ops[FunctionIdIdx] = getDebugInfoNoneId();
-    // CHECK FOR ENTRY POINT HERE  -
-    // getCallingConv() == SPIR_KERNEL 
     for (const llvm::Function &F : M->functions()) {
       if (Func->describes(&F)) {
+        if (F->getCallingConv() == CallingConv::SPIR_KERNEL)
+          IsEntryPointKernel = true;
+
         SPIRVValue *SPIRVFunc = SPIRVWriter->getTranslatedValue(&F);
         assert(SPIRVFunc && "All function must be already translated");
         Ops[FunctionIdIdx] = SPIRVFunc->getId();
@@ -1184,29 +1186,30 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFunction(const DISubprogram *Func) {
       transDbgEntry(Var);
   }
 
-  if (Func->isMainSubprogram()) {
-      if (isNonSemanticDebugInfo()) {
-      SPIRVWordVec Ops(SPIRVDebug::Operand::EntryPoint::OperandCount);
-
-      DICompileUnit *CU = Func->getUnit();
-      StringRef Producer = CU->getProducer();
-      StringRef Flags = CU->getFlags();
-
-      auto It = MDMap.find(CU);
-      SPIRVEntry *CUVal = It != MDMap.end() ? It->second : getDebugInfoNone();
-      
-      using namespace SPIRVDebug::Operand::EntryPoint;
-      Ops[EntryPointIdx] = DebugFunc->getId();
-      Ops[CompilationUnitIdx] = CUVal->getId();
-      Ops[CompilerSignatureIdx] = BM->getString(Producer.str())->getId();
-      Ops[CommandLineArgsIdx] = BM->getString(Flags.str())->getId();
-      BM->addDebugInfo(SPIRVDebug::EntryPoint, getVoidTy(), Ops);
-    }
-  }
-
   // If the function has template parameters the function *is* a template.
   if (DITemplateParameterArray TPA = Func->getTemplateParams()) {
     DebugFunc = transDbgTemplateParams(TPA, DebugFunc);
+  }
+
+  if (Func->isMainSubprogram() || IsEntryPointKernel) {
+    transDbgEntryPoint(Func, DebugFunc);
+    // if (isNonSemanticDebugInfo()) {
+    //   SPIRVWordVec Ops(SPIRVDebug::Operand::EntryPoint::OperandCount);
+
+    //   DICompileUnit *CU = Func->getUnit();
+    //   StringRef Producer = CU->getProducer();
+    //   StringRef Flags = CU->getFlags();
+
+    //   auto It = MDMap.find(CU);
+    //   SPIRVEntry *CUVal = It != MDMap.end() ? It->second : getDebugInfoNone();
+
+    //   using namespace SPIRVDebug::Operand::EntryPoint;
+    //   Ops[EntryPointIdx] = DebugFunc->getId();
+    //   Ops[CompilationUnitIdx] = CUVal->getId();
+    //   Ops[CompilerSignatureIdx] = BM->getString(Producer.str())->getId();
+    //   Ops[CommandLineArgsIdx] = BM->getString(Flags.str())->getId();
+    //   BM->addDebugInfo(SPIRVDebug::EntryPoint, getVoidTy(), Ops);
+    // }
   }
 
   if (isNonSemanticDebugInfo())
@@ -1230,6 +1233,28 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFuncDefinition(SPIRVValue *FuncDef,
 
   return BM->addExtInst(getVoidTy(), ExtSetId, SPIRVDebug::FunctionDefinition,
                         Ops, BB, BB->getInst(0));
+}
+
+SPIRVEntry *LLVMToSPIRVDbgTran::transDbgEntryPoint(const DISubprogram *Func,
+                                                   SPIRVEntry *DbgFunc) {
+  if (!isNonSemanticDebugInfo())
+    return nullptr;
+
+  SPIRVWordVec Ops(SPIRVDebug::Operand::EntryPoint::OperandCount);
+
+  DICompileUnit *CU = Func->getUnit();
+  StringRef Producer = CU->getProducer();
+  StringRef Flags = CU->getFlags();
+
+  auto It = MDMap.find(CU);
+  SPIRVEntry *CUVal = It != MDMap.end() ? It->second : getDebugInfoNone();
+
+  using namespace SPIRVDebug::Operand::EntryPoint;
+  Ops[EntryPointIdx] = DbgFunc->getId();
+  Ops[CompilationUnitIdx] = CUVal->getId();
+  Ops[CompilerSignatureIdx] = BM->getString(Producer.str())->getId();
+  Ops[CommandLineArgsIdx] = BM->getString(Flags.str())->getId();
+  return BM->addDebugInfo(SPIRVDebug::EntryPoint, getVoidTy(), Ops);
 }
 
 // Location information

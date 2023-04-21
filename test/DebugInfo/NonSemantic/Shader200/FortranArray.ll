@@ -8,12 +8,12 @@
 
 
 ; CHECK-SPIRV: [[#None:]] [[#]] DebugInfoNone
-; CHECK-SPIRV: [[#CompUnit:]] [[#]] DebugCompileUnit
+; CHECK-SPIRV: [[#CompUnit:]] [[#]] DebugCompilationUnit
 ; CHECK-SPIRV: [[#EntryFunc:]] [[#]] DebugFunction
 ; CHECK-SPIRV: [[#BaseTy:]] [[#]] DebugTypeBasic
 ; CHECK-SPIRV: [[#Subrange:]] [[#]] DebugTypeSubrange
 ; CHECK-SPIRV: DebugTypeArrayDynamic [[#BaseTy]] [[#]] [[#]] [[#None]] [[#None]] [[#Subrange]]
-; CHECK-SPIRV: DebugEntryPoint [[#EntryFunc]] [[#CompUnit]]
+; CHECK-SPIRV: DebugEntryPoint [[#EntryFunc]] [[#CompUnit]] [[#]] [[#]] {{$}}
 
 ; CHECK-LLVM: !DICompileUnit(language: DW_LANG_Fortran95
 ; CHECK-LLVM: !DICompositeType(tag: DW_TAG_array_type, baseType: ![[#BaseT:]], size: 32, elements: ![[#Elements:]], dataLocation: !DIExpression(DW_OP_push_object_address, DW_OP_deref), associated: !DIExpression(DW_OP_push_object_address, DW_OP_deref, DW_OP_constu, 0, DW_OP_or))

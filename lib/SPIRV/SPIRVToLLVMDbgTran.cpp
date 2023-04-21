@@ -776,17 +776,6 @@ DINode *SPIRVToLLVMDbgTran::transFunction(const SPIRVExtInst *DebugInst,
   llvm::DITemplateParameterArray TParamsArray = TParams.get();
 
   DISubprogram *DIS = nullptr;
-  // DO EARLY EXIT IF IT'S ENTRY POINT
-  if (DebugInst->getExtSetKind() == SPIRVEIS_NonSemantic_Shader_DebugInfo_200 &&
-      !IsMainSubprogram) {
-    DIS = getDIBuilder(DebugInst).createTempFunctionFwdDecl(Scope, Name, LinkageName, File,
-                                            LineNo, Ty, 0, Flags, SPFlags,
-                                            TParamsArray);
-    DebugInstCache[DebugInst] = DIS;
-    // SPIRVId RealFuncId = Ops[FunctionIdIdx];
-    // FuncMap[RealFuncId] = DIS;
-    return DIS;
-  }
   if (Scope && (isa<DICompositeType>(Scope) || isa<DINamespace>(Scope)) &&
       !IsDefinition)
     DIS = getDIBuilder(DebugInst).createMethod(Scope, Name, LinkageName, File,
@@ -920,17 +909,7 @@ MDNode *SPIRVToLLVMDbgTran::transEntryPoint(const SPIRVExtInst *DebugInst) {
   assert(NumOps == OperandCount && "Invalid number of operands");
 
   SPIRVExtInst *EP = BM->get<SPIRVExtInst>(Ops[EntryPointIdx]);
-  // DISubprogram *D = transDebugInst<DISubprogram>(EP);
-  auto *D = transDebugInst<DINode>(EP);
-  MDNode *NewF = transFunction(EP, true /*IsMainSubprogram*/);
-  // D->replaceAllUsesWith(NewF);
-  NewF = getDIBuilder(DebugInst).replaceTemporary(llvm::TempMDNode(D), NewF);
-  // D->replaceWithDistinct(NewF);
-  // DebugInstCache[EP] = NewF;
-  // DebugInstCache[DebugInst] = DIS;
-  // SPIRVId RealFuncId = Ops[FunctionIdIdx];
-  // FuncMap[Ops[EntryPointIdx]] = cast<DISubprogram>(NewF);
-  return NewF;
+  return transFunction(EP, true /*IsMainSubprogram*/);
 }
 
 MDNode *SPIRVToLLVMDbgTran::transGlobalVariable(const SPIRVExtInst *DebugInst) {
@@ -1261,7 +1240,6 @@ MDNode *SPIRVToLLVMDbgTran::transDebugInstImpl(const SPIRVExtInst *DebugInst) {
     return transFunctionDefinition(DebugInst);
 
   case SPIRVDebug::EntryPoint:
-    // return nullptr;
     return transEntryPoint(DebugInst);
 
   case SPIRVDebug::GlobalVariable:
