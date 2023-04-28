@@ -303,9 +303,9 @@ enum {
 
 namespace Source {
 enum {
-  FileIdx      = 0,
-  TextIdx      = 1,
-  OperandCount = 2
+  FileIdx         = 0,
+  TextIdx         = 1,
+  MinOperandCount = 1
 };
 }
 

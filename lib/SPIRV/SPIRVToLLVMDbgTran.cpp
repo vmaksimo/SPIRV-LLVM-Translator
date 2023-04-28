@@ -1450,7 +1450,10 @@ DIFile *SPIRVToLLVMDbgTran::getFile(const SPIRVId SourceId) {
   assert(Source->getExtOp() == SPIRVDebug::Source &&
          "DebugSource instruction is expected");
   SPIRVWordVec SourceArgs = Source->getArguments();
-  assert(SourceArgs.size() == OperandCount && "Invalid number of operands");
+  assert(SourceArgs.size() >= MinOperandCount && "Invalid number of operands");
+  if (SourceArgs.size() == MinOperandCount)
+    return getDIFile(getString(SourceArgs[FileIdx]));
+
   std::string ChecksumStr =
       getDbgInst<SPIRVDebug::DebugInfoNone>(SourceArgs[TextIdx])
           ? ""

@@ -1341,56 +1341,112 @@ SPIRVExtInst *LLVMToSPIRVDbgTran::getSource(const T *DIEntry) {
     return It->second;
 
   using namespace SPIRVDebug::Operand::Source;
-  SPIRVWordVec Ops(OperandCount);
+  SPIRVWordVec Ops(MinOperandCount);
   Ops[FileIdx] = BM->getString(FileName)->getId();
   DIFile *F = DIEntry ? DIEntry->getFile() : nullptr;
-  if (F && F->getRawChecksum()) {
-    auto CheckSum = F->getChecksum().value();
-    constexpr size_t MaxNumWords =
-        MaxWordCount - 2 /*Fixed WC for SPIRVString*/;
-    std::string Str =
-        "//__" + CheckSum.getKindAsString().str() + ":" + CheckSum.Value.str();
-    const size_t NumWords = getSizeInWords(Str);
-    if (NumWords < MaxNumWords) {
-      Ops[TextIdx] = BM->getString(Str)->getId();
-      SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
-          BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
-      FileMap[FileName] = Source;
-      return Source;
-    }
-
-    if (NumWords > MaxNumWords && isNonSemanticDebugInfo()) {
-      Ops[TextIdx] = BM->getString(Str.substr(0, MaxNumWords))->getId();
-      SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
-          BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
-      FileMap[FileName] = Source;
-      Str.erase(0, MaxNumWords);
-
-      uint64_t NumOfContinuedInstructions = NumWords / MaxNumWords - 1;
-      for (uint64_t J = 0; J < NumOfContinuedInstructions; J++) {
-        SPIRVWord Op = BM->getString(Str.substr(0, MaxNumWords))->getId();
-        Str.erase(0, MaxNumWords);
-        Source = static_cast<SPIRVExtInst *>(
-            BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op}));
-        FileMap[FileName] = Source;
-      }
-      uint64_t Remains = NumWords % MaxNumWords;
-      if (Remains) {
-        SPIRVWord Op = BM->getString(Str.substr(0, Remains))->getId();
-        Str.erase(0, Remains);
-        Source = static_cast<SPIRVExtInst *>(
-            BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op}));
-        FileMap[FileName] = Source;
-      }
-      return Source;
-    }
-  } else {
-    Ops[TextIdx] = getDebugInfoNone()->getId();
+  if (!F) {
     SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
         BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
     FileMap[FileName] = Source;
     return Source;
   }
+
+  if (!isNonSemanticDebugInfo() && F->getRawChecksum()) {
+    auto CheckSum = F->getChecksum().value();
+    Ops.push_back(BM->getString("//__" + CheckSum.getKindAsString().str() +
+                                ":" + CheckSum.Value.str())
+                      ->getId());
+    SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
+        BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
+    FileMap[FileName] = Source;
+    return Source;
+  }
+
+  if (F->getRawSource()) {
+    std::string Str = F->getSource().value().str();
+    constexpr size_t MaxNumWords =
+        MaxWordCount - 2 /*Fixed WC for SPIRVString*/;
+    const size_t NumWords = getSizeInWords(Str);
+    if (NumWords < MaxNumWords) {
+      Ops.push_back(BM->getString(Str)->getId());
+      SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
+          BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
+      FileMap[FileName] = Source;
+      return Source;
+    }
+
+    Ops.push_back(BM->getString(Str.substr(0, MaxNumWords))->getId());
+    SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
+        BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
+    FileMap[FileName] = Source;
+    Str.erase(0, MaxNumWords);
+
+    uint64_t NumOfContinuedInstructions = NumWords / MaxNumWords - 1;
+    for (uint64_t J = 0; J < NumOfContinuedInstructions; J++) {
+      SPIRVWord Op = BM->getString(Str.substr(0, MaxNumWords))->getId();
+      Str.erase(0, MaxNumWords);
+      Source = static_cast<SPIRVExtInst *>(
+          BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op}));
+      // FileMap[FileName] = Source;
+    }
+    uint64_t Remains = NumWords % MaxNumWords;
+    if (Remains) {
+      SPIRVWord Op = BM->getString(Str.substr(0, Remains))->getId();
+      Str.erase(0, Remains);
+      Source = static_cast<SPIRVExtInst *>(
+          BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op}));
+      // FileMap[FileName] = Source;
+    }
+    return Source;
+  }
+
+  // if (F && F->getRawChecksum()) {
+    // auto CheckSum = F->getChecksum().value();
+    // constexpr size_t MaxNumWords =
+    //     MaxWordCount - 2 /*Fixed WC for SPIRVString*/;
+    // std::string Str =
+    //     "//__" + CheckSum.getKindAsString().str() + ":" + CheckSum.Value.str();
+    // const size_t NumWords = getSizeInWords(Str);
+    // if (NumWords < MaxNumWords) {
+    //   Ops[TextIdx] = BM->getString(Str)->getId();
+    //   SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
+    //       BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
+    //   FileMap[FileName] = Source;
+    //   return Source;
+    // }
+
+    // if (NumWords > MaxNumWords && isNonSemanticDebugInfo()) {
+    //   Ops[TextIdx] = BM->getString(Str.substr(0, MaxNumWords))->getId();
+    //   SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
+    //       BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
+    //   FileMap[FileName] = Source;
+    //   Str.erase(0, MaxNumWords);
+
+    //   uint64_t NumOfContinuedInstructions = NumWords / MaxNumWords - 1;
+    //   for (uint64_t J = 0; J < NumOfContinuedInstructions; J++) {
+    //     SPIRVWord Op = BM->getString(Str.substr(0, MaxNumWords))->getId();
+    //     Str.erase(0, MaxNumWords);
+    //     Source = static_cast<SPIRVExtInst *>(
+    //         BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op}));
+    //     FileMap[FileName] = Source;
+    //   }
+    //   uint64_t Remains = NumWords % MaxNumWords;
+    //   if (Remains) {
+    //     SPIRVWord Op = BM->getString(Str.substr(0, Remains))->getId();
+    //     Str.erase(0, Remains);
+    //     Source = static_cast<SPIRVExtInst *>(
+    //         BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op}));
+    //     FileMap[FileName] = Source;
+    //   }
+    //   return Source;
+    // }
+  // } else {
+  //   Ops[TextIdx] = getDebugInfoNone()->getId();
+    SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
+        BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
+    FileMap[FileName] = Source;
+    return Source;
+  // }
 }
 
 SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFileType(const DIFile *F) {
