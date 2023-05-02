@@ -1385,16 +1385,16 @@ SPIRVExtInst *LLVMToSPIRVDbgTran::getSource(const T *DIEntry) {
     for (uint64_t J = 0; J < NumOfContinuedInstructions; J++) {
       SPIRVWord Op = BM->getString(Str.substr(0, MaxNumWords))->getId();
       Str.erase(0, MaxNumWords);
-      Source = static_cast<SPIRVExtInst *>(
-          BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op}));
+      // Source = static_cast<SPIRVExtInst *>(
+      BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op});
       // FileMap[FileName] = Source;
     }
     uint64_t Remains = NumWords % MaxNumWords;
     if (Remains) {
       SPIRVWord Op = BM->getString(Str.substr(0, Remains))->getId();
       Str.erase(0, Remains);
-      Source = static_cast<SPIRVExtInst *>(
-          BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op}));
+      // Source = static_cast<SPIRVExtInst *>(
+      BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op});
       // FileMap[FileName] = Source;
     }
     return Source;

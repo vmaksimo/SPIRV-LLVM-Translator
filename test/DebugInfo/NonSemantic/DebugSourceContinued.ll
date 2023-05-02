@@ -6,8 +6,9 @@
 ; RUN: llvm-dis %t.rev.bc -o %t.rev.ll
 ; RUN: FileCheck %s --input-file %t.rev.ll --check-prefix CHECK-LLVM
 
-; CHECK-LLVM: !DIFile(filename: "main.cpp"
-; CHECK-LLVM-SAME: checksumkind: CSK_MD5, checksum: "7bb56387968a9caa6e9e35fff94eaf7b"
+; CHECK-LLVM: !DIFile(filename: "t.c", directory: "/test", source: "A
+; CHECK-LLVM-COUNT-600000: A
+; C/HECK-LLVM-SAME: checksumkind: CSK_MD5, checksum: "7bb56387968a9caa6e9e35fff94eaf7b"
 ; C/HECK-SPIRV: String [[#REG:]] "//__CSK_MD5:7bb56387968a9caa6e9e35fff94eaf7b"
 ; CHECK-SPIRV: DebugSource
 ; C/HECK-SPIRV-SAME: [[#REG]]

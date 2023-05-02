@@ -962,6 +962,10 @@ template <> struct InstToContinued<OpSpecConstantComposite> {
   constexpr static spv::Op OpCode = OpSpecConstantCompositeContinuedINTEL;
 };
 
+// template <> struct InstToContinued<Op> {
+
+// };
+
 class SPIRVModuleProcessed : public SPIRVEntryNoId<OpModuleProcessed> {
 public:
   SPIRVModuleProcessed(SPIRVModule *M, const std::string &Process)

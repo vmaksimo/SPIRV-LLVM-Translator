@@ -1725,6 +1725,7 @@ protected:
 
 class SPIRVExtInst : public SPIRVFunctionCallGeneric<OpExtInst, 5> {
 public:
+  // using ContinuedInstType = typename InstToContinued<OC>::Type;
   SPIRVExtInst(SPIRVType *TheType, SPIRVId TheId, SPIRVId TheBuiltinSet,
                SPIRVWord TheEntryPoint, const std::vector<SPIRVWord> &TheArgs,
                SPIRVBasicBlock *BB)
@@ -1757,6 +1758,14 @@ public:
   SPIRVWord getExtOp() const { return ExtOp; }
 
   SPIRVExtInstSetKind getExtSetKind() const { return ExtSetKind; }
+
+  void addContinuedInstruction(SPIRVExtInst *Inst) {
+    ContinuedInstructions.push_back(Inst);
+  }
+
+  std::vector<SPIRVExtInst *> getContinuedInstructions() {
+    return ContinuedInstructions;
+  }
 
   void setExtSetKindById() {
     assert(Module && "Invalid module");
@@ -1798,10 +1807,35 @@ public:
       break;
     case SPIRVEIS_Debug:
     case SPIRVEIS_OpenCL_DebugInfo_100:
-    case SPIRVEIS_NonSemantic_Shader_DebugInfo_100:
-    case SPIRVEIS_NonSemantic_Shader_DebugInfo_200:
       getDecoder(I) >> ExtOpDebug;
       break;
+    case SPIRVEIS_NonSemantic_Shader_DebugInfo_100:
+    case SPIRVEIS_NonSemantic_Shader_DebugInfo_200: {
+      SPIRVDecoder Decoder = getDecoder(I);
+      Decoder >> ExtOpDebug;
+      // Module->add(this);
+
+      // if (getExtOp() == SPIRVDebug::Instruction::Source) {
+      //   Decoder.getWordCountAndOpCode();
+      //   while (!I.eof()) {
+      //     SPIRVEntry *Entry = Decoder.getEntry();
+      //     if (!Entry)
+      //       break;
+
+      //     Module->add(Entry);
+      //     SPIRVExtInst *Inst = static_cast<SPIRVExtInst *>(Entry);
+      //     if (Inst &&
+      //         Inst->getExtOp() == SPIRVDebug::Instruction::SourceContinued) {
+      //       addContinuedInstruction(Inst);
+      //       Decoder.getWordCountAndOpCode();
+      //     } else {
+      //       break;
+      //     }
+      //   }
+      //   break;
+      // }
+      break;
+    }
     case SPIRVEIS_NonSemantic_AuxData:
       getDecoder(I) >> ExtOpNonSemanticAuxData;
       break;
@@ -1865,7 +1899,14 @@ protected:
     SPIRVDebugExtOpKind ExtOpDebug;
     NonSemanticAuxDataOpKind ExtOpNonSemanticAuxData;
   };
+  std::vector<SPIRVExtInst *> ContinuedInstructions;
+  // const spv::Op ContinuedOpCode = InstToContinued<OC>::OpCode;
 };
+
+// class SPIRVDbgSourceContinued: public SPIRVExtInst {
+// protected:
+
+// };
 
 class SPIRVCompositeConstruct : public SPIRVInstruction {
 public:
