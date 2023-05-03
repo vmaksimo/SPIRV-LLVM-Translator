@@ -1375,24 +1375,24 @@ SPIRVExtInst *LLVMToSPIRVDbgTran::getSource(const T *DIEntry) {
       return Source;
     }
 
-    Ops.push_back(BM->getString(Str.substr(0, MaxNumWords))->getId());
+    Ops.push_back(BM->getString(Str.substr(0, MaxNumWords * 4 - 1))->getId());
     SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
         BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
     FileMap[FileName] = Source;
-    Str.erase(0, MaxNumWords);
+    Str.erase(0, MaxNumWords * 4 - 1);
 
     uint64_t NumOfContinuedInstructions = NumWords / MaxNumWords - 1;
     for (uint64_t J = 0; J < NumOfContinuedInstructions; J++) {
-      SPIRVWord Op = BM->getString(Str.substr(0, MaxNumWords))->getId();
-      Str.erase(0, MaxNumWords);
+      SPIRVWord Op = BM->getString(Str.substr(0, MaxNumWords * 4 - 1))->getId();
+      Str.erase(0, MaxNumWords * 4 - 1);
       // Source = static_cast<SPIRVExtInst *>(
       BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op});
       // FileMap[FileName] = Source;
     }
     uint64_t Remains = NumWords % MaxNumWords;
     if (Remains) {
-      SPIRVWord Op = BM->getString(Str.substr(0, Remains))->getId();
-      Str.erase(0, Remains);
+      SPIRVWord Op = BM->getString(Str)->getId();
+      // Str.erase(0, Remains);
       // Source = static_cast<SPIRVExtInst *>(
       BM->addDebugInfo(SPIRVDebug::SourceContinued, getVoidTy(), {Op});
       // FileMap[FileName] = Source;

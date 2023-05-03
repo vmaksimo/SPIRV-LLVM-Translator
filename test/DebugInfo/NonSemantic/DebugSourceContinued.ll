@@ -8,10 +8,14 @@
 
 ; CHECK-LLVM: !DIFile(filename: "t.c", directory: "/test", source: "A
 ; CHECK-LLVM-COUNT-600000: A
-; C/HECK-LLVM-SAME: checksumkind: CSK_MD5, checksum: "7bb56387968a9caa6e9e35fff94eaf7b"
-; C/HECK-SPIRV: String [[#REG:]] "//__CSK_MD5:7bb56387968a9caa6e9e35fff94eaf7b"
-; CHECK-SPIRV: DebugSource
-; C/HECK-SPIRV-SAME: [[#REG]]
+
+; CHECK-SPIRV: String [[#Str:]] "A
+; CHECK-SPIRV-COUNT-262130: A
+; CHECK-SPIRV: String [[#Str2:]] "A
+; CHECK-SPIRV-COUNT-75737: A
+; CHECK-SPIRV: DebugSource [[#]] [[#Str]]
+; CHECK-SPIRV: DebugSourceContinued [[#Str]]
+; CHECK-SPIRV: DebugSourceContinued [[#Str2]]
 
 ; ModuleID = 't.c'
 source_filename = "t.c"

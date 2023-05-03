@@ -1811,9 +1811,8 @@ public:
       break;
     case SPIRVEIS_NonSemantic_Shader_DebugInfo_100:
     case SPIRVEIS_NonSemantic_Shader_DebugInfo_200: {
-      SPIRVDecoder Decoder = getDecoder(I);
-      Decoder >> ExtOpDebug;
-      // Module->add(this);
+      getDecoder(I) >> ExtOpDebug;
+      break;
 
       // if (getExtOp() == SPIRVDebug::Instruction::Source) {
       //   Decoder.getWordCountAndOpCode();
@@ -1834,7 +1833,7 @@ public:
       //   }
       //   break;
       // }
-      break;
+      // break;
     }
     case SPIRVEIS_NonSemantic_AuxData:
       getDecoder(I) >> ExtOpNonSemanticAuxData;
@@ -1843,7 +1842,35 @@ public:
       assert(0 && "not supported");
       getDecoder(I) >> ExtOp;
     }
-    getDecoder(I) >> Args;
+    SPIRVDecoder Decoder = getDecoder(I);
+    Decoder >> Args;
+
+    if (ExtSetKind == SPIRVEIS_NonSemantic_Shader_DebugInfo_100 ||
+        ExtSetKind == SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
+      if (getExtOp() == SPIRVDebug::Instruction::Source) {
+        Module->add(this);
+        for (SPIRVEntry *E : Decoder.getSourceContinuedInstructions()) {
+          addContinuedInstruction(static_cast<SPIRVExtInst *>(E));
+        }
+      }
+    }
+
+    // Decoder.getWordCountAndOpCode();
+    // while (!I.eof()) {
+    //   SPIRVEntry *Entry = Decoder.getEntry();
+    //   if (!Entry)
+    //     return;
+
+    //   Module->add(Entry);
+    //   SPIRVExtInst *Inst = static_cast<SPIRVExtInst *>(Entry);
+    //   if (Inst &&
+    //       Inst->getExtOp() == SPIRVDebug::Instruction::SourceContinued) {
+    //     addContinuedInstruction(Inst);
+    //     Decoder.getWordCountAndOpCode();
+    //   } else {
+    //     return;
+    //   }
+    // }
   }
   void validate() const override {
     SPIRVFunctionCallGeneric::validate();

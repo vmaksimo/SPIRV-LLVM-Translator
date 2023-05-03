@@ -39,6 +39,7 @@
 #include "SPIRVStream.h"
 #include "SPIRVDebug.h"
 #include "SPIRVFunction.h"
+#include "SPIRVInstruction.h"
 #include "SPIRVNameMapEnum.h"
 #include "SPIRVOpCode.h"
 
@@ -320,9 +321,40 @@ SPIRVDecoder::getContinuedInstructions(const spv::Op ContinuedOpCode) {
   std::vector<SPIRVEntry *> ContinuedInst;
   std::streampos Pos = IS.tellg(); // remember position
   getWordCountAndOpCode();
-  while (OpCode == ContinuedOpCode) {
+  while (OpCode == ContinuedOpCode) { // || OpCode == OpExtInst) {
     SPIRVEntry *Entry = getEntry();
     assert(Entry && "Failed to decode entry! Invalid instruction!");
+    // if (Entry->getOpCode() == OpExtInst) {
+    //   // SPIRVExtInst *Inst;
+    //   // Inst = static_cast<SPIRVExtInst*>(Entry);
+    //   SPIRVExtInst *Inst = static_cast<SPIRVExtInst *>(Entry);
+    //   if (Inst->getExtOp() != SPIRVDebug::Instruction::SourceContinued)
+    //     return {};
+    // }
+    M.add(Entry);
+    ContinuedInst.push_back(Entry);
+    Pos = IS.tellg();
+    getWordCountAndOpCode();
+  }
+  IS.seekg(Pos); // restore position
+  return ContinuedInst;
+}
+
+std::vector<SPIRVEntry *> SPIRVDecoder::getSourceContinuedInstructions() {
+  std::vector<SPIRVEntry *> ContinuedInst;
+  std::streampos Pos = IS.tellg(); // remember position
+  getWordCountAndOpCode();
+  while (OpCode == OpExtInst) {
+    SPIRVEntry *Entry = getEntry();
+    assert(Entry && "Failed to decode entry! Invalid instruction!");
+    // SPIRVExtInst *Inst;
+    // Inst = static_cast<SPIRVExtInst*>(Entry);
+    SPIRVExtInst *Inst = static_cast<SPIRVExtInst *>(Entry);
+    if (Inst->getExtOp() != SPIRVDebug::Instruction::SourceContinued) {
+      IS.seekg(Pos); // restore position
+      return ContinuedInst;
+    }
+    // return {};
     M.add(Entry);
     ContinuedInst.push_back(Entry);
     Pos = IS.tellg();
