@@ -1848,7 +1848,7 @@ public:
     if (ExtSetKind == SPIRVEIS_NonSemantic_Shader_DebugInfo_100 ||
         ExtSetKind == SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
       if (getExtOp() == SPIRVDebug::Instruction::Source) {
-        Module->add(this);
+        // Module->add(this);
         for (SPIRVEntry *E : Decoder.getSourceContinuedInstructions()) {
           addContinuedInstruction(static_cast<SPIRVExtInst *>(E));
         }
