@@ -570,7 +570,7 @@ SPIRVType *LLVMToSPIRVBase::transPointerType(Type *ET, unsigned AddrSpc) {
       if (STName.startswith(kSPIRVTypeName::PrefixAndDelim)) {
         SmallVector<std::string, 8> Postfixes;
         auto TN = decodeSPIRVTypeName(STName, Postfixes);
-        if (TN == kSPIRVTypeName::JointMatrixINTEL) {
+        if (TN == kSPIRVTypeName::JointMatrixINTEL || TN == kSPIRVTypeName::CooperativeMatrixKHR) {
           SPIRVType *TranslatedTy = transSPIRVJointMatrixINTELType(Postfixes);
           PointeeTypeMap[TypeKey] = TranslatedTy;
           return TranslatedTy;
@@ -700,7 +700,7 @@ SPIRVType *LLVMToSPIRVBase::transSPIRVOpaqueType(StringRef STName,
     return SaveType(BM->addQueueType());
   else if (TN == kSPIRVTypeName::PipeStorage)
     return SaveType(BM->addPipeStorageType());
-  else if (TN == kSPIRVTypeName::JointMatrixINTEL) {
+  else if (TN == kSPIRVTypeName::JointMatrixINTEL || TN == kSPIRVTypeName::CooperativeMatrixKHR) {
     return SaveType(transSPIRVJointMatrixINTELType(Postfixes));
   } else
     return SaveType(
