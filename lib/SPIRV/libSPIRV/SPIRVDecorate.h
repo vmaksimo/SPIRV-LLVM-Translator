@@ -184,10 +184,26 @@ public:
       return ExtensionID::SPV_INTEL_fpga_invocation_pipelining_attributes;
     case internal::DecorationRuntimeAlignedINTEL:
       return ExtensionID::SPV_INTEL_runtime_aligned;
-    case internal::DecorationHostAccessINTEL:
-    case internal::DecorationInitModeINTEL:
+    // case internal::DecorationHostAccessINTEL:
+    case DecorationInitModeINTEL: { // Decorations have the same number, but the
+                                    // internal will be deprecated later.
+      if (Dec == internal::DecorationHostAccessINTEL)
+        return ExtensionID::SPV_INTEL_global_variable_decorations;
+      return ExtensionID::SPV_INTEL_global_variable_fpga_decorations;
+    }
+    // case internal::DecorationInitModeINTEL:
+    case DecorationImplementInRegisterMapINTEL: { // Decorations have the same
+                                                  // number, but the internal
+                                                  // will be deprecated later.
+      if (Dec == internal::DecorationInitModeINTEL)
+        return ExtensionID::SPV_INTEL_global_variable_decorations;
+      return ExtensionID::SPV_INTEL_global_variable_fpga_decorations;
+    }
     case internal::DecorationImplementInCSRINTEL:
       return ExtensionID::SPV_INTEL_global_variable_decorations;
+    case DecorationHostAccessINTEL:
+      return ExtensionID::SPV_INTEL_global_variable_host_access;
+
     case DecorationConduitKernelArgumentINTEL:
     case DecorationRegisterMapKernelArgumentINTEL:
     case DecorationStableKernelArgumentINTEL:

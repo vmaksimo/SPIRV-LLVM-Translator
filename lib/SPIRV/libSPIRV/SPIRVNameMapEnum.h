@@ -200,6 +200,10 @@ template <> inline void SPIRVMap<Decoration, std::string>::init() {
   add(DecorationLatencyControlConstraintINTEL, "LatencyControlConstraintINTEL");
   add(DecorationFPMaxErrorDecorationINTEL, "FPMaxErrorDecorationINTEL");
 
+  add(DecorationHostAccessINTEL, "HostAccessINTEL");
+  add(DecorationInitModeINTEL, "InitModeINTEL");
+  add(DecorationImplementInRegisterMapINTEL, "ImplementInRegisterMapINTEL");
+
   // From spirv_internal.hpp
   add(internal::DecorationCallableFunctionINTEL, "CallableFunctionINTEL");
   add(internal::DecorationRuntimeAlignedINTEL, "RuntimeAlignedINTEL");
