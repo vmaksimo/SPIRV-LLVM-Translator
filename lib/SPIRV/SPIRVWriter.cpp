@@ -2573,7 +2573,8 @@ static void transMetadataDecorations(Metadata *MD, SPIRVEntry *Target) {
           Target, Name->getString().str(), TypeKind));
       break;
     }
-    case spv::internal::DecorationHostAccessINTEL: {
+
+    case DecorationHostAccessINTEL: {
       checkIsGlobalVar(Target, DecoKind);
 
       ErrLog.checkError(NumOperands == 3, SPIRVEC_InvalidLlvmModule,
@@ -2582,33 +2583,112 @@ static void transMetadataDecorations(Metadata *MD, SPIRVEntry *Target) {
       auto *AccessMode =
           mdconst::dyn_extract<ConstantInt>(DecoMD->getOperand(1));
       ErrLog.checkError(
-          AccessMode, SPIRVEC_InvalidLlvmModule,
-          "HostAccessINTEL requires first extra operand to be an int");
+          static_cast<HostAccessQualifier>(AccessMode->getZExtValue()),
+          SPIRVEC_InvalidLlvmModule,
+          "HostAccessINTEL requires first extra operand to be a value of "
+          "HostAccessQualifier enum");
       auto *Name = dyn_cast<MDString>(DecoMD->getOperand(2));
       ErrLog.checkError(
           Name, SPIRVEC_InvalidLlvmModule,
           "HostAccessINTEL requires second extra operand to be a string");
 
-      Target->addDecorate(new SPIRVDecorateHostAccessINTEL(
-          Target, AccessMode->getZExtValue(), Name->getString().str()));
+      Target->addDecorate(
+          new SPIRVDecorateHostAccessINTEL(Target, AccessMode->getZExtValue(),
+                                           Name->getString().str(), DecoKind));
       break;
     }
-    case spv::internal::DecorationInitModeINTEL: {
-      checkIsGlobalVar(Target, DecoKind);
-      ErrLog.checkError(static_cast<SPIRVVariable *>(Target)->getInitializer(),
-                        SPIRVEC_InvalidLlvmModule,
-                        "InitModeINTEL only be applied to a global (module "
-                        "scope) variable which has an Initializer operand");
+    // case spv::internal::DecorationHostAccessINTEL: {
+    case DecorationInitModeINTEL: { // Decorations have the same number, but the
+                                    // internal will be deprecated later.
 
-      ErrLog.checkError(NumOperands == 2, SPIRVEC_InvalidLlvmModule,
-                        "InitModeINTEL requires exactly 1 extra operand");
-      auto *Trigger = mdconst::dyn_extract<ConstantInt>(DecoMD->getOperand(1));
-      ErrLog.checkError(
-          Trigger, SPIRVEC_InvalidLlvmModule,
-          "InitModeINTEL requires extra operand to be an integer");
+      // This branch is for internal::DecorationHostAccessINTEL
+      if (Target->getModule()->isAllowedToUseExtension(
+              ExtensionID::SPV_INTEL_global_variable_decorations)) {
+        checkIsGlobalVar(Target, DecoKind);
 
-      Target->addDecorate(
-          new SPIRVDecorateInitModeINTEL(Target, Trigger->getZExtValue()));
+        ErrLog.checkError(NumOperands == 3, SPIRVEC_InvalidLlvmModule,
+                          "HostAccessINTEL requires exactly 2 extra operands "
+                          "after the decoration kind number");
+        auto *AccessMode =
+            mdconst::dyn_extract<ConstantInt>(DecoMD->getOperand(1));
+        ErrLog.checkError(
+            AccessMode, SPIRVEC_InvalidLlvmModule,
+            "HostAccessINTEL requires first extra operand to be an int");
+        auto *Name = dyn_cast<MDString>(DecoMD->getOperand(2));
+        ErrLog.checkError(
+            Name, SPIRVEC_InvalidLlvmModule,
+            "HostAccessINTEL requires second extra operand to be a string");
+
+        Target->addDecorate(new SPIRVDecorateHostAccessINTEL(
+            Target, AccessMode->getZExtValue(), Name->getString().str(),
+            DecoKind));
+
+      }
+      // This branch is for DecorationInitModeINTEL
+      else if (Target->getModule()->isAllowedToUseExtension(
+                   ExtensionID::SPV_INTEL_global_variable_fpga_decorations)) {
+        checkIsGlobalVar(Target, DecoKind);
+        ErrLog.checkError(
+            static_cast<SPIRVVariable *>(Target)->getInitializer(),
+            SPIRVEC_InvalidLlvmModule,
+            "InitModeINTEL only be applied to a global (module "
+            "scope) variable which has an Initializer operand");
+
+        ErrLog.checkError(NumOperands == 2, SPIRVEC_InvalidLlvmModule,
+                          "InitModeINTEL requires exactly 1 extra operand");
+        auto *Trigger =
+            mdconst::dyn_extract<ConstantInt>(DecoMD->getOperand(1));
+        ErrLog.checkError(
+            static_cast<InitializationModeQualifier>(Trigger->getZExtValue()),
+            SPIRVEC_InvalidLlvmModule,
+            "InitModeINTEL requires extra operand to be a value of "
+            "Initialization Mode Qualifier enum");
+
+        Target->addDecorate(new SPIRVDecorateInitModeINTEL(
+            Target, Trigger->getZExtValue(), DecoKind));
+      }
+      break;
+    }
+    // case spv::internal::DecorationInitModeINTEL: {
+    case DecorationImplementInRegisterMapINTEL: { // Decorations have the same
+                                                  // number, but the internal
+                                                  // will be deprecated later.
+      // This branch is for internal::DecorationInitModeINTEL
+      if (Target->getModule()->isAllowedToUseExtension(
+              ExtensionID::SPV_INTEL_global_variable_decorations)) {
+        checkIsGlobalVar(Target, DecoKind);
+        ErrLog.checkError(
+            static_cast<SPIRVVariable *>(Target)->getInitializer(),
+            SPIRVEC_InvalidLlvmModule,
+            "InitModeINTEL only be applied to a global (module "
+            "scope) variable which has an Initializer operand");
+
+        ErrLog.checkError(NumOperands == 2, SPIRVEC_InvalidLlvmModule,
+                          "InitModeINTEL requires exactly 1 extra operand");
+        auto *Trigger =
+            mdconst::dyn_extract<ConstantInt>(DecoMD->getOperand(1));
+        ErrLog.checkError(
+            Trigger, SPIRVEC_InvalidLlvmModule,
+            "InitModeINTEL requires extra operand to be an integer");
+
+        Target->addDecorate(new SPIRVDecorateInitModeINTEL(
+            Target, Trigger->getZExtValue(), DecoKind));
+      }
+      // This branch is for DecorationImplementInRegisterMapINTEL
+      else if (Target->getModule()->isAllowedToUseExtension(
+                   ExtensionID::SPV_INTEL_global_variable_fpga_decorations)) {
+        checkIsGlobalVar(Target, DecoKind);
+        ErrLog.checkError(
+            NumOperands == 2, SPIRVEC_InvalidLlvmModule,
+            "ImplementInCSRINTEL requires exactly 1 extra operand");
+        auto *Value = mdconst::dyn_extract<ConstantInt>(DecoMD->getOperand(1));
+        ErrLog.checkError(
+            Value, SPIRVEC_InvalidLlvmModule,
+            "ImplementInCSRINTEL requires extra operand to be an integer");
+
+        Target->addDecorate(new SPIRVDecorateImplementInCSRINTEL(
+            Target, Value->getZExtValue(), DecoKind));
+      }
       break;
     }
     case spv::internal::DecorationImplementInCSRINTEL: {
@@ -2620,8 +2700,8 @@ static void transMetadataDecorations(Metadata *MD, SPIRVEntry *Target) {
           Value, SPIRVEC_InvalidLlvmModule,
           "ImplementInCSRINTEL requires extra operand to be an integer");
 
-      Target->addDecorate(
-          new SPIRVDecorateImplementInCSRINTEL(Target, Value->getZExtValue()));
+      Target->addDecorate(new SPIRVDecorateImplementInCSRINTEL(
+          Target, Value->getZExtValue(), DecoKind));
       break;
     }
     case spv::internal::DecorationCacheControlLoadINTEL: {
