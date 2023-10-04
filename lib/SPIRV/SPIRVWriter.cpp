@@ -2583,10 +2583,11 @@ static void transMetadataDecorations(Metadata *MD, SPIRVEntry *Target) {
       auto *AccessMode =
           mdconst::dyn_extract<ConstantInt>(DecoMD->getOperand(1));
       ErrLog.checkError(
-          static_cast<HostAccessQualifier>(AccessMode->getZExtValue()),
-          SPIRVEC_InvalidLlvmModule,
-          "HostAccessINTEL requires first extra operand to be a value of "
-          "HostAccessQualifier enum");
+          AccessMode, SPIRVEC_InvalidLlvmModule,
+          "HostAccessINTEL requires first extra operand to be an int");
+
+      HostAccessQualifier Q =
+          static_cast<HostAccessQualifier>(AccessMode->getZExtValue());
       auto *Name = dyn_cast<MDString>(DecoMD->getOperand(2));
       ErrLog.checkError(
           Name, SPIRVEC_InvalidLlvmModule,
@@ -2638,11 +2639,11 @@ static void transMetadataDecorations(Metadata *MD, SPIRVEntry *Target) {
                           "InitModeINTEL requires exactly 1 extra operand");
         auto *Trigger =
             mdconst::dyn_extract<ConstantInt>(DecoMD->getOperand(1));
-        ErrLog.checkError(
-            static_cast<InitializationModeQualifier>(Trigger->getZExtValue()),
-            SPIRVEC_InvalidLlvmModule,
-            "InitModeINTEL requires extra operand to be a value of "
-            "Initialization Mode Qualifier enum");
+        ErrLog.checkError(Trigger, SPIRVEC_InvalidLlvmModule,
+                          "InitModeINTEL requires extra operand to be an int");
+
+        InitializationModeQualifier Q =
+            static_cast<InitializationModeQualifier>(Trigger->getZExtValue());
 
         Target->addDecorate(new SPIRVDecorateInitModeINTEL(
             Target, Trigger->getZExtValue(), DecoKind));
