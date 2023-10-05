@@ -184,27 +184,11 @@ public:
       return ExtensionID::SPV_INTEL_fpga_invocation_pipelining_attributes;
     case internal::DecorationRuntimeAlignedINTEL:
       return ExtensionID::SPV_INTEL_runtime_aligned;
-      // /*
-    // case internal::DecorationHostAccessINTEL:
-    // case DecorationInitModeINTEL: { // Decorations have the same number, but the
-                                    // internal will be deprecated later.
-    //   if (Dec == internal::DecorationHostAccessINTEL)
-    //     return ExtensionID::SPV_INTEL_global_variable_decorations;
-    //   return ExtensionID::SPV_INTEL_global_variable_fpga_decorations;
-    // }
-    // // case internal::DecorationInitModeINTEL:
-    // case DecorationImplementInRegisterMapINTEL: { // Decorations have the same
-    //                                               // number, but the internal
-    //                                               // will be deprecated later.
-    //   if (Dec == internal::DecorationInitModeINTEL)
-    //     return ExtensionID::SPV_INTEL_global_variable_decorations;
-    //   return ExtensionID::SPV_INTEL_global_variable_fpga_decorations;
-    // }
-    // */
-    // case internal::DecorationImplementInCSRINTEL:
-    //   return ExtensionID::SPV_INTEL_global_variable_decorations;
-    // case DecorationHostAccessINTEL:
-    //   return ExtensionID::SPV_INTEL_global_variable_host_access;
+    case DecorationInitModeINTEL:
+    case DecorationImplementInRegisterMapINTEL:
+      return ExtensionID::SPV_INTEL_global_variable_fpga_decorations;
+    case DecorationHostAccessINTEL:
+      return ExtensionID::SPV_INTEL_global_variable_host_access;
 
     case DecorationConduitKernelArgumentINTEL:
     case DecorationRegisterMapKernelArgumentINTEL:
@@ -749,29 +733,12 @@ class SPIRVDecorateHostAccessINTEL : public SPIRVDecorate {
 public:
   // Complete constructor for SPIRVHostAccessINTEL
   SPIRVDecorateHostAccessINTEL(SPIRVEntry *TheTarget, SPIRVWord AccessMode,
-                               const std::string &VarName, Decoration Dec)
-      : SPIRVDecorate(Dec, TheTarget) {
+                               const std::string &VarName)
+      : SPIRVDecorate(DecorationHostAccessINTEL, TheTarget) {
     Literals.push_back(AccessMode);
     for (auto &I : getVec(VarName))
       Literals.push_back(I);
     WordCount += Literals.size();
-  }
-  SPIRVCapVec getRequiredCapability() const override {
-    if (Module->isAllowedToUseExtension(ExtensionID::SPV_INTEL_global_variable_decorations))
-      return getVec(spv::internal::CapabilityGlobalVariableDecorationsINTEL);
-    else if (Module->isAllowedToUseExtension(ExtensionID::SPV_INTEL_global_variable_host_access))
-      return getVec(CapabilityGlobalVariableHostAccessINTEL);
-    return {};
-  }
-  std::optional<ExtensionID> getRequiredExtension() const override {
-    switch (static_cast<int>(Dec)) {
-    case internal::DecorationHostAccessINTEL:
-      return ExtensionID::SPV_INTEL_global_variable_decorations;
-    case DecorationHostAccessINTEL:
-      return ExtensionID::SPV_INTEL_global_variable_host_access;
-    default:
-      return {};
-    }
   }
 
   SPIRVWord getAccessMode() const { return Literals.front(); }
@@ -812,51 +779,15 @@ public:
 class SPIRVDecorateInitModeINTEL : public SPIRVDecorate {
 public:
   // Complete constructor for SPIRVInitModeINTEL
-  SPIRVDecorateInitModeINTEL(SPIRVEntry *TheTarget, SPIRVWord Trigger,
-                             Decoration Dec)
-      : SPIRVDecorate(Dec, TheTarget, Trigger) {}
-  SPIRVCapVec getRequiredCapability() const override {
-    if (Module->isAllowedToUseExtension(ExtensionID::SPV_INTEL_global_variable_decorations))
-      return getVec(spv::internal::CapabilityGlobalVariableDecorationsINTEL);
-    else if (Module->isAllowedToUseExtension(ExtensionID::SPV_INTEL_global_variable_fpga_decorations))
-      return getVec(CapabilityGlobalVariableFPGADecorationsINTEL);
-    return {};
-  }
-  std::optional<ExtensionID> getRequiredExtension() const override {
-    switch (static_cast<int>(Dec)) {
-    case internal::DecorationInitModeINTEL:
-      return ExtensionID::SPV_INTEL_global_variable_decorations;
-    case DecorationInitModeINTEL:
-      return ExtensionID::SPV_INTEL_global_variable_fpga_decorations;
-    default:
-      return {};
-    }
-  }
+  SPIRVDecorateInitModeINTEL(SPIRVEntry *TheTarget, SPIRVWord Trigger)
+      : SPIRVDecorate(DecorationInitModeINTEL, TheTarget, Trigger) {}
 };
 
 class SPIRVDecorateImplementInCSRINTEL : public SPIRVDecorate {
 public:
   // Complete constructor for SPIRVImplementInCSRINTEL
-  SPIRVDecorateImplementInCSRINTEL(SPIRVEntry *TheTarget, SPIRVWord Value,
-                                   Decoration Dec)
-      : SPIRVDecorate(Dec, TheTarget, Value) {}
-  SPIRVCapVec getRequiredCapability() const override {
-    if (Module->isAllowedToUseExtension(ExtensionID::SPV_INTEL_global_variable_decorations))
-      return getVec(spv::internal::CapabilityGlobalVariableDecorationsINTEL);
-    else if (Module->isAllowedToUseExtension(ExtensionID::SPV_INTEL_global_variable_fpga_decorations))
-      return getVec(CapabilityGlobalVariableFPGADecorationsINTEL);
-    return {};
-  }
-  std::optional<ExtensionID> getRequiredExtension() const override {
-    switch (static_cast<int>(Dec)) {
-    case internal::DecorationImplementInCSRINTEL:
-      return ExtensionID::SPV_INTEL_global_variable_decorations;
-    case DecorationImplementInRegisterMapINTEL:
-      return ExtensionID::SPV_INTEL_global_variable_fpga_decorations;
-    default:
-      return {};
-    }
-  }
+  SPIRVDecorateImplementInCSRINTEL(SPIRVEntry *TheTarget, SPIRVWord Value)
+      : SPIRVDecorate(DecorationImplementInRegisterMapINTEL, TheTarget, Value) {}
 };
 
 class SPIRVDecorateCacheControlLoadINTEL : public SPIRVDecorate {
