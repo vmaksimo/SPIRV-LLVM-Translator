@@ -4,8 +4,7 @@
 ; RUN: llvm-spirv -to-text %t.spv -o - | FileCheck %s
 
 ; CHECK-DAG: Constant [[#]] [[#Relaxed:]] 0
-; CHECK-DAG: Constant [[#]] [[#DeviceScope:]] 1
-; CHECK-DAG: Constant [[#]] [[#Acquire:]] 2
+; CHECK-DAG: Constant [[#]] [[#ConstInt2:]] 2
 ; CHECK-DAG: Constant [[#]] [[#Release:]] 4
 ; CHECK-DAG: Constant [[#]] [[#SequentiallyConsistent:]] 16
 
@@ -18,18 +17,18 @@ entry:
 ; CHECK: Variable [[#]] [[#PTR:]]
   %0 = alloca i32
 
-; CHECK: AtomicStore [[#PTR]] [[#DeviceScope]] [[#Relaxed]] [[#]]
+; CHECK: AtomicStore [[#PTR]] [[#ConstInt2]] [[#Relaxed]] [[#]]
   store atomic i32 0, ptr %0 monotonic, align 4
-; CHECK: AtomicStore [[#PTR]] [[#DeviceScope]] [[#Release]] [[#]]
+; CHECK: AtomicStore [[#PTR]] [[#ConstInt2]] [[#Release]] [[#]]
   store atomic i32 0, ptr %0 release, align 4
-; CHECK: AtomicStore [[#PTR]] [[#DeviceScope]] [[#SequentiallyConsistent]] [[#]]
+; CHECK: AtomicStore [[#PTR]] [[#ConstInt2]] [[#SequentiallyConsistent]] [[#]]
   store atomic i32 0, ptr %0 seq_cst, align 4
 
-; CHECK: AtomicLoad [[#]] [[#]] [[#PTR]] [[#DeviceScope]] [[#Relaxed]]
+; CHECK: AtomicLoad [[#]] [[#]] [[#PTR]] [[#ConstInt2]] [[#Relaxed]]
   %1 = load atomic i32, ptr %0 monotonic, align 4
-; CHECK: AtomicLoad [[#]] [[#]] [[#PTR]] [[#DeviceScope]] [[#Acquire]]
+; CHECK: AtomicLoad [[#]] [[#]] [[#PTR]] [[#ConstInt2]] [[#ConstInt2]]
   %2 = load atomic i32, ptr %0 acquire, align 4
-; CHECK: AtomicLoad [[#]] [[#]] [[#PTR]] [[#DeviceScope]] [[#SequentiallyConsistent]]
+; CHECK: AtomicLoad [[#]] [[#]] [[#PTR]] [[#ConstInt2]] [[#SequentiallyConsistent]]
   %3 = load atomic i32, ptr %0 seq_cst, align 4
   ret void
 }
