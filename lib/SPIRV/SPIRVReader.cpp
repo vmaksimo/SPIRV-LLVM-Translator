@@ -2235,7 +2235,19 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     auto Constituents = transValue(CC->getOperands(), F, BB);
     std::vector<Constant *> CV;
     for (const auto &I : Constituents) {
-      CV.push_back(dyn_cast<Constant>(I));
+      if (auto C = dyn_cast<Constant>(I))
+        CV.push_back(C);
+      // In case we have runtime values instead of constants
+      // else {
+      //   Value *Alloca =
+      //       new AllocaInst(I->getType(), SPIRAS_Private, "", BB);
+
+      //   auto *GEP =
+      //       GetElementPtrInst::Create(Alloca->getType(), Alloca, {getInt32(M, 0)}, "", BB);
+      //   GEP->setIsInBounds(true);
+      //   auto *Load = new LoadInst(I->getType(), GEP, "", false, BB);
+      //   CV.push_back(cast<Constant>(Load));
+      // }
     }
     switch (static_cast<size_t>(BV->getType()->getOpCode())) {
     case OpTypeVector:
@@ -2246,6 +2258,30 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     }
     case OpTypeStruct: {
       auto *ST = cast<StructType>(transType(CC->getType()));
+      // TODO: rework for mixed rt and constant values
+      if (CV.empty()) {
+        
+        Value *Alloca = new AllocaInst(ST, SPIRAS_Private, "", BB);
+        // gep element
+        // store result of argument
+        // repeat
+        // load str
+        // return str
+
+        for (size_t I = 0; I < Constituents.size(); I++) {
+          auto *GEP = GetElementPtrInst::Create(
+              Constituents[I]->getType(), Alloca, {getInt32(M, I)}, "", BB);
+          GEP->setIsInBounds(true);
+          new StoreInst(Constituents[I], GEP, false, BB);
+        }
+
+        // auto *GEP = GetElementPtrInst::Create(Alloca->getType(), Alloca,
+        //                                       {getInt32(M, 0)}, "", BB);
+        // GEP->setIsInBounds(true);
+        auto *Load = new LoadInst(ST, Alloca, "", false, BB);
+        // CV.push_back(cast<Constant>(Load));
+        return mapValue(BV, Load);
+      }
       return mapValue(BV, ConstantStruct::get(ST, CV));
     }
     case internal::OpTypeJointMatrixINTEL:
