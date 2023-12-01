@@ -2211,8 +2211,16 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
 
   if (auto *Ext = dyn_cast<ExtractValueInst>(V)) {
     if (auto *II = dyn_cast<IntrinsicInst>(Ext->getAggregateOperand())) {
-      if (II->getIntrinsicID() == Intrinsic::frexp)
-        return mapValue(V, transValue(II, BB));
+      if (II->getIntrinsicID() == Intrinsic::frexp) {
+        // TODO: Also test the the case for extrancelem 1
+        unsigned Idx = Ext->getIndices()[0];
+        auto Val = transValue(II, BB);
+        if (Idx == 0)
+          return mapValue(V, Val);
+        else // Idx = 1
+          return mapValue(V,
+                          static_cast<SPIRVExtInst *>(Val)->getArgValues()[1]);
+      }
     }
     return mapValue(V, BM->addCompositeExtractInst(
                            transScavengedType(Ext),

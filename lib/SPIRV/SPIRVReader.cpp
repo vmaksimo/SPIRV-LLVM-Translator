@@ -2234,21 +2234,14 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     auto *CC = static_cast<SPIRVCompositeConstruct *>(BV);
     auto Constituents = transValue(CC->getOperands(), F, BB);
     std::vector<Constant *> CV;
+    bool hasRTValues = false;
     for (const auto &I : Constituents) {
-      if (auto C = dyn_cast<Constant>(I))
-        CV.push_back(C);
-      // In case we have runtime values instead of constants
-      // else {
-      //   Value *Alloca =
-      //       new AllocaInst(I->getType(), SPIRAS_Private, "", BB);
-
-      //   auto *GEP =
-      //       GetElementPtrInst::Create(Alloca->getType(), Alloca, {getInt32(M, 0)}, "", BB);
-      //   GEP->setIsInBounds(true);
-      //   auto *Load = new LoadInst(I->getType(), GEP, "", false, BB);
-      //   CV.push_back(cast<Constant>(Load));
-      // }
+      auto *C = dyn_cast<Constant>(I);
+      CV.push_back(C);
+      if (!hasRTValues && C == nullptr)
+        hasRTValues = true;
     }
+
     switch (static_cast<size_t>(BV->getType()->getOpCode())) {
     case OpTypeVector:
       return mapValue(BV, ConstantVector::get(CV));
@@ -2258,31 +2251,34 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     }
     case OpTypeStruct: {
       auto *ST = cast<StructType>(transType(CC->getType()));
+      if (!hasRTValues)
+        return mapValue(BV, ConstantStruct::get(ST, CV));
+
+      AllocaInst *Alloca = new AllocaInst(ST, SPIRAS_Private, "", BB);
+
       // TODO: rework for mixed rt and constant values
-      if (CV.empty()) {
-        
-        Value *Alloca = new AllocaInst(ST, SPIRAS_Private, "", BB);
-        // gep element
-        // store result of argument
-        // repeat
-        // load str
-        // return str
 
-        for (size_t I = 0; I < Constituents.size(); I++) {
-          auto *GEP = GetElementPtrInst::Create(
-              Constituents[I]->getType(), Alloca, {getInt32(M, I)}, "", BB);
-          GEP->setIsInBounds(true);
-          new StoreInst(Constituents[I], GEP, false, BB);
-        }
+      // gep element
+      // store result of argument
+      // repeat
+      // load str
+      // return str
 
-        // auto *GEP = GetElementPtrInst::Create(Alloca->getType(), Alloca,
-        //                                       {getInt32(M, 0)}, "", BB);
-        // GEP->setIsInBounds(true);
-        auto *Load = new LoadInst(ST, Alloca, "", false, BB);
-        // CV.push_back(cast<Constant>(Load));
-        return mapValue(BV, Load);
+      for (size_t I = 0; I < CV.size(); I++) {
+        // if (CV[I] == nullptr) {
+        auto *GEP = GetElementPtrInst::Create(
+            Constituents[I]->getType(), Alloca, {getInt32(M, I)}, "gep", BB);
+        GEP->setIsInBounds(true);
+        new StoreInst(Constituents[I], GEP, false, BB);
+        // }
       }
-      return mapValue(BV, ConstantStruct::get(ST, CV));
+
+      // if (Alloca->getNumUses()) {
+      auto *Load = new LoadInst(ST, Alloca, "load", false, BB);
+      return mapValue(BV, Load);
+      // } else {
+      //   Alloca->eraseFromParent();
+      // }
     }
     case internal::OpTypeJointMatrixINTEL:
     case OpTypeCooperativeMatrixKHR:
