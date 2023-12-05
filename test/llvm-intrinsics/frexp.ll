@@ -105,7 +105,7 @@ define { <4 x float>, <4 x i32> } @frexp_nonsplat_vector() {
 ; CHECK-SPIRV: ExtInst [[#TypeFloat]] [[#]] [[#ExtInstSetId]] frexp [[#]] [[#]]
 ; CHECK-SPIRV: ExtInst [[#TypeFloat]] [[#]] [[#ExtInstSetId]] frexp [[#]] [[#]]
 ; CHECK-LLVM: %[[#IntVar1:]] = alloca i32
-; CHECK-LLVM: %[[Frexp0:[a-z0-9.]+]] = call spir_func float @_Z5frexpfPi(float 4.200000e+01, ptr %[[#IntVar1]])
+; CHECK-LLVM: %[[Frexp0:[a-z0-9.]+]] = call spir_func float @_Z5frexpfPi(float %x, ptr %[[#IntVar1]])
 ; CHECK-LLVM: %[[#IntVar2:]] = alloca i32
 ; CHECK-LLVM: %[[Frexp1:[a-z0-9.]+]] = call spir_func float @_Z5frexpfPi(float %[[Frexp0]], ptr %[[#IntVar2]])
 ; CHECK-LLVM: %[[#LoadIntVar:]] = load i32, ptr %[[#IntVar2]]
@@ -116,18 +116,6 @@ define { <4 x float>, <4 x i32> } @frexp_nonsplat_vector() {
 ; CHECK-LLVM: store i32 %[[#LoadIntVar]], ptr %[[GEPInt]]
 ; CHECK-LLVM: %[[LoadStrFloatInt:[a-z0-9]+]] = load %[[StrTypeFloatInt]], ptr %[[#AllocaStrFloatInt]]
 ; CHECK-LLVM: ret %[[StrTypeFloatInt]] %[[LoadStrFloatInt]]
-define { float, i32 } @frexp_frexp_const(float %x) {
-  %frexp0 = call { float, i32 } @llvm.frexp.f32.i32(float 42.0)
-  %frexp0.0 = extractvalue { float, i32 } %frexp0, 0
-  %frexp1 = call { float, i32 } @llvm.frexp.f32.i32(float %frexp0.0)
-  ret { float, i32 } %frexp1
-}
-
-; CHECK-SPIRV: ExtInst [[#TypeFloat]] [[#]] [[#ExtInstSetId]] frexp [[#]] [[#]]
-; CHECK-SPIRV: ExtInst [[#TypeFloat]] [[#]] [[#ExtInstSetId]] frexp [[#]] [[#]]
-; CHECK-LLVM: %[[Frexp0:[a-z0-9.]+]] = call spir_func float @_Z5frexpfPi(float %x, ptr %[[#]])
-; CHECK-LLVM: call spir_func float @_Z5frexpfPi(float %[[Frexp0]], ptr %[[#]])
-; CHECK-LLVM: ret %[[StrTypeFloatInt]]
 define { float, i32 } @frexp_frexp(float %x) {
   %frexp0 = call { float, i32 } @llvm.frexp.f32.i32(float %x)
   %frexp0.0 = extractvalue { float, i32 } %frexp0, 0
@@ -145,4 +133,15 @@ define { <2 x double>, <2 x i32> } @frexp_frexp_vector(<2 x double> %x) {
   %frexp0.0 = extractvalue { <2 x double>, <2 x i32> } %frexp0, 0
   %frexp1 = call { <2 x double>, <2 x i32> } @llvm.frexp.v2f64.v2i32(<2 x double> %frexp0.0)
   ret { <2 x double>, <2 x i32> } %frexp1
+}
+
+; CHECK-SPIRV: ExtInst [[#TypeFloat]] [[#]] [[#ExtInstSetId]] frexp [[#]] [[#]]
+; CHECK-LLVM: %[[#IntVar:]] = alloca i32
+; CHECK-LLVM: %[[Frexp:[a-z0-9.]+]] = call spir_func float @_Z5frexpfPi(float %x, ptr %[[#IntVar]])
+; CHECK-LLVM: %[[LoadVar:[a-z0-9.]+]] = load i32, ptr %[[#IntVar]]
+; CHECK-LLVM: ret i32 %[[LoadVar]]
+define i32 @frexp_frexp_get_int(float %x) {
+  %frexp0 = call { float, i32 } @llvm.frexp.f32.i32(float %x)
+  %frexp0.0 = extractvalue { float, i32 } %frexp0, 1
+  ret i32 %frexp0.0
 }

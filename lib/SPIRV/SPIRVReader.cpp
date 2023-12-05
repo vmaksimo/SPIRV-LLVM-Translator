@@ -2256,29 +2256,17 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
 
       AllocaInst *Alloca = new AllocaInst(ST, SPIRAS_Private, "", BB);
 
-      // TODO: rework for mixed rt and constant values
-
-      // gep element
-      // store result of argument
-      // repeat
-      // load str
-      // return str
-
+      // get pointer to the element of structure
+      // store the result of argument
       for (size_t I = 0; I < CV.size(); I++) {
-        // if (CV[I] == nullptr) {
         auto *GEP = GetElementPtrInst::Create(
             Constituents[I]->getType(), Alloca, {getInt32(M, I)}, "gep", BB);
         GEP->setIsInBounds(true);
         new StoreInst(Constituents[I], GEP, false, BB);
-        // }
       }
 
-      // if (Alloca->getNumUses()) {
       auto *Load = new LoadInst(ST, Alloca, "load", false, BB);
       return mapValue(BV, Load);
-      // } else {
-      //   Alloca->eraseFromParent();
-      // }
     }
     case internal::OpTypeJointMatrixINTEL:
     case OpTypeCooperativeMatrixKHR:

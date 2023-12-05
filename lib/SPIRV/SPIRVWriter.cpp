@@ -2043,13 +2043,13 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
       if (auto *II = dyn_cast<IntrinsicInst>(RV)) {
         if (II->getIntrinsicID() == Intrinsic::frexp) {
           // create composite type from the return value and second operand
-          auto frexpspv = transValue(RV, BB);
-          SPIRVValue *intvalspv =
-              static_cast<SPIRVExtInst *>(frexpspv)->getArgValues()[1];
-          intvalspv = BM->addLoadInst(intvalspv, {}, BB);
+          auto* FrexpResult = transValue(RV, BB);
+          SPIRVValue *IntFromFrexpResult =
+              static_cast<SPIRVExtInst *>(FrexpResult)->getArgValues()[1];
+          IntFromFrexpResult = BM->addLoadInst(IntFromFrexpResult, {}, BB);
 
-          std::vector<SPIRVId> Operands = {frexpspv->getId(),
-                                           intvalspv->getId()};
+          std::vector<SPIRVId> Operands = {FrexpResult->getId(),
+                                           IntFromFrexpResult->getId()};
           auto Compos = BM->addCompositeConstructInst(transType(RV->getType()),
                                                       Operands, BB);
 
@@ -2212,14 +2212,16 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
   if (auto *Ext = dyn_cast<ExtractValueInst>(V)) {
     if (auto *II = dyn_cast<IntrinsicInst>(Ext->getAggregateOperand())) {
       if (II->getIntrinsicID() == Intrinsic::frexp) {
-        // TODO: Also test the the case for extrancelem 1
         unsigned Idx = Ext->getIndices()[0];
         auto Val = transValue(II, BB);
         if (Idx == 0)
           return mapValue(V, Val);
-        else // Idx = 1
-          return mapValue(V,
-                          static_cast<SPIRVExtInst *>(Val)->getArgValues()[1]);
+        else { // Idx = 1
+          SPIRVValue *IntFromFrexpResult =
+              static_cast<SPIRVExtInst *>(Val)->getArgValues()[1];
+          IntFromFrexpResult = BM->addLoadInst(IntFromFrexpResult, {}, BB);
+          return mapValue(V, IntFromFrexpResult);
+        }
       }
     }
     return mapValue(V, BM->addCompositeExtractInst(
@@ -3550,7 +3552,6 @@ bool LLVMToSPIRVBase::isKnownIntrinsic(Intrinsic::ID Id) {
   case Intrinsic::floor:
   case Intrinsic::fma:
   case Intrinsic::frexp:
-  case Intrinsic::ldexp:
   case Intrinsic::log:
   case Intrinsic::log10:
   case Intrinsic::log2:
@@ -3683,8 +3684,6 @@ static SPIRVWord getBuiltinIdForIntrinsic(Intrinsic::ID IID) {
     return OpenCLLIB::Fma;
   case Intrinsic::frexp:
     return OpenCLLIB::Frexp;
-  case Intrinsic::ldexp:
-    return OpenCLLIB::Ldexp;
   case Intrinsic::log:
     return OpenCLLIB::Log;
   case Intrinsic::log10:
@@ -3859,11 +3858,7 @@ SPIRVValue *LLVMToSPIRVBase::transIntrinsicInst(IntrinsicInst *II,
   case Intrinsic::frexp: {
     if (!checkTypeForSPIRVExtendedInstLowering(II, BM))
       break;
-    SPIRVWord ExtOp = // allowsApproxFunction(II)
-                      //    ? getNativeBuiltinIdForIntrinsic(IID)
-                      //   :
-        getBuiltinIdForIntrinsic(IID);
-
+    SPIRVWord ExtOp = getBuiltinIdForIntrinsic(IID);
 
     SPIRVType *FTy = transType(II->getType()->getStructElementType(0));
     SPIRVTypePointer *ITy = static_cast<SPIRVTypePointer *>(transPointerType(
