@@ -41,19 +41,14 @@ target triple = "spir64-unknown-unknown"
 
 $_ZTS8MyKernel = comdat any
 
-@__spirv_BuiltInWorkgroupId = external dso_local local_unnamed_addr addrspace(1) constant <3 x i64>, align 32
-@__spirv_BuiltInGlobalLinearId = external dso_local local_unnamed_addr addrspace(1) constant i64, align 8
-@__spirv_BuiltInWorkgroupSize = external dso_local local_unnamed_addr addrspace(1) constant <3 x i64>, align 32
-
 ; Function Attrs: convergent mustprogress norecurse nounwind
 define weak_odr dso_local spir_kernel void @_ZTS8MyKernel(ptr addrspace(1) noundef align 4 %_arg_in, ptr addrspace(1) noundef align 4 %_arg_res) local_unnamed_addr #0 comdat !srcloc !5 !kernel_arg_buffer_location !6 !sycl_fixed_targets !7 !sycl_kernel_omit_args !8 !stall_enable !9 {
 entry:
   %myMultTask.i = alloca %"class.sycl::_V1::ext::intel::experimental::task_sequence.3", align 8
-  call void @llvm.lifetime.start.p0(i64 16, ptr nonnull %myMultTask.i) #6
   store i32 0, ptr %myMultTask.i, align 8, !tbaa !10
 ; CHECK-LLVM: %[[TSCreate:[a-z0-9.]+]] = call spir_func target("spirv.TaskSequenceINTEL") @_Z66__spirv_TaskSequenceCreateINTEL_RPU3AS125__spirv_TaskSequenceINTELU13block_pointerFvvEiiii(ptr @_Z4multii, i32 10, i32 -1, i32 17, i32 1)
 ; CHECK-LLVM: store target("spirv.TaskSequenceINTEL") %[[TSCreate]], ptr %id.i
-  %call.i1 = call spir_func noundef target("spirv.TaskSequenceINTEL") @_Z31__spirv_TaskSequenceCreateINTELIN4sycl3_V13ext5intel12experimental13task_sequenceIL_Z4multiiENS2_6oneapi12experimental10propertiesISt5tupleIJNS7_14property_valueINS4_13pipelined_keyEJSt17integral_constantIiLin1EEEEENSA_INS4_16fpga_cluster_keyEJSC_INS4_25fpga_cluster_options_enumELSG_1EEEEENSA_INS4_12balanced_keyEJEEENSA_INS4_23invocation_capacity_keyEJSC_IjLj10EEEEENSA_INS4_21response_capacity_keyEJSC_IjLj17EEEEEEEEEEEiJiiEEmPT_PFT0_DpT1_Ejjit(ptr noundef nonnull @_Z4multii, i32 noundef 10, i32 noundef -1, i32 noundef 17, i16 noundef zeroext 1) #7
+  %call.i1 = call spir_func noundef target("spirv.TaskSequenceINTEL") @_Z31__spirv_TaskSequenceCreateINTELIN4sycl3_V13ext5intel12experimental13task_sequenceIL_Z4multiiENS2_6oneapi12experimental10propertiesISt5tupleIJNS7_14property_valueINS4_13pipelined_keyEJSt17integral_constantIiLin1EEEEENSA_INS4_16fpga_cluster_keyEJSC_INS4_25fpga_cluster_options_enumELSG_1EEEEENSA_INS4_12balanced_keyEJEEENSA_INS4_23invocation_capacity_keyEJSC_IjLj10EEEEENSA_INS4_21response_capacity_keyEJSC_IjLj17EEEEEEEEEEEiJiiEEmPT_PFT0_DpT1_Ejjit(ptr noundef nonnull @_Z4multii, i32 noundef 10, i32 noundef -1, i32 noundef 17, i16 noundef zeroext 1) #3
   %id.i = getelementptr inbounds %"class.sycl::_V1::ext::intel::experimental::task_sequence.3", ptr %myMultTask.i, i64 0, i32 0
   store target("spirv.TaskSequenceINTEL") %call.i1, ptr %id.i, align 8, !tbaa !16
   br label %for.cond.i
@@ -73,7 +68,7 @@ for.body.i:                                       ; preds = %for.cond.i
 ; CHECK-LLVM: %[[#LOAD:]] = load target("spirv.TaskSequenceINTEL"), ptr %id.i
 ; CHECK-LLVM: call spir_func void @_Z30__spirv_TaskSequenceAsyncINTELPU3AS125__spirv_TaskSequenceINTELii(target("spirv.TaskSequenceINTEL") %[[#LOAD]], i32 %[[#]], i32 %[[#]])
   %2 = load target("spirv.TaskSequenceINTEL"), ptr %id.i, align 8, !tbaa !16
-  call spir_func void @_Z30__spirv_TaskSequenceAsyncINTELIJiiEEvmDpT_(target("spirv.TaskSequenceINTEL") noundef %2, i32 noundef %0, i32 noundef %0) #7
+  call spir_func void @_Z30__spirv_TaskSequenceAsyncINTELIJiiEEvmDpT_(target("spirv.TaskSequenceINTEL") noundef %2, i32 noundef %0, i32 noundef %0) #3
   %inc.i = add nuw nsw i32 %i.0.i, 1
   br label %for.cond.i, !llvm.loop !18
 
@@ -89,7 +84,7 @@ for.body10.i:                                     ; preds = %for.cond6.i
 ; CHECK-LLVM: %[[#LOAD1:]] = load target("spirv.TaskSequenceINTEL"), ptr %id.i
 ; CHECK-LLVM: call spir_func i32 @_Z28__spirv_TaskSequenceGetINTELPU3AS125__spirv_TaskSequenceINTEL(target("spirv.TaskSequenceINTEL") %[[#LOAD1]])
   %4 = load target("spirv.TaskSequenceINTEL"), ptr %id.i, align 8, !tbaa !16
-  %call.i5 = call spir_func noundef i32 @_Z28__spirv_TaskSequenceGetINTELIiET_m(target("spirv.TaskSequenceINTEL") noundef %4) #7
+  %call.i5 = call spir_func noundef i32 @_Z28__spirv_TaskSequenceGetINTELIiET_m(target("spirv.TaskSequenceINTEL") noundef %4) #3
   %idxprom11.i = zext nneg i32 %i5.0.i to i64
   %arrayidx12.i = getelementptr inbounds i32, ptr addrspace(1) %_arg_res, i64 %idxprom11.i
   store i32 %call.i5, ptr addrspace(1) %arrayidx12.i, align 4, !tbaa !17
@@ -100,44 +95,33 @@ _ZZ4mainENKUlvE_clEv.exit:                        ; preds = %for.cond6.i
 ; CHECK-LLVM: %[[#LOAD2:]] = load target("spirv.TaskSequenceINTEL"), ptr %id.i
 ; CHECK-LLVM: call spir_func void @_Z32__spirv_TaskSequenceReleaseINTELPU3AS125__spirv_TaskSequenceINTEL(target("spirv.TaskSequenceINTEL") %[[#LOAD2]])
   %5 = load target("spirv.TaskSequenceINTEL"), ptr %id.i, align 8, !tbaa !16
-  call spir_func void @_Z32__spirv_TaskSequenceReleaseINTELm(target("spirv.TaskSequenceINTEL") noundef %5) #7
-  call void @llvm.lifetime.end.p0(i64 16, ptr nonnull %myMultTask.i) #6
+  call spir_func void @_Z32__spirv_TaskSequenceReleaseINTELm(target("spirv.TaskSequenceINTEL") noundef %5) #3
   ret void
 }
 
-; Function Attrs: nocallback nofree nosync nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.lifetime.start.p0(i64 immarg, ptr nocapture) #1
-
 ; Function Attrs: mustprogress norecurse nounwind
-define linkonce_odr dso_local spir_func noundef i32 @_Z4multii(i32 noundef %a, i32 noundef %b) #2 !srcloc !21 {
+define linkonce_odr dso_local spir_func noundef i32 @_Z4multii(i32 noundef %a, i32 noundef %b) #1 !srcloc !21 {
 entry:
   %mul = mul nsw i32 %a, %b
   ret i32 %mul
 }
 
 ; Function Attrs: convergent nounwind
-declare dso_local spir_func noundef target("spirv.TaskSequenceINTEL") @_Z31__spirv_TaskSequenceCreateINTELIN4sycl3_V13ext5intel12experimental13task_sequenceIL_Z4multiiENS2_6oneapi12experimental10propertiesISt5tupleIJNS7_14property_valueINS4_13pipelined_keyEJSt17integral_constantIiLin1EEEEENSA_INS4_16fpga_cluster_keyEJSC_INS4_25fpga_cluster_options_enumELSG_1EEEEENSA_INS4_12balanced_keyEJEEENSA_INS4_23invocation_capacity_keyEJSC_IjLj10EEEEENSA_INS4_21response_capacity_keyEJSC_IjLj17EEEEEEEEEEEiJiiEEmPT_PFT0_DpT1_Ejjit(ptr noundef, i32 noundef, i32 noundef, i32 noundef, i16 noundef zeroext) local_unnamed_addr #3
+declare dso_local spir_func noundef target("spirv.TaskSequenceINTEL") @_Z31__spirv_TaskSequenceCreateINTELIN4sycl3_V13ext5intel12experimental13task_sequenceIL_Z4multiiENS2_6oneapi12experimental10propertiesISt5tupleIJNS7_14property_valueINS4_13pipelined_keyEJSt17integral_constantIiLin1EEEEENSA_INS4_16fpga_cluster_keyEJSC_INS4_25fpga_cluster_options_enumELSG_1EEEEENSA_INS4_12balanced_keyEJEEENSA_INS4_23invocation_capacity_keyEJSC_IjLj10EEEEENSA_INS4_21response_capacity_keyEJSC_IjLj17EEEEEEEEEEEiJiiEEmPT_PFT0_DpT1_Ejjit(ptr noundef, i32 noundef, i32 noundef, i32 noundef, i16 noundef zeroext) local_unnamed_addr #2
 
 ; Function Attrs: convergent nounwind
-declare dso_local spir_func void @_Z30__spirv_TaskSequenceAsyncINTELIJiiEEvmDpT_(target("spirv.TaskSequenceINTEL") noundef, i32 noundef, i32 noundef) local_unnamed_addr #3
+declare dso_local spir_func void @_Z30__spirv_TaskSequenceAsyncINTELIJiiEEvmDpT_(target("spirv.TaskSequenceINTEL") noundef, i32 noundef, i32 noundef) local_unnamed_addr #2
 
 ; Function Attrs: convergent nounwind
-declare dso_local spir_func noundef i32 @_Z28__spirv_TaskSequenceGetINTELIiET_m(target("spirv.TaskSequenceINTEL") noundef) local_unnamed_addr #3
+declare dso_local spir_func noundef i32 @_Z28__spirv_TaskSequenceGetINTELIiET_m(target("spirv.TaskSequenceINTEL") noundef) local_unnamed_addr #2
 
 ; Function Attrs: convergent nounwind
-declare dso_local spir_func void @_Z32__spirv_TaskSequenceReleaseINTELm(target("spirv.TaskSequenceINTEL") noundef) local_unnamed_addr #3
-
-; Function Attrs: nocallback nofree nosync nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.lifetime.end.p0(i64 immarg, ptr nocapture) #1
+declare dso_local spir_func void @_Z32__spirv_TaskSequenceReleaseINTELm(target("spirv.TaskSequenceINTEL") noundef) local_unnamed_addr #2
 
 attributes #0 = { convergent mustprogress norecurse nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "sycl-fpga-cluster"="1" "sycl-module-id"="test.cpp" "sycl-optlevel"="2" "sycl-single-task" "uniform-work-group-size"="true" }
-attributes #1 = { nocallback nofree nosync nounwind willreturn memory(argmem: readwrite) }
-attributes #2 = { mustprogress norecurse nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "sycl-optlevel"="2" }
-attributes #3 = { convergent nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" }
-attributes #4 = { alwaysinline convergent mustprogress norecurse nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "sycl-module-id"="/p/psg/swip/w/bowenxue/source/sycl_workspace/llvm/libdevice/itt_compiler_wrappers.cpp" "sycl-optlevel"="2" }
-attributes #5 = { convergent mustprogress noinline norecurse nounwind optnone "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "sycl-module-id"="/p/psg/swip/w/bowenxue/source/sycl_workspace/llvm/libdevice/itt_stubs.cpp" "sycl-optlevel"="2" }
-attributes #6 = { nounwind }
-attributes #7 = { convergent nounwind }
+attributes #1 = { mustprogress norecurse nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "sycl-optlevel"="2" }
+attributes #2 = { convergent nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" }
+attributes #3 = { convergent nounwind }
 
 !opencl.spir.version = !{!0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0}
 !spirv.Source = !{!1, !1, !1, !1, !1, !1, !1, !1, !1, !1, !1, !1, !1, !1, !1, !1, !1, !1, !1, !1, !1}
@@ -168,10 +152,3 @@ attributes #7 = { convergent nounwind }
 !19 = !{!"llvm.loop.mustprogress"}
 !20 = distinct !{!20, !19}
 !21 = !{i32 5445350}
-!22 = !{i32 442}
-!23 = !{!15, !15, i64 0}
-!24 = !{i32 1030}
-!25 = !{i32 462}
-!26 = !{!27, !27, i64 0}
-!27 = !{!"any pointer", !13, i64 0}
-!28 = !{i32 592}

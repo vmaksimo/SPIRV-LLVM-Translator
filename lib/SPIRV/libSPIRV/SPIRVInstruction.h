@@ -3894,7 +3894,7 @@ protected:
         const_cast<SPIRVTaskSequenceCreateINTELInst *>(this)->getOperand(1));
     const int Pipelined = PipelinedConst->getZExtIntValue();
     SPVErrLog.checkError(Pipelined >= -1, SPIRVEC_InvalidInstruction,
-                         InstName + "\nPipeline must be 32 bit integer with "
+                         InstName + "\nPipeline must be a 32 bit integer with "
                                     "the value bigger or equal to -1.\n");
 
     const int ClusterMode =
