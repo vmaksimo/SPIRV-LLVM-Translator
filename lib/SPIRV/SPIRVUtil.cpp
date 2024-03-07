@@ -2177,8 +2177,9 @@ bool postProcessBuiltinReturningStruct(Function *F) {
       auto *ST = cast<StoreInst>(*(CI->user_begin()));
       std::vector<Type *> ArgTys;
       getFunctionTypeParameterTypes(F->getFunctionType(), ArgTys);
-      ArgTys.insert(ArgTys.begin(),
-                    PointerType::get(F->getReturnType(), SPIRAS_Private));
+      auto AS =
+          cast<PointerType>(ST->getPointerOperandType())->getAddressSpace();
+      ArgTys.insert(ArgTys.begin(), PointerType::get(F->getReturnType(), AS));
       auto *NewF =
           getOrCreateFunction(M, Type::getVoidTy(*Context), ArgTys, Name);
       auto SretAttr = Attribute::get(*Context, Attribute::AttrKind::StructRet,

@@ -111,8 +111,10 @@ public:
 
   void setType(SPIRVType *Ty) {
     Type = Ty;
-    assert(!Ty || !Ty->isTypeVoid() || OpCode == OpFunction || OpCode == internal::OpTaskSequenceGetINTEL);
-    if (Ty && (!Ty->isTypeVoid() || OpCode == OpFunction || OpCode == internal::OpTaskSequenceGetINTEL))
+    assert(!Ty || !Ty->isTypeVoid() || OpCode == OpFunction ||
+           OpCode == internal::OpTaskSequenceGetINTEL);
+    if (Ty && (!Ty->isTypeVoid() || OpCode == OpFunction ||
+               OpCode == internal::OpTaskSequenceGetINTEL))
       setHasType();
     else
       setHasNoType();
