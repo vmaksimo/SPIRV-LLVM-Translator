@@ -6358,6 +6358,18 @@ LLVMToSPIRVBase::transBuiltinToInstWithoutDecoration(Op OC, CallInst *CI,
     return BM->addStoreInst(transValue(CI->getArgOperand(0), BB), APIntInst, {},
                             BB);
   }
+  case internal::OpTaskSequenceGetINTEL: {
+    Type *ResTy = CI->getType();
+    // auto* SPVTy = transType(Type::getVoidTy(CI->getContext()));
+    auto *SPVTy = transType(ResTy);
+    // SPIRVType *SPRetTy = ResTy->isVoidTy() ? nullptr :
+    // transScavengedType(CI); SPIRVType *RetTy = ResTy ? transType(ResTy) :
+    // transScavengedType(CI); return
+    // BM->addInstTemplate(internal::OpTaskSequenceGetINTEL,
+    // {transValue(CI->getArgOperand(0), BB)->getId()}, BB, SPVTy);
+    return BM->addTaskSequenceGetINTELInst(
+        SPVTy, transValue(CI->getArgOperand(0), BB), BB);
+  }
   case OpLoad: {
     std::vector<SPIRVWord> MemoryAccess;
     assert(CI->arg_size() > 0 && "Expected at least 1 operand for OpLoad call");
