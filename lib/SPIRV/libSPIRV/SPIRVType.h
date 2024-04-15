@@ -599,6 +599,9 @@ protected:
     assert(OpCode == OC);
     assert(WordCount == FixedWC);
     assert(ImgTy && ImgTy->isTypeImage());
+    if (Module->isAllowedToUseVersion(VersionNumber::SPIRV_1_6)) {
+      assert(ImgTy && ImgTy->getDescriptor().Dim != SPIRVImageDimKind::DimBuffer);
+    }
   }
 };
 
