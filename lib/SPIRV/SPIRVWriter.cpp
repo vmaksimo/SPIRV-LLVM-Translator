@@ -6513,6 +6513,24 @@ LLVMToSPIRVBase::transBuiltinToInstWithoutDecoration(Op OC, CallInst *CI,
     return BM->addStoreInst(transValue(CI->getArgOperand(0), BB), TaskSeqGet,
                             {}, BB);
   }
+  case internal::OpTaskSequenceAsyncINTEL: {
+    // return BM->addInstTemplate(internal::OpMaskedGatherINTEL, Ops, BB, Ty);
+    // if (CI->hasByValAttr())
+      // BA->addAttr(FunctionParameterAttributeByVal);
+
+    // SPIRVFunction *BF =
+    //   static_cast<SPIRVFunction *>(mapValue(F, BM->addFunction(BFT)));
+    // for (Function::arg_iterator I = F->arg_begin(), E = F->arg_end(); I != E;
+    //    ++I) {
+    // auto ArgNo = I->getArgNo();
+    // SPIRVFunctionParameter *BA = BF->getArgument(ArgNo);
+    // if (I->hasName())
+    //   BM->setName(BA, I->getName().str());
+    // if (I->hasByValAttr())
+    //   BA->addAttr(FunctionParameterAttributeByVal);
+
+    return BM->addInstTemplate(internal::OpTaskSequenceAsyncINTEL, Ops, BB, Ty);
+  }
   case OpLoad: {
     std::vector<SPIRVWord> MemoryAccess;
     assert(CI->arg_size() > 0 && "Expected at least 1 operand for OpLoad call");
