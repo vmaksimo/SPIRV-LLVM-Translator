@@ -415,6 +415,10 @@ SPIRVType *LLVMToSPIRVBase::transType(Type *T) {
   if (T->isPointerTy()) {
     auto *ET = Type::getInt8Ty(T->getContext());
     auto AddrSpc = T->getPointerAddressSpace();
+    if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers)) {
+      return BM->addUntypedPointerKHRType(
+          SPIRSPIRVAddrSpaceMap::map(static_cast<SPIRAddressSpace>(AddrSpc)));
+    }
     return transPointerType(ET, AddrSpc);
   }
 
@@ -814,6 +818,9 @@ SPIRVType *LLVMToSPIRVBase::transSPIRVOpaqueType(StringRef STName,
 SPIRVType *LLVMToSPIRVBase::transScavengedType(Value *V) {
   if (auto *F = dyn_cast<Function>(V)) {
     FunctionType *FnTy = Scavenger->getFunctionType(F);
+    if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers)) {
+      FnTy = F->getFunctionType();
+    }
     SPIRVType *RT = transType(FnTy->getReturnType());
     std::vector<SPIRVType *> PT;
     for (Argument &Arg : F->args()) {

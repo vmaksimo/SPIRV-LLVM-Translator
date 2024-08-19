@@ -276,6 +276,44 @@ private:
   SPIRVId ElemTypeId;
 };
 
+class SPIRVTypeUntypedPointerKHR : public SPIRVType {
+public:
+  // Complete constructor
+  SPIRVTypeUntypedPointerKHR(SPIRVModule *M, SPIRVId TheId,
+                             SPIRVStorageClassKind TheStorageClass)
+      : SPIRVType(M, 3, OpTypeUntypedPointerKHR, TheId),
+        ElemStorageClass(TheStorageClass) {
+    validate();
+  }
+  // Incomplete constructor
+  SPIRVTypeUntypedPointerKHR()
+      : SPIRVType(OpTypeUntypedPointerKHR),
+        ElemStorageClass(StorageClassFunction) {}
+
+  _SPIRV_DCL_ENCDEC
+  SPIRVStorageClassKind getStorageClass() const { return ElemStorageClass; }
+  SPIRVCapVec getRequiredCapability() const override {
+    auto Cap = getVec(CapabilityUntypedPointersKHR, CapabilityAddresses);
+    auto C = getCapability(ElemStorageClass);
+    Cap.insert(Cap.end(), C.begin(), C.end());
+    return Cap;
+  }
+
+  std::optional<ExtensionID> getRequiredExtension() const override {
+    return ExtensionID::SPV_KHR_untyped_pointers;
+  }
+
+protected:
+  // _SPIRV_DEF_ENCDEC2(Id, ElemStorageClass)
+  void validate() const override {
+    SPIRVEntry::validate();
+    assert(isValid(ElemStorageClass));
+  }
+
+private:
+  SPIRVStorageClassKind ElemStorageClass; // Storage Class
+};
+
 class SPIRVTypeForwardPointer : public SPIRVEntryNoId<OpTypeForwardPointer> {
 public:
   SPIRVTypeForwardPointer(SPIRVModule *M, SPIRVId PointerId,

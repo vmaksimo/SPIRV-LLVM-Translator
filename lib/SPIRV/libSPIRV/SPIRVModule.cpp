@@ -81,7 +81,8 @@ public:
       : SPIRVModule(), NextId(1), SPIRVVersion(VersionNumber::SPIRV_1_0),
         GeneratorId(SPIRVGEN_KhronosLLVMSPIRVTranslator), GeneratorVer(0),
         InstSchema(SPIRVISCH_Default), SrcLang(SourceLanguageOpenCL_C),
-        SrcLangVer(102000), BoolTy(nullptr), VoidTy(nullptr) {
+        SrcLangVer(102000), BoolTy(nullptr), VoidTy(nullptr),
+        UntypedPtrTy(nullptr) {
     AddrModel = sizeof(size_t) == 32 ? AddressingModelPhysical32
                                      : AddressingModelPhysical64;
     // OpenCL memory model requires Kernel capability
@@ -252,6 +253,8 @@ public:
   SPIRVTypeInt *addIntegerType(unsigned BitWidth) override;
   SPIRVTypeOpaque *addOpaqueType(const std::string &) override;
   SPIRVTypePointer *addPointerType(SPIRVStorageClassKind, SPIRVType *) override;
+  SPIRVTypeUntypedPointerKHR *
+      addUntypedPointerKHRType(SPIRVStorageClassKind) override;
   SPIRVTypeImage *addImageType(SPIRVType *,
                                const SPIRVTypeImageDescriptor &) override;
   SPIRVTypeImage *addImageType(SPIRVType *, const SPIRVTypeImageDescriptor &,
@@ -563,6 +566,7 @@ private:
   SPIRVUnknownStructFieldMap UnknownStructFieldMap;
   SPIRVTypeBool *BoolTy;
   SPIRVTypeVoid *VoidTy;
+  SPIRVTypeUntypedPointerKHR *UntypedPtrTy;
   SmallDenseMap<unsigned, SPIRVTypeInt *, 4> IntTypeMap;
   SmallDenseMap<unsigned, SPIRVTypeFloat *, 4> FloatTypeMap;
   SmallDenseMap<std::pair<unsigned, SPIRVType *>, SPIRVTypePointer *, 4>
@@ -1012,6 +1016,17 @@ SPIRVModuleImpl::addPointerType(SPIRVStorageClassKind StorageClass,
   auto *Ty = new SPIRVTypePointer(this, getId(), StorageClass, ElementType);
   PointerTypeMap[Desc] = Ty;
   return addType(Ty);
+}
+
+SPIRVTypeUntypedPointerKHR *
+SPIRVModuleImpl::addUntypedPointerKHRType(SPIRVStorageClassKind StorageClass) {
+  SPIRVTypeUntypedPointerKHR *Ty = UntypedPtrTy;
+  if (!Ty) {
+    Ty = addType(new SPIRVTypeUntypedPointerKHR(this, getId(), StorageClass));
+    UntypedPtrTy = Ty;
+  }
+
+  return Ty;
 }
 
 SPIRVTypeFunction *SPIRVModuleImpl::addFunctionType(
@@ -1930,6 +1945,16 @@ class TopologicalSort {
           // cyclic dependency by inserting a forward declaration of that
           // pointer.
           SPIRVTypePointer *Ptr = static_cast<SPIRVTypePointer *>(E);
+          SPIRVModule *BM = E->getModule();
+          ForwardPointerSet.insert(BM->add(new SPIRVTypeForwardPointer(
+              BM, Ptr->getId(), Ptr->getPointerStorageClass())));
+          return false;
+        } else if (E->getOpCode() == OpTypeUntypedPointerKHR) {
+          // If we have a pointer in the recursive chain, we can break the
+          // cyclic dependency by inserting a forward declaration of that
+          // pointer.
+          SPIRVTypeUntypedPointerKHR *Ptr =
+              static_cast<SPIRVTypeUntypedPointerKHR *>(E);
           SPIRVModule *BM = E->getModule();
           ForwardPointerSet.insert(BM->add(new SPIRVTypeForwardPointer(
               BM, Ptr->getId(), Ptr->getPointerStorageClass())));
