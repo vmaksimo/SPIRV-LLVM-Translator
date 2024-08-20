@@ -81,8 +81,7 @@ public:
       : SPIRVModule(), NextId(1), SPIRVVersion(VersionNumber::SPIRV_1_0),
         GeneratorId(SPIRVGEN_KhronosLLVMSPIRVTranslator), GeneratorVer(0),
         InstSchema(SPIRVISCH_Default), SrcLang(SourceLanguageOpenCL_C),
-        SrcLangVer(102000), BoolTy(nullptr), VoidTy(nullptr),
-        UntypedPtrTy(nullptr) {
+        SrcLangVer(102000), BoolTy(nullptr), VoidTy(nullptr) {
     AddrModel = sizeof(size_t) == 32 ? AddressingModelPhysical32
                                      : AddressingModelPhysical64;
     // OpenCL memory model requires Kernel capability
@@ -566,7 +565,8 @@ private:
   SPIRVUnknownStructFieldMap UnknownStructFieldMap;
   SPIRVTypeBool *BoolTy;
   SPIRVTypeVoid *VoidTy;
-  SPIRVTypeUntypedPointerKHR *UntypedPtrTy;
+  SmallDenseMap<SPIRVStorageClassKind, SPIRVTypeUntypedPointerKHR *>
+      UntypedPtrTyMap;
   SmallDenseMap<unsigned, SPIRVTypeInt *, 4> IntTypeMap;
   SmallDenseMap<unsigned, SPIRVTypeFloat *, 4> FloatTypeMap;
   SmallDenseMap<std::pair<unsigned, SPIRVType *>, SPIRVTypePointer *, 4>
@@ -1020,13 +1020,19 @@ SPIRVModuleImpl::addPointerType(SPIRVStorageClassKind StorageClass,
 
 SPIRVTypeUntypedPointerKHR *
 SPIRVModuleImpl::addUntypedPointerKHRType(SPIRVStorageClassKind StorageClass) {
-  SPIRVTypeUntypedPointerKHR *Ty = UntypedPtrTy;
-  if (!Ty) {
-    Ty = addType(new SPIRVTypeUntypedPointerKHR(this, getId(), StorageClass));
-    UntypedPtrTy = Ty;
-  }
+  auto Loc = UntypedPtrTyMap.find(StorageClass);
+  if (Loc != UntypedPtrTyMap.end())
+    return Loc->second;
 
-  return Ty;
+  // SPIRVTypeUntypedPointerKHR *Ty = UntypedPtrTy;
+  // if (!Ty) {
+  //   Ty = addType(new SPIRVTypeUntypedPointerKHR(this, getId(), StorageClass));
+  //   UntypedPtrTy = Ty;
+  // }
+  // return Ty;
+  auto *Ty = new SPIRVTypeUntypedPointerKHR(this, getId(), StorageClass);
+  UntypedPtrTyMap[StorageClass] = Ty;
+  return addType(Ty);
 }
 
 SPIRVTypeFunction *SPIRVModuleImpl::addFunctionType(
@@ -1858,6 +1864,22 @@ SPIRVInstruction *SPIRVModuleImpl::addVariable(
     SPIRVType *Type, bool IsConstant, SPIRVLinkageTypeKind LinkageTy,
     SPIRVValue *Initializer, const std::string &Name,
     SPIRVStorageClassKind StorageClass, SPIRVBasicBlock *BB) {
+
+  if (isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers)) {
+    SPIRVType *Ty = addUntypedPointerKHRType(StorageClass);
+    SPIRVUntypedVariableKHR *Variable =
+        new SPIRVUntypedVariableKHR(Ty, getId(), Type->getPointerElementType(),
+                                    Initializer, Name, StorageClass, BB, this);
+    if (BB)
+      return addInstruction(Variable, BB, BB->getVariableInsertionPoint());
+
+    add(Variable);
+    if (LinkageTy != internal::LinkageTypeInternal)
+      Variable->setLinkageType(LinkageTy);
+    Variable->setIsConstant(IsConstant);
+    return Variable;
+  }
+
   SPIRVVariable *Variable = new SPIRVVariable(Type, getId(), Initializer, Name,
                                               StorageClass, BB, this);
   if (BB)

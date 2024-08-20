@@ -1601,6 +1601,82 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
 
     return Res;
   }
+  case OpUntypedVariableKHR: {
+    auto *BVar = static_cast<SPIRVUntypedVariableKHR *>(BV);
+    auto *PreTransTy = BVar->getType();//->getPointerElementType();
+    auto *Ty = transType(PreTransTy);
+    bool IsConst = BVar->isConstant();
+    llvm::GlobalValue::LinkageTypes LinkageTy = transLinkageType(BVar);
+    SPIRVStorageClassKind BS = BVar->getStorageClass();
+    SPIRVValue *Init = BVar->getInitializer();
+
+    if (PreTransTy->isTypeSampler() && BS == StorageClassUniformConstant) {
+      // Skip generating llvm code during translation of a variable definition,
+      // generate code only for its uses
+      if (!BB)
+        return nullptr;
+
+      assert(Init && "UniformConstant OpVariable with sampler type must have "
+                     "an initializer!");
+      return transValue(Init, F, BB);
+    }
+
+    if (BS == StorageClassFunction && !Init) {
+      assert(BB && "Invalid BB");
+      return mapValue(BV, new AllocaInst(Ty, 0, BV->getName(), BB));
+    }
+
+    SPIRAddressSpace AddrSpace;
+    bool IsVectorCompute =
+        BVar->hasDecorate(DecorationVectorComputeVariableINTEL);
+    Constant *Initializer = nullptr;
+    if (IsVectorCompute) {
+      AddrSpace = VectorComputeUtil::getVCGlobalVarAddressSpace(BS);
+      Initializer = UndefValue::get(Ty);
+    } else
+      AddrSpace = SPIRSPIRVAddrSpaceMap::rmap(BS);
+    // Force SPIRV BuiltIn variable's name to be __spirv_BuiltInXXXX.
+    // No matter what BV's linkage name is.
+    SPIRVBuiltinVariableKind BVKind;
+    if (BVar->isBuiltin(&BVKind))
+      BV->setName(prefixSPIRVName(SPIRVBuiltInNameMap::map(BVKind)));
+    auto *LVar = new GlobalVariable(*M, Ty, IsConst, LinkageTy,
+                                    /*Initializer=*/nullptr, BV->getName(), 0,
+                                    GlobalVariable::NotThreadLocal, AddrSpace);
+    auto *Res = mapValue(BV, LVar);
+    if (Init)
+      Initializer = dyn_cast<Constant>(transValue(Init, F, BB, false));
+    else if (LinkageTy == GlobalValue::CommonLinkage)
+      // In LLVM, variables with common linkage type must be initialized to 0.
+      Initializer = Constant::getNullValue(Ty);
+    else if (BS == SPIRVStorageClassKind::StorageClassWorkgroup &&
+             LinkageTy != GlobalValue::ExternalLinkage)
+      Initializer = dyn_cast<Constant>(UndefValue::get(Ty));
+    else if ((LinkageTy != GlobalValue::ExternalLinkage) &&
+             (BS == SPIRVStorageClassKind::StorageClassCrossWorkgroup))
+      Initializer = Constant::getNullValue(Ty);
+
+    LVar->setUnnamedAddr((IsConst && Ty->isArrayTy() &&
+                          Ty->getArrayElementType()->isIntegerTy(8))
+                             ? GlobalValue::UnnamedAddr::Global
+                             : GlobalValue::UnnamedAddr::None);
+    LVar->setInitializer(Initializer);
+
+    if (IsVectorCompute) {
+      LVar->addAttribute(kVCMetadata::VCGlobalVariable);
+      SPIRVWord Offset;
+      if (BVar->hasDecorate(DecorationGlobalVariableOffsetINTEL, 0, &Offset))
+        LVar->addAttribute(kVCMetadata::VCByteOffset, utostr(Offset));
+      if (BVar->hasDecorate(DecorationVolatile))
+        LVar->addAttribute(kVCMetadata::VCVolatile);
+      auto SEVAttr = translateSEVMetadata(BVar, LVar->getContext());
+      if (SEVAttr)
+        LVar->addAttribute(SEVAttr.value().getKindAsString(),
+                           SEVAttr.value().getValueAsString());
+    }
+
+    return Res;
+  }
 
   case OpFunctionParameter: {
     auto *BA = static_cast<SPIRVFunctionParameter *>(BV);

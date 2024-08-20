@@ -1542,6 +1542,7 @@ SPIRVValue *LLVMToSPIRVBase::transUnaryInst(UnaryInstruction *U,
   }
 
   Op BOC = OpNop;
+  SPIRVType *TransTy = transScavengedType(U);
   if (auto *Cast = dyn_cast<AddrSpaceCastInst>(U)) {
     const auto SrcAddrSpace = Cast->getSrcTy()->getPointerAddressSpace();
     const auto DestAddrSpace = Cast->getDestTy()->getPointerAddressSpace();
@@ -1593,13 +1594,18 @@ SPIRVValue *LLVMToSPIRVBase::transUnaryInst(UnaryInstruction *U,
           "Casts from generic address space to constant are illegal\n");
       BOC = OpGenericCastToPtr;
     }
+    if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers))
+      TransTy = BM->addUntypedPointerKHRType(SPIRSPIRVAddrSpaceMap::map(
+          static_cast<SPIRAddressSpace>(DestAddrSpace)));
+    // else
+    //   TransTy = 
+
   } else {
     auto OpCode = U->getOpcode();
     BOC = OpCodeMap::map(OpCode);
   }
 
   auto *Op = transValue(U->getOperand(0), BB, true, FuncTransMode::Pointer);
-  SPIRVType *TransTy = transScavengedType(U);
   return BM->addUnaryInst(transBoolOpCode(Op, BOC), TransTy, Op, BB);
 }
 
@@ -2241,6 +2247,11 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
 
   if (AllocaInst *Alc = dyn_cast<AllocaInst>(V)) {
     SPIRVType *TranslatedTy = transScavengedType(V);
+    // if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers)) {
+    //   TranslatedTy = BM->addUntypedPointerKHRType(
+    //       SPIRSPIRVAddrSpaceMap::map(static_cast<SPIRAddressSpace>(
+    //           V->getType()->getPointerAddressSpace())));
+    // }
     if (Alc->isArrayAllocation()) {
       SPIRVValue *Length = transValue(Alc->getArraySize(), BB);
       assert(Length && "Couldn't translate array size!");
@@ -2285,6 +2296,9 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
         VarTy, false, spv::internal::LinkageTypeInternal, nullptr,
         Alc->getName().str(), StorageClassFunction, BB);
     if (V->getType()->getPointerAddressSpace() == SPIRAS_Generic) {
+      // if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers)) {
+      //   TranslatedTy = BM->addUntypedPointerKHRType(StorageClassFunction);
+      // }
       SPIRVValue *Cast =
           BM->addUnaryInst(OpPtrCastToGeneric, TranslatedTy, Var, BB);
       return mapValue(V, Cast);

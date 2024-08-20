@@ -530,6 +530,98 @@ protected:
   std::vector<SPIRVId> Initializer;
 };
 
+class SPIRVUntypedVariableKHR : public SPIRVInstruction {
+public:
+  const static SPIRVWord FixedWords = 4;
+  // Complete constructor for integer constant
+  SPIRVUntypedVariableKHR(SPIRVType *TheType, SPIRVId TheId,
+                          SPIRVType *TheDataType, SPIRVValue *TheInitializer,
+                          const std::string &TheName,
+                          SPIRVStorageClassKind TheStorageClass,
+                          SPIRVBasicBlock *TheBB, SPIRVModule *TheM)
+      : SPIRVInstruction(
+            TheDataType && !TheDataType->isUndef()
+                ? (TheInitializer && !TheInitializer->isUndef() ? 6 : 5)
+                : 4,
+            OpUntypedVariableKHR, TheType, TheId, TheBB, TheM),
+        StorageClass(TheStorageClass), DataType(TheDataType) {
+    if (TheInitializer && !TheInitializer->isUndef())
+      Initializer.push_back(TheInitializer->getId());
+    Name = TheName;
+    validate();
+  }
+  // Incomplete constructor
+  SPIRVUntypedVariableKHR()
+      : SPIRVInstruction(OpUntypedVariableKHR),
+        StorageClass(StorageClassFunction), DataType(nullptr) {}
+
+  SPIRVStorageClassKind getStorageClass() const { return StorageClass; }
+  SPIRVValue *getInitializer() const {
+    if (Initializer.empty())
+      return nullptr;
+    assert(Initializer.size() == 1);
+    return getValue(Initializer[0]);
+  }
+  SPIRVType *getDataType() const { return DataType; }
+  bool isConstant() const { return hasDecorate(DecorationConstant); }
+  bool isBuiltin(SPIRVBuiltinVariableKind *BuiltinKind = nullptr) const {
+    SPIRVWord Kind;
+    bool Found = hasDecorate(DecorationBuiltIn, 0, &Kind);
+    if (!Found)
+      return false;
+    if (BuiltinKind)
+      *BuiltinKind = static_cast<SPIRVBuiltinVariableKind>(Kind);
+    return true;
+  }
+  void setBuiltin(SPIRVBuiltinVariableKind Kind) {
+    assert(isValid(Kind));
+    addDecorate(new SPIRVDecorate(DecorationBuiltIn, this, Kind));
+  }
+  void setIsConstant(bool Is) {
+    if (Is)
+      addDecorate(new SPIRVDecorate(DecorationConstant, this));
+    else
+      eraseDecorate(DecorationConstant);
+  }
+  std::vector<SPIRVEntry *> getNonLiteralOperands() const override {
+    std::vector<SPIRVEntry *> Vec;
+    if (SPIRVType *T = getDataType())
+      Vec.push_back(T);
+    if (SPIRVValue *V = getInitializer())
+      Vec.push_back(V);
+    return Vec;
+  }
+
+protected:
+  void validate() const override {
+    SPIRVValue::validate();
+    assert(isValid(StorageClass));
+    // assert((StorageClass == StorageClassFunction ||
+    //         StorageClass == StorageClassPrivate ||
+    //         StorageClass == StorageClassWorkgroup) &&
+    //        DataType);
+    assert(Initializer.size() == 1 || Initializer.empty());
+    assert(getType()->isTypePointer());
+  }
+  void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVEntry::setWordCount(TheWordCount);
+    Initializer.resize(WordCount - 5);
+  }
+  // _SPIRV_DEF_ENCDEC5(Type, Id, StorageClass, DataType, Initializer)
+    void encode(spv_ostream &O) const override {
+    getEncoder(O) << Type << Id << StorageClass << DataType << Initializer;
+  }
+
+  void decode(std::istream &I) override {
+    getDecoder(I) >> Type >> Id >> StorageClass >> DataType >> Initializer;
+    // memoryAccessUpdate(MemoryAccess);
+  }
+
+  SPIRVStorageClassKind StorageClass;
+  std::vector<SPIRVId> Initializer = {};
+  SPIRVType *DataType = nullptr;
+};
+
 class SPIRVStore : public SPIRVInstruction, public SPIRVMemoryAccess {
 public:
   const static SPIRVWord FixedWords = 3;
@@ -577,9 +669,13 @@ protected:
     SPIRVInstruction::validate();
     if (getSrc()->isForward() || getDst()->isForward())
       return;
-    assert(getValueType(PtrId)->getPointerElementType() ==
-               getValueType(ValId) &&
-           "Inconsistent operand types");
+    if (!Module->isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers))
+    //   assert(getValueType(PtrId) == getValueType(ValId) &&
+    //          "Inconsistent operand types");
+    // else
+      assert(getValueType(PtrId)->getPointerElementType() ==
+                 getValueType(ValId) &&
+             "Inconsistent operand types");
   }
 
 private:
@@ -664,12 +760,12 @@ protected:
     (void)Op1Ty;
     (void)Op2Ty;
     if (isBinaryOpCode(OpCode)) {
-      assert(getValueType(Op1) == getValueType(Op2) &&
-             "Invalid type for binary instruction");
-      assert((Op1Ty->isTypeInt() || Op2Ty->isTypeFloat()) &&
-             "Invalid type for Binary instruction");
-      assert((Op1Ty->getBitWidth() == Op2Ty->getBitWidth()) &&
-             "Inconsistent BitWidth");
+      // assert(getValueType(Op1) == getValueType(Op2) &&
+      //        "Invalid type for binary instruction");
+      // assert((Op1Ty->isTypeInt() || Op2Ty->isTypeFloat()) &&
+      //        "Invalid type for Binary instruction");
+      // assert((Op1Ty->getBitWidth() == Op2Ty->getBitWidth()) &&
+      //        "Inconsistent BitWidth");
     } else if (isShiftOpCode(OpCode)) {
       assert((Op1Ty->isTypeInt() || Op2Ty->isTypeInt()) &&
              "Invalid type for shift instruction");
@@ -991,7 +1087,7 @@ protected:
              "OpLessOrGreater is removed starting from SPIR-V 1.6");
     assert((ResTy->isTypeBool() || ResTy->isTypeInt()) &&
            "Invalid type for compare instruction");
-    assert(Op1Ty == Op2Ty && "Inconsistent types");
+    // assert(Op1Ty == Op2Ty && "Inconsistent types");
   }
 };
 

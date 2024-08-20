@@ -110,6 +110,7 @@
 ; RUN: llvm-spirv %t.bc -spirv-ext=+all -o %t.spv
 ; RUN: llvm-spirv %t.spv --to-text -o %t.spt
 ; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: spirv-val %t.spv
 
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM
