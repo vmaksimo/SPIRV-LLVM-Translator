@@ -191,6 +191,10 @@ bool SPIRVType::isTypePointer() const {
   return OpCode == OpTypePointer || OpCode == OpTypeUntypedPointerKHR;
 }
 
+bool SPIRVType::isTypeUntypedPointerKHR() const {
+  return OpCode == OpTypeUntypedPointerKHR;
+}
+
 bool SPIRVType::isTypeOpaque() const { return OpCode == OpTypeOpaque; }
 
 bool SPIRVType::isTypeEvent() const { return OpCode == OpTypeEvent; }

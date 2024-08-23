@@ -563,6 +563,7 @@ public:
     return getValue(Initializer[0]);
   }
   SPIRVType *getDataType() const { return DataType; }
+  bool hasDataType() const {return DataType; }
   bool isConstant() const { return hasDecorate(DecorationConstant); }
   bool isBuiltin(SPIRVBuiltinVariableKind *BuiltinKind = nullptr) const {
     SPIRVWord Kind;
@@ -688,12 +689,13 @@ class SPIRVLoad : public SPIRVInstruction, public SPIRVMemoryAccess {
 public:
   const static SPIRVWord FixedWords = 4;
   // Complete constructor
-  SPIRVLoad(SPIRVId TheId, SPIRVId PointerId,
+  SPIRVLoad(SPIRVId TheId, SPIRVId PointerId, SPIRVType* TheType,
             const std::vector<SPIRVWord> &TheMemoryAccess,
             SPIRVBasicBlock *TheBB)
       : SPIRVInstruction(
             FixedWords + TheMemoryAccess.size(), OpLoad,
-            TheBB->getValueType(PointerId)->getPointerElementType(), TheId,
+            // TheBB->getValueType(PointerId)->getPointerElementType(), TheId,
+            TheType, TheId,
             TheBB),
         SPIRVMemoryAccess(TheMemoryAccess), PtrId(PointerId),
         MemoryAccess(TheMemoryAccess) {
@@ -724,7 +726,8 @@ protected:
   void validate() const override {
     SPIRVInstruction::validate();
     assert((getValue(PtrId)->isForward() ||
-            Type == getValueType(PtrId)->getPointerElementType()) &&
+            Type == getValueType(PtrId)->getPointerElementType() ||
+            getValueType(PtrId)->isTypeUntypedPointerKHR()) &&
            "Inconsistent types");
   }
 
@@ -2479,8 +2482,10 @@ protected:
     // Signedness of 1, its sign bit cannot be set.
     if (!(ObjType->getPointerElementType()->isTypeVoid() ||
           // (void *) is i8* in LLVM IR
-          ObjType->getPointerElementType()->isTypeInt(8)) ||
+          ObjType->getPointerElementType()->isTypeInt(8) ||
+          ObjType->getPointerElementType()->isTypeUntypedPointerKHR()) ||
         !Module->hasCapability(CapabilityAddresses))
+      // !ObjType->isTypeUntypedPointerKHR())
       assert(Size == 0 && "Size must be 0");
   }
   _SPIRV_DEF_ENCDEC2(Object, Size)

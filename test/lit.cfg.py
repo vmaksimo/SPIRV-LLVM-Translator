@@ -57,6 +57,13 @@ if not config.spirv_skip_debug_info_tests:
     tools.extend(['llc', 'llvm-dwarfdump', 'llvm-objdump', 'llvm-readelf', 'llvm-readobj'])
 
 llvm_config.add_tool_substitutions(tools, tool_dirs)
+new_substitutions = []
+for (name, command) in config.substitutions:
+    if 'llvm-spirv' in command:
+        command += ' --spirv-ext=+SPV_KHR_untyped_pointers'
+    new_substitutions.append((name, command))
+
+config.substitutions = new_substitutions
 
 using_spirv_tools = False
 

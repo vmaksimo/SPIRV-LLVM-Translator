@@ -834,7 +834,12 @@ SPIRVType *LLVMToSPIRVBase::transScavengedType(Value *V) {
 
     return getSPIRVFunctionType(RT, PT);
   }
-
+  if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers)) {
+    if (V->getType()->isPointerTy()) {
+      if (!isa<ConstantPointerNull>(V) && !isa<UndefValue>(V))
+        return BM->addUntypedPointerKHRType(StorageClassFunction);
+    }
+  }
   return transType(Scavenger->getScavengedType(V));
 }
 

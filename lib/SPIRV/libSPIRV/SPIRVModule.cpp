@@ -1452,8 +1452,28 @@ SPIRVInstruction *
 SPIRVModuleImpl::addLoadInst(SPIRVValue *Source,
                              const std::vector<SPIRVWord> &TheMemoryAccess,
                              SPIRVBasicBlock *BB) {
+  SPIRVType *Ty = nullptr; // Source->getPointerElementType();
+  if (isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers)) {
+    if (Source->getType()->isTypeUntypedPointerKHR()) {
+      // Ty = Source->isTypeUntypedPointerKHR()
+      if (static_cast<SPIRVUntypedVariableKHR *>(Source)->hasDataType()) {
+        Ty = static_cast<SPIRVUntypedVariableKHR *>(Source)->getDataType();
+        //  : Source->getType()->getPointerElementType();
+        if (Ty->isTypePointer())
+          Ty = Ty->getPointerElementType();
+      } else {
+        Ty = Source->getType();
+      }
+    }
+  } else {
+    Ty = Source->getType()->getPointerElementType();
+  }
+  // TheBB->getValueType(PointerId)->isTypeUntypedPointerKHR()
+  //             ? static_cast<SPIRVUntypedVariableKHR *>(
+  //                   TheBB->getValue(PointerId))
+  //                   ->getDataType()->->getPointerElementType()
   return addInstruction(
-      new SPIRVLoad(getId(), Source->getId(), TheMemoryAccess, BB), BB);
+      new SPIRVLoad(getId(), Source->getId(), Ty, TheMemoryAccess, BB), BB);
 }
 
 SPIRVInstruction *
@@ -1971,7 +1991,8 @@ class TopologicalSort {
           ForwardPointerSet.insert(BM->add(new SPIRVTypeForwardPointer(
               BM, Ptr->getId(), Ptr->getPointerStorageClass())));
           return false;
-        } else if (E->getOpCode() == OpTypeUntypedPointerKHR) {
+        }
+        else if (E->getOpCode() == OpTypeUntypedPointerKHR) {
           // If we have a pointer in the recursive chain, we can break the
           // cyclic dependency by inserting a forward declaration of that
           // pointer.
