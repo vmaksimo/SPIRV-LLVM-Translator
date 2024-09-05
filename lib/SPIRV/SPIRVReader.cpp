@@ -1530,7 +1530,12 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
   case OpVariable:
   case OpUntypedVariableKHR: {
     auto *BVar = static_cast<SPIRVVariableBase *>(BV);
-    auto *PreTransTy = BVar->getType()->getPointerElementType();
+    SPIRVType* PreTransTy = BVar->getType()->getPointerElementType();
+    if (BVar->getType()->isTypeUntypedPointerKHR()) {
+      auto *UntypedVar = static_cast<SPIRVUntypedVariableKHR *>(BVar);
+      if (SPIRVType* DT = UntypedVar->getDataType())
+        PreTransTy = DT;
+    }
     auto *Ty = transType(PreTransTy);
     bool IsConst = BVar->isConstant();
     llvm::GlobalValue::LinkageTypes LinkageTy = transLinkageType(BVar);

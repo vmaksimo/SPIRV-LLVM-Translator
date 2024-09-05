@@ -456,9 +456,9 @@ public:
                                      SPIRVBasicBlock *BB) override;
   SPIRVInstruction *addUnaryInst(Op, SPIRVType *, SPIRVValue *,
                                  SPIRVBasicBlock *) override;
-  SPIRVInstruction *addVariable(SPIRVType *, bool, SPIRVLinkageTypeKind,
-                                SPIRVValue *, const std::string &,
-                                SPIRVStorageClassKind,
+  SPIRVInstruction *addVariable(SPIRVType *, SPIRVType *, bool,
+                                SPIRVLinkageTypeKind, SPIRVValue *,
+                                const std::string &, SPIRVStorageClassKind,
                                 SPIRVBasicBlock *) override;
   SPIRVValue *addVectorShuffleInst(SPIRVType *Type, SPIRVValue *Vec1,
                                    SPIRVValue *Vec2,
@@ -1856,14 +1856,16 @@ SPIRVModuleImpl::getOrAddAliasScopeListDeclINTELInst(std::vector<SPIRVId> Args,
   return getOrAddMemAliasingINTELInst<SPIRVAliasScopeListDeclINTEL>(Args, MD);
 }
 
-SPIRVInstruction *SPIRVModuleImpl::addVariable(
-    SPIRVType *Type, bool IsConstant, SPIRVLinkageTypeKind LinkageTy,
-    SPIRVValue *Initializer, const std::string &Name,
-    SPIRVStorageClassKind StorageClass, SPIRVBasicBlock *BB) {
+SPIRVInstruction *
+SPIRVModuleImpl::addVariable(SPIRVType *Type, SPIRVType *AllocType,
+                             bool IsConstant, SPIRVLinkageTypeKind LinkageTy,
+                             SPIRVValue *Initializer, const std::string &Name,
+                             SPIRVStorageClassKind StorageClass,
+                             SPIRVBasicBlock *BB) {
   SPIRVVariableBase *Variable = nullptr;
   if (Type->isTypeUntypedPointerKHR()) {
-    Variable = new SPIRVUntypedVariableKHR(Type, getId(), nullptr, Initializer,
-                                           Name, StorageClass, BB, this);
+    Variable = new SPIRVUntypedVariableKHR(
+        Type, getId(), AllocType, Initializer, Name, StorageClass, BB, this);
   } else {
     Variable = new SPIRVVariable(Type, getId(), Initializer, Name, StorageClass,
                                  BB, this);

@@ -558,13 +558,18 @@ public:
             TheStorageClass, TheBB, TheM,
             TheDataType && !TheDataType->isUndef()
                 ? (TheInitializer && !TheInitializer->isUndef() ? 6 : 5)
-                : 4),
-        DataType(TheDataType) {
+                : 4) {
+    if (TheDataType && !TheDataType->isUndef())
+      DataType.push_back(TheDataType->getId());
     validate();
   }
-  SPIRVUntypedVariableKHR()
-      : SPIRVVariableBase(OpUntypedVariableKHR), DataType(nullptr) {}
-  SPIRVType *getDataType() const { return DataType; }
+  SPIRVUntypedVariableKHR() : SPIRVVariableBase(OpUntypedVariableKHR) {}
+  SPIRVType *getDataType() const {
+    if (DataType.empty())
+      return nullptr;
+    assert(DataType.size() == 1);
+    return get<SPIRVType>(DataType[0]);
+  }
   // bool hasDataType() const { return DataType; }
   std::vector<SPIRVEntry *> getNonLiteralOperands() const override {
     std::vector<SPIRVEntry *> Vec;
@@ -582,27 +587,20 @@ public:
   }
 
 protected:
+  void validate() const override {
+    SPIRVVariableBase::validate();
+    assert(DataType.size() == 1 || DataType.empty());
+  }
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
-    if (TheWordCount >= 5)
-      Initializer.resize(WordCount - 5);
+    if (TheWordCount > 4)
+      DataType.resize(1);
+    if (TheWordCount > 5)
+      Initializer.resize(1);
   }
-  void encode(spv_ostream &O) const override {
-    getEncoder(O) << Type << Id << StorageClass;
-    if (getDataType())
-      getEncoder(O) << DataType;
-    if (getInitializer())
-      getEncoder(O) << Initializer;
-  }
+  _SPIRV_DEF_ENCDEC5(Type, Id, StorageClass, DataType, Initializer)
 
-  void decode(std::istream &I) override {
-    getDecoder(I) >> Type >> Id >> StorageClass;
-    if (getDataType())
-      getDecoder(I) >> DataType;
-    if (getInitializer())
-      getDecoder(I) >> Initializer;
-  }
-  SPIRVType *DataType = nullptr;
+  std::vector<SPIRVId> DataType;
 };
 
 class SPIRVStore : public SPIRVInstruction, public SPIRVMemoryAccess {
