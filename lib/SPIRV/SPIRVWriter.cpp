@@ -2536,6 +2536,13 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
         PtrTy = transType(TPT->getElementType());
         Ops = getVec(PtrTy->getId(), Ops);
       }
+    } else if (transValue(PointerOperand, BB)
+                   ->getType()
+                   ->isTypeUntypedPointerKHR() &&
+               TranslatedTy != BM->getValueType(Ops[0])) {
+      Ops[0] =
+          BM->addUnaryInst(OpBitcast, TranslatedTy, BM->getValue(Ops[0]), BB)
+              ->getId();
     }
     return mapValue(
         V, BM->addPtrAccessChainInst(TranslatedTy, Ops, BB, GEP->isInBounds()));
