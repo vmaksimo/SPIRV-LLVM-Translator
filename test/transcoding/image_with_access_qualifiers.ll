@@ -1,4 +1,10 @@
 ; RUN: llvm-as %s -o %t.bc
+; RUN: llvm-spirv %t.bc -spirv-text -o %t.txt
+; RUN: FileCheck < %t.txt %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv %t.bc -o %t.spv
+; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
+; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM
+
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -spirv-text -o %t.txt
 ; RUN: FileCheck < %t.txt %s --check-prefix=CHECK-SPIRV
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv
@@ -7,8 +13,6 @@
 
 ; NOTE: access qualifier infomation is not preserved after round-trip conversion to LLVM
 ; CHECK-LLVM: call spir_func <4 x float> @_Z11read_imagef14ocl_image1d_rw11ocl_sampleri(ptr
-                                        ; _Z11read_imagefPU3AS1c11ocl_sampleri
-; TODO: verify why we lost image info in mangling
 ; CHECK-SPIRV-DAG: 2 Capability ImageBasic
 ; CHECK-SPIRV-DAG: 2 Capability ImageReadWrite
 ; CHECK-SPIRV-DAG: 2 Capability LiteralSampler

@@ -1,4 +1,13 @@
 ; RUN: llvm-as %s -o %t.bc
+; RUN: llvm-spirv -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv %t.bc -o %t.spv
+; RUN: spirv-val %t.spv
+; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
+; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM
+; RUN: llvm-spirv -r %t.spv -o %t.rev.bc --spirv-target-env=SPV-IR
+; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-SPV-IR
+; RUN: llvm-spirv -spirv-text %t.rev.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: spirv-val %t.spv
@@ -82,7 +91,6 @@ entry:
   ret void
 }
 
-; TODO: check why we do loading into untyped pointer, when the image is present
 ; CHECK-SPIRV: Load [[IMAGE1D_T]] [[IMAGE1D:[0-9]+]] 
 ; CHECK-SPIRV: ImageQueryLevels [[INT]] {{[0-9]+}} [[IMAGE1D]]
 ; CHECK-SPIRV: Load [[IMAGE2D_T]] [[IMAGE2D:[0-9]+]] 
