@@ -1,8 +1,8 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv -spirv-text -o - %t.bc | FileCheck %s --check-prefix CHECK-SPV
-; RUN: llvm-spirv -o %t.spv %t.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -spirv-text -o - %t.bc | FileCheck %s --check-prefix CHECK-SPV
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -o %t.spv %t.bc
 ; RUN: spirv-val %t.spv
-; RUN: llvm-spirv -r -o - %t.spv | llvm-dis | FileCheck %s --check-prefix CHECK-LLVM
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r -o - %t.spv | llvm-dis | FileCheck %s --check-prefix CHECK-LLVM
 
 ; CHECK-SPV-DAG: Decorate [[#I64_CONST:]] SpecId [[#]]
 ; CHECK-SPV-DAG: Decorate [[#I32_CONST:]] SpecId [[#]]
