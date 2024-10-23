@@ -14,8 +14,8 @@
 ; CHECK-SPIRV: Decorate [[#Var]] UserSemantic "var_annotation_b"
 ; CHECK-SPIRV: Decorate [[#Var2:]] UserSemantic "class_annotation_a"
 ; CHECK-SPIRV: Decorate [[#Var2]] UserSemantic "class_annotation_b"
-; CHECK-SPIRV-DAG: Variable [[#]] [[#Var]] [[#]]
-; CHECK-SPIRV-DAG: Variable [[#]] [[#Var2]] [[#]]
+; CHECK-SPIRV-DAG: {{(Variable|UntypedVariableKHR)}} [[#]] [[#Var]] [[#]]
+; CHECK-SPIRV-DAG: {{(Variable|UntypedVariableKHR)}} [[#]] [[#Var2]] [[#]]
 
 ; CHECK-LLVM-DAG: @[[StrA:[0-9_.]+]] = {{.*}}"var_annotation_a\00"
 ; CHECK-LLVM-DAG: @[[StrB:[0-9_.]+]] = {{.*}}"var_annotation_b\00"

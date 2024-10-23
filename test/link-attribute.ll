@@ -8,7 +8,7 @@ target triple = "spir64-unknown-unknown"
 
 
 ; CHECK: 8 Decorate [[ID:[0-9]*]] LinkageAttributes "imageSampler" Export
-; CHECK: 5 Variable {{[0-9]*}} [[ID]] 0 {{[0-9]*}}
+; CHECK: {{Variable|UntypedVariableKHR}} {{[0-9]*}} [[ID]] 0 {{[0-9]*}}
 
 @imageSampler = addrspace(2) constant i32 36, align 4
 

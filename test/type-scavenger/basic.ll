@@ -1,5 +1,9 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -spirv-text -o - | FileCheck %s
+; RUN: llvm-spirv %t.bc -spirv-text -o - | FileCheck %s --check-prefixes=CHECK,CHECK-TYPED-PTR
+; RUN: llvm-spirv %t.bc -o %t.spv
+; RUN: spirv-val %t.spv
+
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -spirv-text -o - | FileCheck %s --check-prefixes=CHECK,CHECK-UNTYPED-PTR
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: spirv-val %t.spv
 
@@ -7,14 +11,17 @@ target datalayout = "e-p:32:32-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:2
 target triple = "spir-unknown-unknown"
 
 ; CHECK: 4 TypeInt [[INT:[0-9]+]] 32 0
-; CHECK: 4 TypePointer [[INTPTR:[0-9]+]] 7 [[INT]]
+; CHECK-TYPED-PTR: 4 TypePointer [[INTPTR:[0-9]+]] 7 [[INT]]
+; CHECK-UNTYPED-PTR: 3 TypeUntypedPointerKHR [[PTR:[0-9]+]] 7
 ; CHECK: 3 TypeFloat [[FLOAT:[0-9]+]] 32
-; CHECK: 4 TypePointer [[FLOATPTR:[0-9]+]] 7 [[FLOAT]]
+; CHECK-TYPED-PTR: 4 TypePointer [[FLOATPTR:[0-9]+]] 7 [[FLOAT]]
 
 ; Function Attrs: nounwind
 define spir_kernel void @foo() {
-; CHECK: 4 Variable [[INTPTR]] [[IPTR:[0-9]+]] 7
-; CHECK: 4 Variable [[FLOATPTR]] [[FPTR:[0-9]+]] 7
+; CHECK-TYPED-PTR: 4 Variable [[INTPTR]] [[IPTR:[0-9]+]] 7
+; CHECK-UNTYPED-PTR: 5 UntypedVariableKHR [[PTR]] [[IPTR:[0-9]+]] 7
+; CHECK-TYPED-PTR: 4 Variable [[FLOATPTR]] [[FPTR:[0-9]+]] 7
+; CHECK-UNTYPED-PTR: 5 UntypedVariableKHR [[PTR]] [[FPTR:[0-9]+]] 7
 ; CHECK: Store [[IPTR]] {{[0-9]+}}
 ; CHECK: Load [[INT]] [[LOAD:[0-9]+]] [[IPTR]]
 ; CHECK: 4 Bitcast [[FLOAT]] [[BITCAST:[0-9]+]] [[LOAD]]

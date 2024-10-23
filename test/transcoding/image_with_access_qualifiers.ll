@@ -7,7 +7,8 @@
 
 ; NOTE: access qualifier infomation is not preserved after round-trip conversion to LLVM
 ; CHECK-LLVM: call spir_func <4 x float> @_Z11read_imagef14ocl_image1d_rw11ocl_sampleri(ptr
-
+                                        ; _Z11read_imagefPU3AS1c11ocl_sampleri
+; TODO: verify why we lost image info in mangling
 ; CHECK-SPIRV-DAG: 2 Capability ImageBasic
 ; CHECK-SPIRV-DAG: 2 Capability ImageReadWrite
 ; CHECK-SPIRV-DAG: 2 Capability LiteralSampler

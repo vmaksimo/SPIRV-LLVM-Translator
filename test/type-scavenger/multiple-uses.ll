@@ -1,6 +1,6 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -spirv-text -o - | FileCheck %s
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv
+; RUN: llvm-spirv %t.bc -spirv-text -o - | FileCheck %s
+; RUN: llvm-spirv %t.bc -o %t.spv
 ; RUN: spirv-val %t.spv
 
 ; This test checks that, when we fix a deferred type to a known value in the
@@ -11,11 +11,11 @@ target datalayout = "e-p:32:32-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:2
 target triple = "spir-unknown-unknown"
 
 ; CHECK: 4 TypeInt [[INT:[0-9]+]] 32 0
-; CHECK: 4 TypePointer [[INTPTR:[0-9]+]] 7 [[INT]]
+; CHECK: {{(TypePointer|TypeUntypedPointerKHR)}} [[INTPTR:[0-9]+]] 7
 
 ; Function Attrs: nounwind
 define spir_kernel void @foo() {
-; CHECK: 4 Variable [[INTPTR]] [[IPTR:[0-9]+]] 7
+; CHECK: {{(Variable|UntypedVariableKHR)}} [[INTPTR]] [[IPTR:[0-9]+]] 7
 ; CHECK: 4 Bitcast [[INTPTR]] [[UPTR:[0-9]+]] [[IPTR]]
 ; CHECK: 4 Bitcast [[INTPTR]] [[UPTR2:[0-9]+]] [[IPTR]]
 entry:

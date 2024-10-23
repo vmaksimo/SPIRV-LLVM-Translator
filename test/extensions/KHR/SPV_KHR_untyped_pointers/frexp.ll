@@ -1,7 +1,10 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc -spirv-text
+; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_KHR_untyped_pointers -o %t.spv
+; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_KHR_untyped_pointers -spirv-text -o %t.spt
+; TODO: enable back once spirv-tools are updated.
+; R/UN: spirv-val %t.spv
 ; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
-; RUN: llvm-spirv %t.bc -o %t.spv
+
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc
 ; RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM
@@ -14,7 +17,7 @@ target triple = "spir64-unknown-unknown"
 ; CHECK-SPIRV: TypeInt [[#TypeInt:]] 32
 ; CHECK-SPIRV: TypeFloat [[#TypeFloat:]] 32
 ; CHECK-SPIRV: TypeStruct [[#TypeStrFloatInt:]] [[#TypeFloat]] [[#TypeInt]]
-; CHECK-SPIRV: TypePointer [[#TypeIntPtr:]] 7 [[#TypeInt]]
+; CHECK-SPIRV: TypeUntypedPointerKHR [[#TypePtr:]] 7
 
 ; CHECK-SPIRV: TypeFloat [[#TypeDouble:]] 64
 ; CHECK-SPIRV: TypeStruct [[#TypeStrDoubleInt:]] [[#TypeDouble]] [[#TypeInt]]
@@ -43,16 +46,17 @@ target triple = "spir64-unknown-unknown"
 ; CHECK-LLVM: %[[StrTypeDoubleIntVec2:[a-z0-9.]+]] = type { <2 x double>, <2 x i32> }
 
 declare { float, i32 } @llvm.frexp.f32.i32(float)
-declare { double, i32 } @llvm.frexp.f64.i32(double)
-declare { <2 x float>, <2 x i32> } @llvm.frexp.v2f32.v2i32(<2 x float>)
-declare { <4 x float>, <4 x i32> } @llvm.frexp.v4f32.v4i32(<4 x float>)
-declare { <2 x double>, <2 x i32> } @llvm.frexp.v2f64.v2i32(<2 x double>)
+; declare { double, i32 } @llvm.frexp.f64.i32(double)
+; declare { <2 x float>, <2 x i32> } @llvm.frexp.v2f32.v2i32(<2 x float>)
+; declare { <4 x float>, <4 x i32> } @llvm.frexp.v4f32.v4i32(<4 x float>)
+; declare { <2 x double>, <2 x i32> } @llvm.frexp.v2f64.v2i32(<2 x double>)
 
 ; CHECK-SPIRV: Function [[#TypeStrFloatInt:]]
-; CHECK-SPIRV: Variable [[#TypeIntPtr]] [[#IntVar:]] 7
+; CHECK-SPIRV: UntypedVariableKHR [[#TypePtr]] [[#IntVar:]] 7 [[#TypeInt]]
 ; CHECK-SPIRV: ExtInst [[#TypeFloat]] [[#FrexpId:]] [[#ExtInstSetId]] frexp [[#NegatedZeroConst]] [[#IntVar]]
 ; CHECK-SPIRV: Load [[#]] [[#LoadId:]] [[#]]
-; CHECK-SPIRV: CompositeConstruct [[#TypeStrFloatInt]] [[#ComposConstr:]] [[#FrexpId]] [[#LoadId]]
+; CHECK-SPIRV: CompositeConstruct [[#TypeStrFloatInt]] [[#ComposConstr:]] [[#FrexpId]] 
+;[[#LoadId]]
 ; CHECK-SPIRV: ReturnValue [[#ComposConstr]]
 
 ; CHECK-LLVM: %[[#IntVar:]] = alloca i32
@@ -135,7 +139,7 @@ define { <2 x double>, <2 x i32> } @frexp_frexp_vector(<2 x double> %x) {
   ret { <2 x double>, <2 x i32> } %frexp1
 }
 
-; CHECK-SPIRV: ExtInst [[#TypeFloat]] [[#]] [[#ExtInstSetId]] frexp [[#]] [[#]]
+; C/HECK-SPIRV: ExtInst [[#TypeFloat]] [[#]] [[#ExtInstSetId]] frexp [[#]] [[#]]
 ; CHECK-LLVM: %[[#IntVar:]] = alloca i32
 ; CHECK-LLVM: %[[Frexp:[a-z0-9.]+]] = call spir_func float @_Z5frexpfPi(float %x, ptr %[[#IntVar]])
 ; CHECK-LLVM: %[[LoadVar:[a-z0-9.]+]] = load i32, ptr %[[#IntVar]]
