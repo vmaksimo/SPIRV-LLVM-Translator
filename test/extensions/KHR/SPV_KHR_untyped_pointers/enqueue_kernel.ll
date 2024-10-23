@@ -32,7 +32,7 @@
 ; CHECK-SPIRV: TypeVoid [[VoidTy:[0-9]+]]
 ; CHECK-SPIRV: TypeUntypedPointerKHR [[Int32LocPtrTy:[0-9]+]] 7
 ; CHECK-SPIRV: TypeDeviceEvent [[EventTy:[0-9]+]]
-; C/HECK-SPIRV: TypePointer [[PtrGenTy:[0-9]+]] 8 [[EventTy]]
+; CHECK-SPIRV: TypePointer [[EventPtrTy:[0-9]+]] 8 [[EventTy]]
 ; CHECK-SPIRV: TypeFunction [[BlockTy1:[0-9]+]] [[VoidTy]] [[PtrGenTy]]
 ; CHECK-SPIRV: TypeFunction [[BlockTy2:[0-9]+]] [[VoidTy]] [[PtrGenTy]]
 ; CHECK-SPIRV: TypeFunction [[BlockTy3:[0-9]+]] [[VoidTy]] [[PtrGenTy]]
@@ -339,10 +339,9 @@ attributes #4 = { convergent nounwind "no-trapping-math"="true" "stack-protector
   ; CHECK-LLVM: [[BlockInv2:%[0-9]+]] = addrspacecast ptr @__device_side_enqueue_block_invoke_kernel to ptr addrspace(4)
   ; CHECK-LLVM: call spir_func i32 @__enqueue_kernel_basic(ptr {{.*}}, i32 {{.*}}, ptr {{.*}}, ptr addrspace(4) [[BlockInv2]], ptr addrspace(4) [[Block2Ptr]])
   ; CHECK-SPV-IR: call spir_func i32 @_Z21__spirv_EnqueueKernelP13__spirv_Queuei9ndrange_tiPU3AS4P19__spirv_DeviceEventS5_U13block_pointerFvvEPU3AS4cii(target("spirv.Queue") {{.*}}, i32 {{.*}}, ptr {{.*}}, i32 0, ptr addrspace(4) null, ptr addrspace(4) null, ptr @__device_side_enqueue_block_invoke_kernel, ptr addrspace(4) {{.*}}, i32 {{.*}}, i32 {{.*}})
-                                    ; _Z21__spirv_EnqueueKernelP13__spirv_Queuei9ndrange_tiPU3AS4cS3_U13block_pointerFvvES3_ii
 
-  ; CHECK-SPIRV: PtrCastToGeneric [[PtrGenTy]] [[Event1:[0-9]+]]
-  ; CHECK-SPIRV: PtrCastToGeneric [[PtrGenTy]] [[Event2:[0-9]+]]
+  ; CHECK-SPIRV: PtrCastToGeneric [[EventPtrTy]] [[Event1:[0-9]+]]
+  ; CHECK-SPIRV: PtrCastToGeneric [[EventPtrTy]] [[Event2:[0-9]+]]
 
   ; CHECK-SPIRV: Bitcast [[PtrGenTy]] [[BlockLit2:[0-9]+]]
   ; CHECK-SPIRV: EnqueueKernel [[Int32Ty]] {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} {{[0-9]+}}
@@ -370,7 +369,6 @@ attributes #4 = { convergent nounwind "no-trapping-math"="true" "stack-protector
   ; CHECK-LLVM: call spir_func i32 @__enqueue_kernel_events_varargs(ptr {{.*}}, i32 {{.*}}, ptr {{.*}}, i32 2, ptr addrspace(4) {{.*}}, ptr addrspace(4) {{.*}}, ptr addrspace(4) [[BlockInv0]], ptr addrspace(4) [[Block0]], i32 1, ptr {{.*}})
   ; CHECK-SPV-IR: call spir_func i32 @_Z21__spirv_EnqueueKernelP13__spirv_Queuei9ndrange_tiPU3AS4P19__spirv_DeviceEventS5_U13block_pointerFvvEPU3AS4ciiPi(target("spirv.Queue") {{.*}}, i32 {{.*}}, ptr {{.*}}, i32 2, ptr addrspace(4) {{.*}}, ptr addrspace(4) {{.*}}, ptr @__device_side_enqueue_block_invoke_3_kernel, ptr addrspace(4) {{.*}}, i32 {{.*}}, i32 {{.*}}, ptr {{.*}})
 
-
   ; CHECK-SPIRV: UntypedPtrAccessChainKHR [[Int32LocPtrTy]] [[LocalBuf41:[0-9]+]]
   ; CHECK-SPIRV: UntypedPtrAccessChainKHR [[Int32LocPtrTy]] [[LocalBuf42:[0-9]+]]
   ; CHECK-SPIRV: UntypedPtrAccessChainKHR [[Int32LocPtrTy]] [[LocalBuf43:[0-9]+]]
@@ -385,7 +383,7 @@ attributes #4 = { convergent nounwind "no-trapping-math"="true" "stack-protector
   ; CHECK-LLVM: call spir_func i32 @__enqueue_kernel_varargs(ptr {{.*}}, i32 {{.*}}, ptr {{.*}}, ptr addrspace(4) [[BlockInv1]], ptr addrspace(4) [[Block1]], i32 3, ptr {{.*}})
   ; CHECK-SPV-IR: call spir_func i32 @_Z21__spirv_EnqueueKernelP13__spirv_Queuei9ndrange_tiPU3AS4P19__spirv_DeviceEventS5_U13block_pointerFvvEPU3AS4ciiPiSA_SA_(target("spirv.Queue") {{.*}}, i32 {{.*}}, ptr {{.*}}, i32 0, ptr addrspace(4) null, ptr addrspace(4) null, ptr @__device_side_enqueue_block_invoke_4_kernel, ptr addrspace(4) {{.*}}, i32 {{.*}}, i32 {{.*}}, ptr {{.*}}, ptr {{.*}}, ptr {{.*}})
 
-  ; CHECK-SPIRV: PtrCastToGeneric [[PtrGenTy]] [[Event1:[0-9]+]]
+  ; CHECK-SPIRV: PtrCastToGeneric [[EventPtrTy]] [[Event1:[0-9]+]]
 
   ; CHECK-SPIRV: Bitcast [[PtrGenTy]] [[BlockLit2:[0-9]+]]
   ; CHECK-SPIRV: EnqueueKernel [[Int32Ty]] {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} {{[0-9]+}}
