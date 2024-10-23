@@ -755,7 +755,7 @@ SPIRVType *LLVMToSPIRVBase::transPointerType(SPIRVType *ET, unsigned AddrSpc) {
     return transPointerType(ET, SPIRAS_Private);
   if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers) &&
       !(ET->isTypeArray() || ET->isTypeVector() || ET->isTypeStruct() ||
-        ET->isTypeImage() || ET->isTypeSampler() || ET->isTypePipe())) {
+        ET->isTypeImage() || ET->isTypeSampler() || ET->isTypePipe() || ET->isTypeDeviceEvent() || ET->isTypeEvent())) {
     TranslatedTy = BM->addUntypedPointerKHRType(
         SPIRSPIRVAddrSpaceMap::map(static_cast<SPIRAddressSpace>(AddrSpc)));
   } else {
@@ -2220,9 +2220,10 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
       MemoryAccess.clear();
     if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers)) {
       SPIRVValue *Source = transValue(LD->getPointerOperand(), BB);
+      SPIRVType *PtrElTy = Source->getType()->getPointerElementType();
       SPIRVType *LoadTy = transType(LD->getType());
       if (LoadTy->isTypeUntypedPointerKHR() &&
-          (Source->getType()->getPointerElementType()->isTypeImage())) {
+          (PtrElTy->isTypeImage() || PtrElTy->isTypeEvent() || PtrElTy->isTypeDeviceEvent())) {
         LoadTy = nullptr;
       }
       return mapValue(V, BM->addLoadInst(Source, MemoryAccess, BB, LoadTy));
