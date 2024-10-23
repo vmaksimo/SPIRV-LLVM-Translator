@@ -13,8 +13,8 @@ target triple = "spir-unknown-unknown"
 ; Check that builtin-call based SPV-IR is recognized by the translator.
 ; CHECK-SPIRV-DAG: Decorate [[Id:[0-9]+]] BuiltIn 28
 ; CHECK-SPIRV-DAG: Decorate [[Id:[0-9]+]] BuiltIn 34
-; CHECK-SPIRV: Variable {{[0-9]+}} [[Id:[0-9]+]]
-; CHECK-SPIRV: Variable {{[0-9]+}} [[Id:[0-9]+]]
+; CHECK-SPIRV: {{(Variable|UntypedVariableKHR)}} {{[0-9]+}} [[Id:[0-9]+]]
+; CHECK-SPIRV: {{(Variable|UntypedVariableKHR)}} {{[0-9]+}} [[Id:[0-9]+]]
 
 ; Function Attrs: nounwind
 define spir_kernel void @f() #0 !kernel_arg_addr_space !0 !kernel_arg_access_qual !0 !kernel_arg_type !0 !kernel_arg_base_type !0 !kernel_arg_type_qual !0 {

@@ -42,7 +42,7 @@ kernel void block_ret_struct(__global int* res)
 
 // CHECK-SPIRV: 4 TypeInt [[IntTy:[0-9]+]] 32
 // CHECK-SPIRV: 4 TypeInt [[Int8Ty:[0-9]+]] 8
-// CHECK-SPIRV: 4 TypePointer [[Int8Ptr:[0-9]+]] 8 [[Int8Ty]]
+// CHECK-SPIRV: {{(TypePointer|TypeUntypedPointerKHR)}} [[Int8Ptr:[0-9]+]] 8
 // CHECK-SPIRV: 3 TypeStruct [[StructTy:[0-9]+]] [[IntTy]]
 // CHECK-SPIRV: 4 TypePointer [[StructPtrTy:[0-9]+]] 7 [[StructTy]]
 

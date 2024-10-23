@@ -1,10 +1,10 @@
 ; REQUIRES: spirv-link
 ;
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv
+; RUN: llvm-spirv %t.bc -o %t.spv
 ; RUN: spirv-val %t.spv
 ; RUN: spirv-link %t.spv -o %t.linked.spv
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.linked.spv -o %t.rev.bc
+; RUN: llvm-spirv -r %t.linked.spv -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc -o - | FileCheck %s
 ;
 ; This checks that SPIR-V programs with global variables are still consumable

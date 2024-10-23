@@ -7,7 +7,7 @@
 ; RUN: llvm-dis < %t.bc | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; CHECK-SPIRV: Decorate [[#Var:]] LinkageAttributes "v" Export
-; CHECK-SPIRV: Variable [[#]] [[#Var]] [[#]] {{$}}
+; CHECK-SPIRV: {{(Variable|UntypedVariableKHR)}} [[#]] [[#Var]] [[#]]
 ; CHECK-SPIRV-NOT: OpUndef
 
 ; CHECK-LLVM: @v = common addrspace(1) global i32 0, align 4

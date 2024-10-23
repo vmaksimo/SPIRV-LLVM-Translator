@@ -82,6 +82,7 @@ entry:
   ret void
 }
 
+; TODO: check why we do loading into untyped pointer, when the image is present
 ; CHECK-SPIRV: Load [[IMAGE1D_T]] [[IMAGE1D:[0-9]+]] 
 ; CHECK-SPIRV: ImageQueryLevels [[INT]] {{[0-9]+}} [[IMAGE1D]]
 ; CHECK-SPIRV: Load [[IMAGE2D_T]] [[IMAGE2D:[0-9]+]] 

@@ -29,7 +29,8 @@ target triple = "spir64-unknown-unknown"
 ; CHECK-SPIRV: Name [[Block:[0-9]+]] "__block_literal_global"
 ; CHECK-SPIRV: TypeInt [[Int8:[0-9]+]] 8
 ; CHECK-SPIRV: TypeVoid [[Void:[0-9]+]]
-; CHECK-SPIRV: TypePointer [[Int8PtrGen:[0-9]+]] 8 [[Int8]]
+; CHECK-SPIRV: TypeUntypedPointerKHR [[Int8PtrGen:[0-9]+]] 8
+;[[Int8]]
 ; CHECK-SPIRV: Variable {{[0-9]+}} [[Block:[0-9]+]]
 
 ; Function Attrs: convergent nounwind

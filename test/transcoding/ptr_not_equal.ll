@@ -18,11 +18,11 @@
 ; SPIR-V 1.4
 ; CHECK-SPIRV: 66560
 ; CHECK-SPIRV: TypeFloat [[#TypeFloat:]] 32
-; CHECK-SPIRV: TypePointer [[#TypePointer:]] [[#]] [[#TypeFloat]]
+; CHECK-SPIRV: {{(TypePointer|TypeUntypedPointerKHR)}} [[#TypePointer:]] [[#]]
 ; CHECK-SPIRV: TypeBool [[#TypeBool:]]
 
-; CHECK-SPIRV: Variable [[#TypePointer]] [[#Var1:]]
-; CHECK-SPIRV: Variable [[#TypePointer]] [[#Var2:]]
+; CHECK-SPIRV: {{(Variable|UntypedVariableKHR)}} [[#TypePointer]] [[#Var1:]]
+; CHECK-SPIRV: {{(Variable|UntypedVariableKHR)}} [[#TypePointer]] [[#Var2:]]
 ; CHECK-SPIRV: PtrEqual [[#TypeBool]] [[#]] [[#Var1]] [[#Var2]]
 ; CHECK-SPIRV: PtrNotEqual [[#TypeBool]] [[#]] [[#Var1]] [[#Var2]]
 

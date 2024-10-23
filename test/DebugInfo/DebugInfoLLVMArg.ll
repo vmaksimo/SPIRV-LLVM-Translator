@@ -41,7 +41,7 @@
 ; CHECK-SPIRV-200: [[#EXPR_2_ARG_1:]] [[#]] DebugOperation [[#CONST165]] [[#CONST1]]
 ; CHECK-SPIRV-200: [[#EXPR_2_ARG_2:]] [[#]] DebugOperation [[#CONST1:]]
 ; CHECK-SPIRV-200: [[#EXPR_2:]] [[#]] DebugExpression [[#EXPR_2_ARG_0]] [[#EXPR_2_ARG_1]] [[#EXPR_2_ARG_2]]
-; CHECK-SPIRV-200: Variable [[#]] [[#VAL:]]
+; CHECK-SPIRV-200: {{(Variable|UntypedVariableKHR)}} [[#]] [[#VAL:]]
 ; CHECK-SPIRV-200: DebugValue [[#DEBUG_LOC_VAR]] [[#VAL]] [[#EXPR_1]]
 ; CHECK-SPIRV-200: DebugValue [[#DEBUG_LOC_VAR]] [[#VAL]] [[#EXPR_2]]
 
@@ -50,7 +50,7 @@
 ; CHECK-SPIRV-OCL: [[#EXPR_ARG_0:]] [[#]] DebugOperation 165 0
 ; CHECK-SPIRV-OCL: [[#EXPRESSION:]] [[#]] DebugExpression [[#EXPR_ARG_0]]
 ; CHECK-SPIRV-OCL: [[#EXPR_EMPTY:]] [[#]] DebugExpression{{ *$}}
-; CHECK-SPIRV-OCL: Variable [[#]] [[#VAL:]]
+; CHECK-SPIRV-OCL: {{(Variable|UntypedVariableKHR)}} [[#]] [[#VAL:]]
 ; CHECK-SPIRV-OCL: DebugValue [[#DEBUG_LOC_VAR]] [[#VAL]] [[#EXPRESSION]]
 ; CHECK-SPIRV-OCL: DebugValue [[#DEBUG_LOC_VAR]] [[#UNDEF]] [[#EXPR_EMPTY]]
 

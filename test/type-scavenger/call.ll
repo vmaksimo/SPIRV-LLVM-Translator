@@ -1,5 +1,9 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -spirv-text -o - | FileCheck %s
+; RUN: llvm-spirv %t.bc -spirv-text -o - | FileCheck %s --check-prefixes=CHECK,CHECK-TYPED-PTR
+; RUN: llvm-spirv %t.bc -o %t.spv
+; RUN: spirv-val %t.spv
+
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -spirv-text -o - | FileCheck %s --check-prefixes=CHECK,CHECK-UNTYPED-PTR
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: spirv-val %t.spv
 
@@ -8,20 +12,28 @@ target triple = "spir-unknown-unknown"
 
 ; CHECK: Name [[CALL:[0-9]+]] "call"
 ; CHECK: TypeInt [[INT:[0-9]+]] 32 0
-; CHECK: TypePointer [[INTPTR:[0-9]+]] 7 [[INT]]
+; CHECK-TYPED-PTR: TypePointer [[INTPTR:[0-9]+]] 7 [[INT]]
+; CHECK-UNTYPED-PTR: TypeUntypedPointerKHR [[PTR:[0-9]+]] 7
 ; CHECK: TypeFloat [[FLOAT:[0-9]+]] 32
-; CHECK: TypePointer [[FLOATPTR:[0-9]+]] 7 [[FLOAT]]
-; CHECK: TypeFunction [[CALLTY:[0-9]+]] [[INTPTR]] [[INTPTR]]
+; CHECK-TYPED-PTR: TypePointer [[FLOATPTR:[0-9]+]] 7 [[FLOAT]]
+; CHECK-TYPED-PTR: TypeFunction [[CALLTY:[0-9]+]] [[INTPTR]] [[INTPTR]]
+; CHECK-UNTYPED-PTR: TypeFunction [[CALLTY:[0-9]+]] [[PTR]] [[PTR]]
 
 ; Function Attrs: nounwind
 define spir_kernel void @foo() {
-; CHECK: Variable [[INTPTR]] [[IPTR:[0-9]+]] 7
-; CHECK: Variable [[FLOATPTR]] [[FPTR:[0-9]+]] 7
-; CHECK: FunctionCall [[INTPTR]] [[IPTR1:[0-9]+]] [[CALL]] [[IPTR]]
+; CHECK-TYPED-PTR: Variable [[INTPTR]] [[IPTR:[0-9]+]] 7
+; CHECK-UNTYPED-PTR: UntypedVariableKHR [[PTR]] [[IPTR:[0-9]+]] 7 [[INT]]
+; CHECK-TYPED-PTR: Variable [[FLOATPTR]] [[FPTR:[0-9]+]] 7
+; CHECK-UNTYPED-PTR: UntypedVariableKHR [[PTR]] [[FPTR:[0-9]+]] 7 [[FLOAT]]
+; CHECK-TYPED-PTR: FunctionCall [[INTPTR]] [[IPTR1:[0-9]+]] [[CALL]] [[IPTR]]
+; CHECK-UNTYPED-PTR: FunctionCall [[PTR]] [[IPTR1:[0-9]+]] [[CALL]] [[IPTR]]
 ; CHECK: Store [[IPTR1]]
-; CHECK: Bitcast [[INTPTR]] [[FPTR1:[0-9]+]] [[FPTR]]
-; CHECK: FunctionCall [[INTPTR]] [[FPTR2:[0-9]+]] [[CALL]] [[FPTR1]]
-; CHECK: Bitcast [[FLOATPTR]] [[FPTR3:[0-9]+]] [[FPTR2]]
+; CHECK-TYPED-PTR: Bitcast [[INTPTR]] [[FPTR1:[0-9]+]] [[FPTR]]
+; CHECK-UNTYPED-PTR: Bitcast [[PTR]] [[FPTR1:[0-9]+]] [[FPTR]]
+; CHECK-TYPED-PTR: FunctionCall [[INTPTR]] [[FPTR2:[0-9]+]] [[CALL]] [[FPTR1]]
+; CHECK-UNTYPED-PTR: FunctionCall [[PTR]] [[FPTR2:[0-9]+]] [[CALL]] [[FPTR1]]
+; CHECK-TYPED-PTR: Bitcast [[FLOATPTR]] [[FPTR3:[0-9]+]] [[FPTR2]]
+; CHECK-UNTYPED-PTR: Bitcast [[PTR]] [[FPTR3:[0-9]+]] [[FPTR2]]
 ; CHECK: Store [[FPTR3]]
 entry:
   %iptr = alloca i32, align 4

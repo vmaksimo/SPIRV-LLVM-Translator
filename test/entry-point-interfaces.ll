@@ -12,8 +12,8 @@
 ; CHECK-SPIRV: TypeInt [[#TypeInt:]] 32 0
 ; CHECK-SPIRV: Constant [[#TypeInt]] [[#Constant1:]] 1
 ; CHECK-SPIRV: Constant [[#TypeInt]] [[#Constant2:]] 3
-; CHECK-SPIRV: Variable [[#]] [[#Interface1]] 0 [[#Constant1]]
-; CHECK-SPIRV: Variable [[#]] [[#Interface2]] 0 [[#Constant2]]
+; CHECK-SPIRV: UntypedVariableKHR [[#]] [[#Interface1]] 0 [[#TypeInt]] [[#Constant1]]
+; CHECK-SPIRV: UntypedVariableKHR [[#]] [[#Interface2]] 0 [[#TypeInt]] [[#Constant2]]
 
 ; ModuleID = 'source.cpp'
 source_filename = "source.cpp"

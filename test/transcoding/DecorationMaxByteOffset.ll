@@ -14,7 +14,7 @@
 ; CHECK-SPIRV-DAG: 4 Decorate [[PTR_ID]] MaxByteOffset 12
 ; CHECK-SPIRV-DAG: 4 Decorate [[PTR2_ID]] MaxByteOffset 123
 ; CHECK-SPIRV: 4 TypeInt [[CHAR_T:[0-9]+]] 8 0
-; CHECK-SPIRV: 4 TypePointer [[CHAR_PTR_T:[0-9]+]] 4 [[CHAR_T]]
+; CHECK-SPIRV: {{TypePointer|TypeUntypedPointerKHR}} [[CHAR_PTR_T:[0-9]+]] 4
 ; CHECK-SPIRV: 3 FunctionParameter [[CHAR_PTR_T]] [[PTR_ID]]
 ; CHECK-SPIRV: 3 FunctionParameter [[CHAR_PTR_T]] [[PTR2_ID]]
 

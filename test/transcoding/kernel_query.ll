@@ -57,7 +57,7 @@ target triple = "spir-unknown-unknown"
 ; CHECK-SPIRV: TypeVoid [[VoidTy:[0-9]+]]
 ; CHECK-SPIRV: TypeStruct [[NDRangeTy:[0-9]+]] [[Int32Ty]] {{$}}
 ; CHECK-SPIRV: TypePointer [[NDRangePtrTy:[0-9]+]] 7 [[NDRangeTy]]
-; CHECK-SPIRV: TypePointer [[Int8PtrGenTy:[0-9]+]] 8 [[Int8Ty]]
+; CHECK-SPIRV: TypeUntypedPointerKHR [[Int8PtrGenTy:[0-9]+]] 8
 ; CHECK-SPIRV: TypeFunction [[BlockKerTy:[0-9]+]] [[VoidTy]] [[Int8PtrGenTy]]
 
 ; Function Attrs: convergent noinline nounwind optnone
