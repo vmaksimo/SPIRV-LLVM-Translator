@@ -6375,6 +6375,18 @@ LLVMToSPIRVBase::transBuiltinToInstWithoutDecoration(Op OC, CallInst *CI,
   } break;
   case OpGroupAsyncCopy: {
     auto BArgs = transValue(getArguments(CI), BB);
+    // Check that type of Source and Destination are the same, bitcast if not
+    // (this mostly needed for untyped pointers)
+    SPIRVType *SrcTy = BArgs[1]->getType();
+    SPIRVType *DstTy = BArgs[2]->getType();
+    if (SrcTy->getPointerElementType() != DstTy->getPointerElementType()) {
+      llvm::Type *Ty = Scavenger->getScavengedType(CI->getOperand(2));
+      if (auto *TPT = dyn_cast<TypedPointerType>(Ty)) {
+        SPIRVType *PtrTy =
+            transPointerType(TPT->getElementType(), TPT->getAddressSpace());
+        BArgs[2] = BM->addUnaryInst(OpBitcast, PtrTy, BArgs[2], BB);
+      }
+    }
     return BM->addAsyncGroupCopy(BArgs[0], BArgs[1], BArgs[2], BArgs[3],
                                  BArgs[4], BArgs[5], BB);
   } break;
