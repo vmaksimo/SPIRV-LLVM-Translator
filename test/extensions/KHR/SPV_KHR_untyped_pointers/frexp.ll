@@ -139,7 +139,7 @@ define { <2 x double>, <2 x i32> } @frexp_frexp_vector(<2 x double> %x) {
   ret { <2 x double>, <2 x i32> } %frexp1
 }
 
-; C/HECK-SPIRV: ExtInst [[#TypeFloat]] [[#]] [[#ExtInstSetId]] frexp [[#]] [[#]]
+; CHECK-SPIRV: ExtInst [[#TypeFloat]] [[#]] [[#ExtInstSetId]] frexp [[#]] [[#]]
 ; CHECK-LLVM: %[[#IntVar:]] = alloca i32
 ; CHECK-LLVM: %[[Frexp:[a-z0-9.]+]] = call spir_func float @_Z5frexpfPi(float %x, ptr %[[#IntVar]])
 ; CHECK-LLVM: %[[LoadVar:[a-z0-9.]+]] = load i32, ptr %[[#IntVar]]
