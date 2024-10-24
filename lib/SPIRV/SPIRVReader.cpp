@@ -2241,10 +2241,16 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
 
   case OpPtrDiff: {
     auto *BC = static_cast<SPIRVBinary *>(BV);
-    auto Ops = transValue(BC->getOperands(), F, BB);
+    auto SPVOps = BC->getOperands();
+    auto Ops = transValue(SPVOps, F, BB);
     IRBuilder<> Builder(BB);
-    Type *ElemTy =
-        transType(BC->getOperands()[0]->getType()->getPointerElementType());
+    Type *ElemTy = nullptr;
+    if (SPVOps[0]->isUntypedVariable()) {
+      auto *BVar = static_cast<SPIRVUntypedVariableKHR *>(SPVOps[0]);
+      ElemTy = transType(BVar->getDataType());
+    } else {
+      ElemTy = transType(SPVOps[0]->getType()->getPointerElementType());
+    }
     Value *V = Builder.CreatePtrDiff(ElemTy, Ops[0], Ops[1]);
     return mapValue(BV, V);
   }
