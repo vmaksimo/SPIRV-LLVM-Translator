@@ -1,7 +1,7 @@
 ; RUN: llvm-as < %s -o %t.bc
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers --spirv-ext=+SPV_EXT_shader_atomic_float_add %t.bc -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_EXT_shader_atomic_float_add %t.bc -o %t.spv
 ; RUN: spirv-val %t.spv
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -to-text %t.spv -o - | FileCheck %s
+; RUN: llvm-spirv -to-text %t.spv -o - | FileCheck %s
 
 ; CHECK-DAG: Extension "SPV_EXT_shader_atomic_float_add"
 ; CHECK-DAG: Capability AtomicFloat64AddEXT
