@@ -19,7 +19,7 @@
 // RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM
 // RUN: llvm-spirv -r %t.spv --spirv-target-env SPV-IR -o %t.rev.bc
 // RUN: llvm-dis %t.rev.bc
-// R/UN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-SPV-IR
+// RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-SPV-IR
 
 // CHECK-SPIRV: EntryPoint {{[0-9]+}} [[BlockKer1:[0-9]+]] "__device_side_enqueue_block_invoke_kernel"
 // CHECK-SPIRV: EntryPoint {{[0-9]+}} [[BlockKer2:[0-9]+]] "__device_side_enqueue_block_invoke_2_kernel"
