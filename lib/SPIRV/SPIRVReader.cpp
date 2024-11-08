@@ -3432,23 +3432,67 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
   std::vector<Type *> ArgTys =
       transTypeVector(SPIRVInstruction::getOperandTypes(Ops), true);
 
-  // Special handling for "truly" untyped pointers to preserve correct
-  // builtin mangling of atomic operations.
   auto Ptr = findFirstPtrType(ArgTys);
   if (Ptr < ArgTys.size() &&
       BI->getValueType(Ops[Ptr]->getId())->isTypeUntypedPointerKHR()) {
+  // Special handling for "truly" untyped pointers to preserve correct
+  // builtin mangling of atomic operations.
     if (isAtomicOpCodeUntypedPtrSupported(BI->getOpCode())) {
       auto *AI = static_cast<SPIRVAtomicInstBase *>(BI);
       ArgTys[Ptr] = TypedPointerType::get(
           transType(AI->getSemanticType()),
           SPIRSPIRVAddrSpaceMap::rmap(
               BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
+    } else if (BI->getOpCode() == OpEnqueueKernel &&
+               Ops[Ptr]->isUntypedVariable()) {
+      // Special Handling for ndrange pointer
+      // if () {
+        // auto *BVar = static_cast<SPIRVUntypedVariableKHR *>(Ops[Ptr]);
+        // ArgTys[Ptr] = TypedPointerType::get(
+        //     transType(BVar->getDataType()),
+        //     SPIRSPIRVAddrSpaceMap::rmap(BVar->getStorageClass()));
+        // }
+    }
+  }
+
+  if (BI->getOpCode() == OpEnqueueKernel) {
+    for (unsigned I = 0; I < ArgTys.size(); I++) {
+      if (isa<PointerType>(ArgTys[I])) {
+        SPIRVType* OpTy = BI->getValueType(Ops[I]->getId());
+        if (OpTy->isTypeUntypedPointerKHR()) {
+          if (isUntypedAccessChainOpCode(Ops[I]->getOpCode())) {
+            SPIRVType* BaseTy = reinterpret_cast<SPIRVAccessChainBase*>(Ops[I])->getBaseType();
+            
+            Type *Ty = nullptr;
+            // isTypeVector() || isTypeArray() || isTypeStruct()
+            if (BaseTy->isTypeArray())
+              Ty = transType(BaseTy->getArrayElementType());
+            else if (BaseTy->isTypeVector())
+              Ty = transType(BaseTy->getVectorComponentType());
+            // else if (BaseTy->isTypeStruct())
+            //   Ty = 
+            auto *Val = transValue(Ops[I], BB->getParent(), BB);
+            auto *Ptr = TypedPointerType::get(Ty, SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
+            ArgTys[I] = Ptr;
+          } else if (Ops[I]->getOpCode() == OpUntypedVariableKHR) {
+            SPIRVUntypedVariableKHR* UV = static_cast<SPIRVUntypedVariableKHR*>(Ops[I]);
+            Type *Ty = transType(UV->getDataType());
+            auto *Ptr = TypedPointerType::get(Ty, SPIRSPIRVAddrSpaceMap::rmap(UV->getStorageClass()));
+            ArgTys[I] = Ptr;
+          }
+        }
+      }
     }
   }
 
   for (auto &I : ArgTys) {
     if (isa<FunctionType>(I)) {
       I = TypedPointerType::get(I, SPIRAS_Private);
+    } else if (isa<PointerType>(I)) {
+      auto *PT = cast<PointerType>(I);
+      // if (PT->getAddressSpace() == SPIRAS_Generic)
+        // I = PointerType::get(PT->getPointerElementType(), SPIRAS_Private);
+      ;
     }
   }
 
