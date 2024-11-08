@@ -3401,15 +3401,6 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
           transType(AI->getSemanticType()),
           SPIRSPIRVAddrSpaceMap::rmap(
               BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
-    } else if (BI->getOpCode() == OpEnqueueKernel &&
-               Ops[Ptr]->isUntypedVariable()) {
-      // Special Handling for ndrange pointer
-      // if () {
-        // auto *BVar = static_cast<SPIRVUntypedVariableKHR *>(Ops[Ptr]);
-        // ArgTys[Ptr] = TypedPointerType::get(
-        //     transType(BVar->getDataType()),
-        //     SPIRSPIRVAddrSpaceMap::rmap(BVar->getStorageClass()));
-        // }
     }
   }
 
@@ -3420,16 +3411,12 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
         if (OpTy->isTypeUntypedPointerKHR()) {
           if (isUntypedAccessChainOpCode(Ops[I]->getOpCode())) {
             SPIRVType* BaseTy = reinterpret_cast<SPIRVAccessChainBase*>(Ops[I])->getBaseType();
-            
             Type *Ty = nullptr;
-            // isTypeVector() || isTypeArray() || isTypeStruct()
             if (BaseTy->isTypeArray())
               Ty = transType(BaseTy->getArrayElementType());
             else if (BaseTy->isTypeVector())
               Ty = transType(BaseTy->getVectorComponentType());
-            // else if (BaseTy->isTypeStruct())
-            //   Ty = 
-            auto *Val = transValue(Ops[I], BB->getParent(), BB);
+            // auto *Val = transValue(Ops[I], BB->getParent(), BB);
             auto *Ptr = TypedPointerType::get(Ty, SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
             ArgTys[I] = Ptr;
           } else if (Ops[I]->getOpCode() == OpUntypedVariableKHR) {
@@ -3446,11 +3433,6 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
   for (auto &I : ArgTys) {
     if (isa<FunctionType>(I)) {
       I = TypedPointerType::get(I, SPIRAS_Private);
-    } else if (isa<PointerType>(I)) {
-      auto *PT = cast<PointerType>(I);
-      // if (PT->getAddressSpace() == SPIRAS_Generic)
-        // I = PointerType::get(PT->getPointerElementType(), SPIRAS_Private);
-      ;
     }
   }
 

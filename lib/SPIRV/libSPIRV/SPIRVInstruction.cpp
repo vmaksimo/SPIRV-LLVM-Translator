@@ -148,10 +148,6 @@ SPIRVInstruction::getOperandTypes(const std::vector<SPIRVValue *> &Ops) {
       Ty = reinterpret_cast<SPIRVFunction *>(I)->getFunctionType();
     else if (I->getOpCode() == OpTypeCooperativeMatrixKHR)
       Ty = reinterpret_cast<SPIRVType *>(I);
-    // else if (isUntypedAccessChainOpCode(I->getOpCode()))
-    //   Ty = reinterpret_cast<SPIRVAccessChainBase*>(I)->getBaseType();
-    // else if (I->getOpCode() == OpUntypedVariableKHR)
-    //   Ty = reinterpret_cast<SPIRVUntypedVariableKHR *>(I)->getDataType();
     else
       Ty = I->getType();
 
