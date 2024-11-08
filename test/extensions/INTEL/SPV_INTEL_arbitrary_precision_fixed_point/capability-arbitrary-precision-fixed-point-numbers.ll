@@ -93,14 +93,14 @@
 ; }
 
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_arbitrary_precision_integers,+SPV_INTEL_arbitrary_precision_fixed_point -o %t.spv
-; RUN: llvm-spirv %t.spv -to-text -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_arbitrary_precision_integers,+SPV_INTEL_arbitrary_precision_fixed_point -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o - | FileCheck %s --check-prefix=CHECK-SPIRV
 
-; RUN: not llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_arbitrary_precision_integers -spirv-text -o - 2>&1 | FileCheck %s --check-prefix=CHECK-ERROR
+; RUN: not llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_arbitrary_precision_integers -spirv-text -o - 2>&1 | FileCheck %s --check-prefix=CHECK-ERROR
 ; CHECK-ERROR: InvalidInstruction: Can't translate llvm instruction:
 ; CHECK-ERROR: Fixed point instructions can't be translated correctly without enabled SPV_INTEL_arbitrary_precision_fixed_point extension!
 
-; RUN: llvm-spirv -r %t.spv -o %t.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.bc
 ; RUN: llvm-dis < %t.bc | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; CHECK-SPIRV: 2 Capability Kernel
