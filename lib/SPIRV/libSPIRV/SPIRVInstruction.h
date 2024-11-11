@@ -1737,6 +1737,18 @@ public:
            OpCode == OpUntypedPtrAccessChainKHR ||
            OpCode == OpUntypedInBoundsPtrAccessChainKHR;
   }
+
+  SPIRVCapVec getRequiredCapability() const override {
+    if (isUntyped())
+      return getVec(CapabilityUntypedPointersKHR);
+    return {};
+  }
+
+  std::optional<ExtensionID> getRequiredExtension() const override {
+    if (isUntyped())
+      return ExtensionID::SPV_KHR_untyped_pointers;
+    return {};
+  }
 };
 
 template <Op OC, unsigned FixedWC>
