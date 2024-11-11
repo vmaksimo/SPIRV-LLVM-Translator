@@ -3386,7 +3386,8 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
                                                BasicBlock *BB) {
   std::string MangledName;
   auto Ops = BI->getOperands();
-  if (isUntypedAccessChainOpCode(BI->getOpCode())) {
+  Op OC = BI->getOpCode();
+  if (isUntypedAccessChainOpCode(OC)) {
     auto *AC = static_cast<SPIRVAccessChainBase *>(BI);
     if (AC->getBaseType()->isTypeCooperativeMatrixKHR())
       Ops.erase(Ops.begin());
@@ -3402,14 +3403,16 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
       BI->getValueType(Ops[Ptr]->getId())->isTypeUntypedPointerKHR()) {
   // Special handling for "truly" untyped pointers to preserve correct
   // builtin mangling of atomic operations.
-    if (isAtomicOpCodeUntypedPtrSupported(BI->getOpCode())) {
+    if (isAtomicOpCodeUntypedPtrSupported(OC)) {
       auto *AI = static_cast<SPIRVAtomicInstBase *>(BI);
       ArgTys[Ptr] = TypedPointerType::get(
           transType(AI->getSemanticType()),
           SPIRSPIRVAddrSpaceMap::rmap(
               BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
-    } else if (BI->getOpCode() == spv::OpCooperativeMatrixStoreKHR ||
-               BI->getOpCode() == spv::internal::OpJointMatrixStoreINTEL) {
+    } else if (OC == spv::OpCooperativeMatrixStoreKHR ||
+               OC == spv::internal::OpJointMatrixStoreINTEL ||
+               OC == spv::internal::OpCooperativeMatrixStoreCheckedINTEL ||
+               OC == spv::internal::OpJointMatrixLoadINTEL) {
       // auto *CM = static_cast<SPIRVCooperativeMatrixStoreKHR *>(BI);
       // It will work but it'd be strange
       auto *Val = transValue(Ops[Ptr], BB->getParent(), BB);
@@ -3425,7 +3428,7 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
     }
   }
 
-  if (BI->getOpCode() == OpEnqueueKernel) {
+  if (OC == OpEnqueueKernel) {
     for (unsigned I = 0; I < ArgTys.size(); I++) {
       if (isa<PointerType>(ArgTys[I])) {
         SPIRVType* OpTy = BI->getValueType(Ops[I]->getId());
@@ -3461,7 +3464,7 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
     mangleOpenClBuiltin(FuncName, ArgTys, MangledName);
   else
     MangledName =
-        getSPIRVFriendlyIRFunctionName(FuncName, BI->getOpCode(), ArgTys, Ops);
+        getSPIRVFriendlyIRFunctionName(FuncName, OC, ArgTys, Ops);
 
   opaquifyTypedPointers(ArgTys);
 
@@ -3484,14 +3487,14 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
     Func->setCallingConv(CallingConv::SPIR_FUNC);
     if (isFuncNoUnwind())
       Func->addFnAttr(Attribute::NoUnwind);
-    auto OC = BI->getOpCode();
+    // auto OC = BI->getOpCode();
     if (isGroupOpCode(OC) || isGroupNonUniformOpcode(OC) ||
         isIntelSubgroupOpCode(OC) || isSplitBarrierINTELOpCode(OC) ||
         OC == OpControlBarrier)
       Func->addFnAttr(Attribute::Convergent);
   }
   CallInst *Call;
-  if (BI->getOpCode() == OpCooperativeMatrixLengthKHR &&
+  if (OC == OpCooperativeMatrixLengthKHR &&
       Ops[0]->getOpCode() == OpTypeCooperativeMatrixKHR) {
     // OpCooperativeMatrixLengthKHR needs special handling as its operand is
     // a Type instead of a Value.
