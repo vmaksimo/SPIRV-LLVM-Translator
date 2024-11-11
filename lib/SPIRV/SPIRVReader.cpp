@@ -3450,18 +3450,19 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
           transType(AI->getSemanticType()),
           SPIRSPIRVAddrSpaceMap::rmap(
               BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
-    } else if (BI->getOpCode() == spv::OpCooperativeMatrixStoreKHR) {
-      auto *CM = static_cast<SPIRVCooperativeMatrixStoreKHR *>(BI);
+    } else if (BI->getOpCode() == spv::OpCooperativeMatrixStoreKHR ||
+               BI->getOpCode() == spv::internal::OpJointMatrixStoreINTEL) {
+      // auto *CM = static_cast<SPIRVCooperativeMatrixStoreKHR *>(BI);
       // It will work but it'd be strange
       auto *Val = transValue(Ops[Ptr], BB->getParent(), BB);
       Val = Val->stripPointerCasts();
       if (auto *GEP = dyn_cast<GetElementPtrInst>(Val))
-        ArgTys[Ptr] = TypedPointerType::get(GEP->getSourceElementType(),
-                                            SPIRSPIRVAddrSpaceMap::rmap(
-                                                BI->getValueType(Ops[Ptr]->getId())
-                                                    ->getPointerStorageClass()));
-      //GEP->getSourceElementType();
-      
+        ArgTys[Ptr] = TypedPointerType::get(
+            GEP->getSourceElementType(),
+            SPIRSPIRVAddrSpaceMap::rmap(
+                BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
+      // GEP->getSourceElementType();
+
       // ArgTys[Ptr] = ArgTys[Ptr];
     }
   }
