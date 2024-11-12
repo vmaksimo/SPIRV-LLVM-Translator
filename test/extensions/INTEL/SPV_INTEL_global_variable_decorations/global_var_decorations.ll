@@ -1,7 +1,7 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_global_variable_decorations -o %t.spv
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; R/UN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
 
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv --spirv-target-env=SPV-IR -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc

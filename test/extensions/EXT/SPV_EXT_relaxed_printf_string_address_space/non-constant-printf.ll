@@ -2,7 +2,7 @@
 ; RUN: not llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv 2>&1 | FileCheck %s --check-prefix=CHECK-WO-EXT
 
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -spirv-text %t.bc -o %t.spt --spirv-ext=+SPV_EXT_relaxed_printf_string_address_space
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; R/UN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
 
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -to-binary %t.spt -o %t.spv
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.rev.bc

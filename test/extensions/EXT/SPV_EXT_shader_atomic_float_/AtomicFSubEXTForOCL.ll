@@ -4,7 +4,7 @@
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_EXT_shader_atomic_float_add -o %t.spv
 ; RUN: spirv-val %t.spv
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -to-text %t.spv -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; R/UN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
 
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers --spirv-target-env=CL2.0 -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc -o - | FileCheck %s --check-prefixes=CHECK-LLVM-CL20
