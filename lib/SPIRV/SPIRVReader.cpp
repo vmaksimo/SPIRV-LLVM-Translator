@@ -3412,8 +3412,7 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
     } else if (OC == spv::OpCooperativeMatrixStoreKHR ||
                OC == spv::internal::OpJointMatrixStoreINTEL ||
                OC == spv::internal::OpCooperativeMatrixStoreCheckedINTEL ||
-               OC == spv::internal::OpJointMatrixLoadINTEL) {
-      // auto *CM = static_cast<SPIRVCooperativeMatrixStoreKHR *>(BI);
+               OC == spv::internal::OpJointMatrixLoadINTEL || OC == spv::OpSubgroupBlockReadINTEL ) {
       // It will work but it'd be strange
       auto *Val = transValue(Ops[Ptr], BB->getParent(), BB);
       Val = Val->stripPointerCasts();
@@ -3422,9 +3421,49 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
             GEP->getSourceElementType(),
             SPIRSPIRVAddrSpaceMap::rmap(
                 BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
-      // GEP->getSourceElementType();
+      else if (isa<Argument>(Val)) {
+        // Pointer is a function parameter. Assume that the type of the pointer
+        // is the same as the return type.
+        Type *Ty = nullptr;
+        // it return type is array type, assign its element type to Ty
+        if (RetTy->isArrayTy())
+          Ty = RetTy->getArrayElementType();
+        else if (RetTy->isVectorTy())
+          Ty = cast<VectorType>(RetTy)->getElementType();
+        else
+          Ty = RetTy;
 
-      // ArgTys[Ptr] = ArgTys[Ptr];
+        ArgTys[Ptr] = TypedPointerType::get(
+            Ty,
+            SPIRSPIRVAddrSpaceMap::rmap(
+                BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
+      }
+    } else if (OC == spv::OpSubgroupBlockWriteINTEL) {
+      auto *Val = transValue(Ops[Ptr], BB->getParent(), BB);
+      Val = Val->stripPointerCasts();
+      if (auto *GEP = dyn_cast<GetElementPtrInst>(Val))
+        ArgTys[Ptr] = TypedPointerType::get(
+            GEP->getSourceElementType(),
+            SPIRSPIRVAddrSpaceMap::rmap(
+                BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
+      else if (isa<Argument>(Val)) {
+        // Pointer is a function parameter. Assume that the type of the pointer
+        // is the same as the data pointer.
+        auto *Data = transValue(Ops[1], BB->getParent(), BB)->getType();
+        Type *Ty = nullptr;
+        // it return type is array type, assign its element type to Ty
+        if (Data->isArrayTy())
+          Ty = Data->getArrayElementType();
+        else if (Data->isVectorTy())
+          Ty = cast<VectorType>(Data)->getElementType();
+        else
+          Ty = RetTy;
+
+        ArgTys[Ptr] = TypedPointerType::get(
+            Ty,
+            SPIRSPIRVAddrSpaceMap::rmap(
+                BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
+      }
     }
   }
 
