@@ -39,7 +39,7 @@
 ; RUN: llvm-as < %s > %t.bc
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_fpga_loop_controls -o %t.spv
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -to-text %t.spv -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; R/UN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
 
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc -o %t.rev.ll

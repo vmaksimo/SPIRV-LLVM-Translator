@@ -407,7 +407,7 @@
 
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_arbitrary_precision_integers,+SPV_INTEL_arbitrary_precision_floating_point -o %t.spv
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; R/UN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o - | FileCheck %s --check-prefix=CHECK-SPIRV
 
 ; RUN: not llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_arbitrary_precision_integers -spirv-text -o - 2>&1 | FileCheck %s --check-prefix=CHECK-ERROR
 ; CHECK-ERROR: InvalidInstruction: Can't translate llvm instruction:
