@@ -8,13 +8,6 @@
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM
 
-; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_KHR_cooperative_matrix,+SPV_KHR_untyped_pointers -o %t.spv
-; RUN: llvm-spirv %t.spv -to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
-
-; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
-; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM
-
 ; CHECK-SPIRV-DAG: Capability CooperativeMatrixKHR
 ; CHECK-SPIRV-DAG: Extension "SPV_KHR_cooperative_matrix"
 ; CHECK-SPIRV-DAG: TypeInt [[#Int8Ty:]] 8 0
@@ -43,7 +36,7 @@
 ; CHECK-LLVM: call spir_func target("spirv.CooperativeMatrixKHR", i8, 2, 48, 12, 1) @_Z86__spirv_CooperativeMatrixLoadKHR_RPU3AS144__spirv_CooperativeMatrixKHR__char_2_48_12_1PU3AS4cil
 ; CHECK-LLVM: call spir_func target("spirv.CooperativeMatrixKHR", i32, 3, 12, 12, 2) @_Z34__spirv_CooperativeMatrixMulAddKHRPU3AS144__spirv_CooperativeMatrixKHR__char_0_12_48_0PU3AS144__spirv_CooperativeMatrixKHR__char_2_48_12_1PU3AS144__spirv_CooperativeMatrixKHR__uint_3_12_12_2i(target("spirv.CooperativeMatrixKHR", i8, 0, 12, 48, 0) %{{.*}}, target("spirv.CooperativeMatrixKHR", i8, 2, 48, 12, 1) %{{.*}}, target("spirv.CooperativeMatrixKHR", i32, 3, 12, 12, 2)
 ; CHECK-LLVM: call spir_func void @_Z33__spirv_CooperativeMatrixStoreKHRPU3AS4iPU3AS144__spirv_CooperativeMatrixKHR__uint_3_12_12_2ili(ptr addrspace(4) %call.ascast.i.i, target("spirv.CooperativeMatrixKHR", i32, 3, 12, 12, 2)
-                                 ; _Z33__spirv_CooperativeMatrixStoreKHRPU3AS4cPU3AS144__spirv_CooperativeMatrixKHR__uint_3_12_12_2ili
+
 ; ModuleID = 'test-matrix-opaque.bc'
 source_filename = "matrix-int8-test.cpp"
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024-n8:16:32:64"

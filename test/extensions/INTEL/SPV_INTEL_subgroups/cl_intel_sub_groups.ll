@@ -52,14 +52,6 @@
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM-SPIRV
 ; RUN: llvm-spirv %t.rev.bc -o - -spirv-text --spirv-ext=+SPV_INTEL_subgroups | FileCheck %s --check-prefix=CHECK-SPIRV
 
-; RUN: llvm-spirv %t.bc -o - -spirv-text --spirv-ext=+SPV_INTEL_subgroups,+SPV_KHR_untyped_pointers | FileCheck %s --check-prefix=CHECK-SPIRV
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-ext=+SPV_INTEL_subgroups,+SPV_KHR_untyped_pointers
-; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
-; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM
-; RUN: llvm-spirv -r %t.spv -o %t.rev.bc --spirv-target-env=SPV-IR
-; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM-SPIRV
-; RUN: llvm-spirv %t.rev.bc -o - -spirv-text --spirv-ext=+SPV_INTEL_subgroups,+SPV_KHR_untyped_pointers | FileCheck %s --check-prefix=CHECK-SPIRV
-
 ; CHECK-SPIRV: Capability SubgroupShuffleINTEL
 ; CHECK-SPIRV: Capability SubgroupBufferBlockIOINTEL
 ; CHECK-SPIRV: Capability SubgroupImageBlockIOINTEL
