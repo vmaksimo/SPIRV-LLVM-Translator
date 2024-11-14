@@ -21,7 +21,7 @@
 
 1 FunctionEnd
 
-; RUN: llvm-spirv %s -to-binary -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %s -to-binary -o %t.spv
 ; RUN: spirv-val %t.spv
 ; Reverse translation shouldn't crash:
-; RUN: llvm-spirv -r --spirv-target-env=SPV-IR %t.spv -o %t.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r --spirv-target-env=SPV-IR %t.spv -o %t.bc

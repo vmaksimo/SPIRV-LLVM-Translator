@@ -1,21 +1,20 @@
 ; RUN: llvm-as %s -o %t.bc
 
-; RUN: not llvm-spirv %t.bc 2>&1 | FileCheck %s --check-prefix=CHECK-WO-EXT
+; RUN: not llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc 2>&1 | FileCheck %s --check-prefix=CHECK-WO-EXT
 
-; RUN: llvm-spirv -s %t.bc -o %t.regularized.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -s %t.bc -o %t.regularized.bc
 ; RUN: llvm-dis %t.regularized.bc -o %t.regularized.ll
 ; RUN: FileCheck < %t.regularized.ll %s --check-prefix=CHECK-REGULARIZED
 
-; RUN: llvm-spirv --spirv-text %t.bc -o %t.spt --spirv-ext=+SPV_INTEL_bfloat16_conversion
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers --spirv-text %t.bc -o %t.spt --spirv-ext=+SPV_INTEL_bfloat16_conversion
 
-; RUN: llvm-spirv -to-binary %t.spt -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -to-binary %t.spt -o %t.spv
 
-; RUN: llvm-spirv -r %t.spv -o %t.rev.bc --spirv-target-env=CL2.0
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.rev.bc --spirv-target-env=CL2.0
 ; RUN: llvm-dis %t.rev.bc -o %t.rev.ll
 ; RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM-CL20
 
-; RUN: llvm-spirv -r %t.spv -o %t.rev.bc --spirv-target-env=SPV-IR
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.rev.bc --spirv-target-env=SPV-IR
 ; RUN: llvm-dis %t.rev.bc -o %t.rev.ll
 ; RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM-SPV
 

@@ -1,11 +1,11 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv -s %t.bc -o %t.regularized.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -s %t.bc -o %t.regularized.bc
 ; RUN: llvm-dis %t.regularized.bc -o %t.regularized.ll
 ; RUN: FileCheck < %t.regularized.ll %s
 
 ; Translation cycle should be successful:
-; RUN: llvm-spirv %t.regularized.bc -o %t.spv
-; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.regularized.bc -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.rev.bc
 
 ; CHECK: %[[#Base:]] = load i1, ptr addrspace(4){{.*}}, align 1
 ; CHECK: %[[#LoadShift:]] = load i32, ptr addrspace(4){{.*}} align 4

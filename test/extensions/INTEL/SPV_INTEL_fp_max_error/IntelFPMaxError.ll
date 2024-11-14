@@ -2,16 +2,15 @@
 
 ;; Check that an error is reported if a fpbuiltin-max-error attribute is encountered without the SPV_INTEL_fp_max_error
 ;; extension.
-; RUN: not llvm-spirv %t.bc --spirv-allow-unknown-intrinsics=llvm.fpbuiltin -o %t.spv 2>&1  | FileCheck %s --check-prefix=CHECK_NO_CAPABILITY_ERROR
+; RUN: not llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-allow-unknown-intrinsics=llvm.fpbuiltin -o %t.spv 2>&1  | FileCheck %s --check-prefix=CHECK_NO_CAPABILITY_ERROR
 ; CHECK_NO_CAPABILITY_ERROR: RequiresExtension: Feature requires the following SPIR-V extension:
 ; CHECK_NO_CAPABILITY_ERROR-NEXT: SPV_INTEL_fp_max_error
 
 ;; Check that fpbuiltin-max-error is translated and reverse-translated properly
-; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_fp_max_error --spirv-allow-unknown-intrinsics=llvm.fpbuiltin -o %t.spv
-; RUN: llvm-spirv %t.spv -to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_fp_max_error --spirv-allow-unknown-intrinsics=llvm.fpbuiltin -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o %t.spt
 
-; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; CHECK-SPIRV: Capability FPMaxErrorINTEL

@@ -3454,7 +3454,10 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
     } else if (OC == spv::OpCooperativeMatrixStoreKHR ||
                OC == spv::internal::OpJointMatrixStoreINTEL ||
                OC == spv::internal::OpCooperativeMatrixStoreCheckedINTEL ||
-               OC == spv::internal::OpJointMatrixLoadINTEL || OC == spv::OpSubgroupBlockReadINTEL ) {
+               OC == spv::internal::OpJointMatrixLoadINTEL ||
+               OC == spv::OpSubgroupBlockReadINTEL ||
+               OC == spv::OpCompositeConstruct ||
+               OC == spv::internal::OpCooperativeMatrixApplyFunctionINTEL) {
       // It will work but it'd be strange
       auto *Val = transValue(Ops[Ptr], BB->getParent(), BB);
       Val = Val->stripPointerCasts();
@@ -3463,7 +3466,7 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
             GEP->getSourceElementType(),
             SPIRSPIRVAddrSpaceMap::rmap(
                 BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
-      else if (isa<Argument>(Val)) {
+      else if (isa<Argument>(Val) && RetTy) {
         // Pointer is a function parameter. Assume that the type of the pointer
         // is the same as the return type.
         Type *Ty = nullptr;

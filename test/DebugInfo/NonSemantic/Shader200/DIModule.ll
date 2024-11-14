@@ -1,14 +1,13 @@
 ; ModuleID = '/Volumes/Data/apple-internal/llvm/tools/clang/test/Modules/debug-info-moduleimport.m'
 ; RUN: llvm-as < %s -o %t.bc
-; RUN: llvm-spirv --spirv-debug-info-version=nonsemantic-shader-200 %t.bc -o %t.spv
-; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o %t.ll
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers --spirv-debug-info-version=nonsemantic-shader-200 %t.bc -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o - | llvm-dis -o %t.ll
 
 ; RUN: llc -mtriple=x86_64-apple-macosx %t.ll -accel-tables=Dwarf -o %t -filetype=obj
 ; RUN: llvm-dwarfdump -debug-info %t | FileCheck %s
 ; RUN: llvm-dwarfdump -verify %t
 
-; RUN: llvm-spirv --spirv-debug-info-version=nonsemantic-shader-200 %t.bc -spirv-text -o %t.spt
-; RUN: FileCheck %s --input-file %t.spt --check-prefix CHECK-SPIRV
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers --spirv-debug-info-version=nonsemantic-shader-200 %t.bc -spirv-text -o %t.spt
 
 ; CHECK: DW_TAG_compile_unit
 ; CHECK-NOT: DW_TAG

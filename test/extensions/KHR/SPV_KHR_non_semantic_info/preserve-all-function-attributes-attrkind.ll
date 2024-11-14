@@ -1,12 +1,10 @@
 ; RUN: llvm-as < %s -o %t.bc
-; RUN: llvm-spirv %t.bc -spirv-text --spirv-preserve-auxdata --spirv-max-version=1.5 -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-EXT
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-preserve-auxdata
-; RUN: llvm-spirv -r --spirv-preserve-auxdata %t.spv -o %t.rev.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv --spirv-preserve-auxdata
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r --spirv-preserve-auxdata %t.spv -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
-; RUN: llvm-spirv %t.bc -spirv-text --spirv-preserve-auxdata -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-NOEXT
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-preserve-auxdata
-; RUN: llvm-spirv -r --spirv-preserve-auxdata %t.spv -o %t.rev.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv --spirv-preserve-auxdata
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r --spirv-preserve-auxdata %t.spv -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; Check SPIR-V versions in a format magic number + version

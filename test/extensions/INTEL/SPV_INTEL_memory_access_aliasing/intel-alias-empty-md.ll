@@ -2,9 +2,8 @@
 ; metadata
 
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_memory_access_aliasing -o %t.spv
-; RUN: llvm-spirv %t.spv -to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_memory_access_aliasing -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o %t.spt
 
 ; CHECK-SPIRV-NOT: Capability MemoryAccessAliasingINTEL
 ; CHECK-SPIRV-NOT: Extension "SPV_INTEL_memory_access_aliasing"

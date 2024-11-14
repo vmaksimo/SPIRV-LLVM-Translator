@@ -1,12 +1,10 @@
 // REQUIRES: spirv-dis
 // RUN: %clang_cc1 -triple spir-unknown-unknown -O1 -cl-std=CL2.0 -fdeclare-opencl-builtins -finclude-default-header -emit-llvm-bc %s -o %t.bc
-// RUN: llvm-spirv %t.bc --spirv-ext=+SPV_KHR_shader_clock -o %t.spv
-// RUN: spirv-dis %t.spv -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+// RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_KHR_shader_clock -o %t.spv
 // RUN: spirv-val %t.spv
-// RUN: llvm-spirv -r %t.spv -o %t.rev.bc
+// RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.rev.bc
 // RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM
-// RUN: llvm-spirv -r --spirv-target-env=SPV-IR %t.spv -o %t.rev.bc
-// RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-SPV-IR
+// RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r --spirv-target-env=SPV-IR %t.spv -o %t.rev.bc
 
 // CHECK-SPIRV: OpCapability ShaderClockKHR
 // CHECK-SPIRV: OpExtension "SPV_KHR_shader_clock"

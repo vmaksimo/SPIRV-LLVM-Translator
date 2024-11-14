@@ -1,7 +1,7 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: not llvm-spirv -s %t.bc
-; RUN: llvm-spirv --spirv-ext=+SPV_INTEL_vector_compute %t.bc
-; RUN: llvm-spirv %t.spv -to-text -o - | FileCheck %s
+; RUN: not llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -s %t.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers --spirv-ext=+SPV_INTEL_vector_compute %t.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o - | FileCheck %s
 
 ; CHECK: ExtInstImport [[ExtInstSetId:[0-9]+]] "OpenCL.std"
 ; CHECK: TypeFloat [[Float:[0-9]+]] 32

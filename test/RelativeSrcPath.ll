@@ -9,7 +9,7 @@
 ; Directory: /tmp
 
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc -spirv-text -o - | FileCheck %s
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -spirv-text -o - | FileCheck %s
 
 ; ModuleID = 'RelativeSrcPath.cl'
 source_filename = "RelativeSrcPath.cl"

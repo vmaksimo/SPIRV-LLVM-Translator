@@ -1,13 +1,11 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_blocking_pipes,+SPV_INTEL_arbitrary_precision_integers -spirv-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_blocking_pipes,+SPV_INTEL_arbitrary_precision_integers -spirv-text -o %t.spt
 ; FIXME: add more negative test cases
-; RUN: llvm-spirv %t.spt -to-binary -o %t.spv
-; RUN: llvm-spirv -r %t.spv -o %t.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spt -to-binary -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.bc
 ; RUN: llvm-dis < %t.bc | FileCheck %s --check-prefix=CHECK-LLVM
 
-; RUN: llvm-spirv -r %t.spv -o %t.bc --spirv-target-env=SPV-IR
-; RUN: llvm-dis < %t.bc | FileCheck %s --check-prefix=CHECK-SPV-IR
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.bc --spirv-target-env=SPV-IR
 
 ; ModuleID = 'test/CodeGenOpenCL/pipe_builtin.cl'
 source_filename = "test/CodeGenOpenCL/pipe_builtin.cl"

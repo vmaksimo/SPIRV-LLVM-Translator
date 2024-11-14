@@ -1,6 +1,6 @@
 // RUN: %clang_cc1 %s -triple spir -O0 -emit-llvm-bc -o %t.bc
-// RUN: llvm-spirv %t.bc -o %t.spv
-// RUN: llvm-spirv %t.spv -to-text -o - | FileCheck %s
+// RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv
+// RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o - | FileCheck %s
 // RUN: spirv-val %t.spv
 
 // CHECK: TypeImage [[TypeImage:[0-9]+]]

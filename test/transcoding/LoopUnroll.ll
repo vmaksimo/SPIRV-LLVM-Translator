@@ -47,14 +47,12 @@
 ; }
 
 ; RUN: llvm-as < %s > %t.bc
-; RUN: llvm-spirv %t.bc -o %t.spv
-; RUN: llvm-spirv -to-text %t.spv -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
-; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -to-text %t.spv -o %t.spt
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc -o - | FileCheck %s --check-prefixes=CHECK-LLVM
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-max-version=1.1
-; RUN: llvm-spirv -to-text %t.spv -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV-NEGATIVE
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv --spirv-max-version=1.1
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -to-text %t.spv -o %t.spt
 
 ; Check SPIR-V versions in a format magic number + version
 ; CHECK-SPIRV: 119734787 66560

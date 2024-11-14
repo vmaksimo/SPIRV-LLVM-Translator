@@ -2,7 +2,7 @@
 ; if SPV_INTEL_token_type extension is not used.
 
 ; RUN: llvm-as < %s -o %t.bc
-; RUN: not llvm-spirv %t.bc 2>&1 --spirv-allow-unknown-intrinsics | FileCheck %s
+; RUN: not llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc 2>&1 --spirv-allow-unknown-intrinsics | FileCheck %s
 
 ; CHECK: RequiresExtension: Feature requires the following SPIR-V extension:
 ; CHECK-NEXT: SPV_INTEL_token_type

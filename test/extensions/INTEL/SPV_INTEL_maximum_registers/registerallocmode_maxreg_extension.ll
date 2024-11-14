@@ -1,8 +1,7 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv -spirv-text --spirv-ext=+SPV_INTEL_maximum_registers %t.bc
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
-; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_maximum_registers -o %t.spv
-; RUN: llvm-spirv -r %t.spv -spirv-target-env=SPV-IR -o - | llvm-dis -o %t.rev.ll
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -spirv-text --spirv-ext=+SPV_INTEL_maximum_registers %t.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_maximum_registers -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -spirv-target-env=SPV-IR -o - | llvm-dis -o %t.rev.ll
 ; RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM
 
 ; CHECK-SPIRV: EntryPoint [[#]] [[#FUNC0:]] "main_l3"

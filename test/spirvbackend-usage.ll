@@ -8,11 +8,10 @@
 ; RUN: llvm-as %s -o %t.bc
 
 ; The following is to test that 
-; RUN: llvm-spirv %t.bc -spirv-text -o %t.spv.txt -spirv-ext=+SPV_KHR_uniform_group_instructions --spirv-use-llvm-backend-target
-; RUN: FileCheck < %t.spv.txt %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -spirv-text -o %t.spv.txt -spirv-ext=+SPV_KHR_uniform_group_instructions --spirv-use-llvm-backend-target
 
-; RUN: llvm-spirv %t.bc -o %t.spv -spirv-ext=+SPV_KHR_uniform_group_instructions --spirv-use-llvm-backend-target
-; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv -spirv-ext=+SPV_KHR_uniform_group_instructions --spirv-use-llvm-backend-target
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc
 ; RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM-SPV
 

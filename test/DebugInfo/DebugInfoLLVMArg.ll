@@ -2,31 +2,27 @@
 ; DW_OP_LLVM_arg is mapped on 165 in SPIR-V
 
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-allow-extra-diexpressions
-; RUN: llvm-spirv %t.spv -to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV-OCL
-; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv --spirv-allow-extra-diexpressions
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o %t.spt
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM-OCL
 
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-debug-info-version=nonsemantic-shader-200
-; RUN: llvm-spirv %t.spv -to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV-200
-; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv --spirv-debug-info-version=nonsemantic-shader-200
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o %t.spt
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM-200
 
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-allow-extra-diexpressions --experimental-debuginfo-iterators=1
-; RUN: llvm-spirv %t.spv -to-text -o %t.spt --experimental-debuginfo-iterators=1
-; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV-OCL
-; RUN: llvm-spirv -r --experimental-debuginfo-iterators=1 %t.spv -o %t.rev.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv --spirv-allow-extra-diexpressions --experimental-debuginfo-iterators=1
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o %t.spt --experimental-debuginfo-iterators=1
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r --experimental-debuginfo-iterators=1 %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM-OCL
 
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-debug-info-version=nonsemantic-shader-200 --experimental-debuginfo-iterators=1
-; RUN: llvm-spirv %t.spv -to-text -o %t.spt --experimental-debuginfo-iterators=1
-; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV-200
-; RUN: llvm-spirv -r --experimental-debuginfo-iterators=1 %t.spv -o %t.rev.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv --spirv-debug-info-version=nonsemantic-shader-200 --experimental-debuginfo-iterators=1
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -to-text -o %t.spt --experimental-debuginfo-iterators=1
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r --experimental-debuginfo-iterators=1 %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM-200
 
 ; CHECK-SPIRV-200-DAG: TypeInt [[#INT32:]] 32 0

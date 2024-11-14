@@ -1,5 +1,5 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc
 
 ; --- Source code ---
 ; Generated with "intel/llvm/clang++ -fsycl-device-only  -emit-llvm -S"

@@ -1,6 +1,6 @@
 ; REQUIRES: spirv-dis
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: spirv-dis %t.spv | FileCheck %s
 
 ; CHECK: [[REGISTER:%[a-zA-Z0-9_]+]] = OpConstant %uint 1

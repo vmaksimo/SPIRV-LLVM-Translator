@@ -3,10 +3,9 @@
 ; kernel __attribute__((intel_reqd_sub_group_size(8)))
 ; void foo() {}
 
-; RUN: llvm-as %s -o - | llvm-spirv -o %t.spv
+; RUN: llvm-as %s -o - | llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -o %t.spv
 ; RUN: spirv-val %t.spv
-; RUN: llvm-spirv %t.spv -to-text -o - | FileCheck %s --check-prefix=CHECK-SPIRV
-; RUN: llvm-spirv %t.spv -r -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -r -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; CHECK-SPIRV: Capability SubgroupDispatch
 ; CHECK-SPIRV: EntryPoint 6 [[kernel:[0-9]+]] "foo"

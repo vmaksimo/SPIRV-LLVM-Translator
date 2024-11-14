@@ -1,4 +1,4 @@
-; RUN: llvm-as < %s | llvm-spirv -spirv-text -o %t
+; RUN: llvm-as < %s | llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -spirv-text -o %t
 ; RUN: FileCheck < %t %s
 
 ; CHECK-DAG: TypeVoid [[VOID:[0-9]+]]

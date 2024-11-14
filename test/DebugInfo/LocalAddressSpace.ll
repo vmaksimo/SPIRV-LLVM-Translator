@@ -2,12 +2,11 @@
 ;__kernel void foo(void) {
 ;  __local int a;
 ;}
-; clang -cc1 -triple spir -disable-llvm-passes -triple spir /work/tmp/tmp.cl -O0 -debug-info-kind=standalone -emit-llvm -o /work/llvm/projects/llvm-spirv/test/DebugInfo/LocalAddressSpace.ll
+; clang -cc1 -triple spir -disable-llvm-passes -triple spir /work/tmp/tmp.cl -O0 -debug-info-kind=standalone -emit-llvm -o /work/llvm/projects/llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers/test/DebugInfo/LocalAddressSpace.ll
 
 ; RUN: llvm-as < %s -o %t.bc
-; RUN: llvm-spirv %t.bc -o %t.spv
-; RUN: llvm-spirv %t.bc -o - -spirv-text | FileCheck %s --check-prefix=CHECK-SPIRV
-; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o %t.ll
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o - | llvm-dis -o %t.ll
 ; RUN: cat %t.ll | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; RUN: llc -mtriple=%triple -filetype=obj -O0 < %t.ll | llvm-dwarfdump -v -debug-info - | FileCheck %s

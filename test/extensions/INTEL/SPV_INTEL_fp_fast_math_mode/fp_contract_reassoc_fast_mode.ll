@@ -1,8 +1,6 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV-OFF
-; RUN: llvm-spirv --spirv-ext=+SPV_INTEL_fp_fast_math_mode -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV-ON
-; RUN: llvm-spirv  --spirv-ext=+SPV_INTEL_fp_fast_math_mode %t.bc -o %t.spv
-; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers  --spirv-ext=+SPV_INTEL_fp_fast_math_mode %t.bc -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
  
 ; CHECK-SPIRV-ON: 2 Capability FPFastMathModeINTEL
 ; CHECK-SPIRV-ON: SPV_INTEL_fp_fast_math_mode

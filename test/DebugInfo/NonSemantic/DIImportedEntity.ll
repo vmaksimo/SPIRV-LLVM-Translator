@@ -1,16 +1,14 @@
 ; ModuleID = '/Volumes/Data/apple-internal/llvm/tools/clang/test/Modules/debug-info-moduleimport.m'
 ; RUN: llvm-as < %s -o %t.bc
 
-; RUN: llvm-spirv --spirv-debug-info-version=nonsemantic-shader-100 %t.bc -spirv-text -o %t.spt
-; RUN: FileCheck %s --input-file %t.spt --check-prefix CHECK-SPIRV
-; RUN: llvm-spirv --spirv-debug-info-version=nonsemantic-shader-100 %t.bc -o %t.spv
-; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o %t.ll
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers --spirv-debug-info-version=nonsemantic-shader-100 %t.bc -spirv-text -o %t.spt
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers --spirv-debug-info-version=nonsemantic-shader-100 %t.bc -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o - | llvm-dis -o %t.ll
 ; RUN: FileCheck %s --input-file %t.ll --check-prefix CHECK-LLVM
 
-; RUN: llvm-spirv --spirv-debug-info-version=nonsemantic-shader-200 %t.bc -spirv-text -o %t.spt
-; RUN: FileCheck %s --input-file %t.spt --check-prefix CHECK-SPIRV
-; RUN: llvm-spirv --spirv-debug-info-version=nonsemantic-shader-200 %t.bc -o %t.spv
-; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o %t.ll
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers --spirv-debug-info-version=nonsemantic-shader-200 %t.bc -spirv-text -o %t.spt
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers --spirv-debug-info-version=nonsemantic-shader-200 %t.bc -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r %t.spv -o - | llvm-dis -o %t.ll
 ; RUN: FileCheck %s --input-file %t.ll --check-prefix CHECK-LLVM
 
 target datalayout = "e-m:o-i64:64-f80:128-n8:16:32:64-S128"

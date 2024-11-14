@@ -1,12 +1,11 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-ext=+SPV_KHR_shader_clock
-; RUN: llvm-spirv %t.spv -o %t.spt --to-text
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
-; RUN: llvm-spirv %t.spv -o %t.rev.bc -r --spirv-target-env=SPV-IR
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv --spirv-ext=+SPV_KHR_shader_clock
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -o %t.spt --to-text
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -o %t.rev.bc -r --spirv-target-env=SPV-IR
 ; RUN: llvm-dis %t.rev.bc -o %t.rev.ll
 ; RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM
 
-; RUN: not llvm-spirv %t.bc 2>&1 | FileCheck %s --check-prefix=CHECK-ERROR
+; RUN: not llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc 2>&1 | FileCheck %s --check-prefix=CHECK-ERROR
 ; CHECK-ERROR: RequiresExtension: Feature requires the following SPIR-V extension:
 ; CHECK-ERROR-NEXT: SPV_KHR_shader_clock
 

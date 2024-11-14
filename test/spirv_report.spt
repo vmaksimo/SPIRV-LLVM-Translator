@@ -1,5 +1,5 @@
-; RUN: llvm-spirv %s -to-binary -o %t.spv
-; RUN: llvm-spirv --spirv-print-report %t.spv | FileCheck %s --check-prefix=CHECK-DAG
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %s -to-binary -o %t.spv
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers --spirv-print-report %t.spv | FileCheck %s --check-prefix=CHECK-DAG
 
 ; CHECK-DAG: Version: 1.0
 ; CHECK-DAG: Memory model: OpenCL

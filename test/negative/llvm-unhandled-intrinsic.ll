@@ -2,7 +2,7 @@
 ; It either represents intrinsic's semantics with SPIRV instruction(s), or
 ; reports an error.
 ; RUN: llvm-as %s -o %t.bc
-; RUN: not llvm-spirv %t.bc 2>&1 | FileCheck %s
+; RUN: not llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc 2>&1 | FileCheck %s
 
 ; CHECK: InvalidFunctionCall: Unexpected llvm intrinsic:
 ; CHECK-NEXT: llvm.readcyclecounter

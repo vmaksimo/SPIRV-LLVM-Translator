@@ -1,12 +1,12 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-max-version=1.1 --spirv-ext=+SPV_KHR_float_controls
-; RUN: llvm-spirv %t.spv -o %t.spt --to-text
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv --spirv-max-version=1.1 --spirv-ext=+SPV_KHR_float_controls
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -o %t.spt --to-text
 ; RUN: FileCheck %s --input-file %t.spt -check-prefixes=SPV,SPVEXT
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-max-version=1.4
-; RUN: llvm-spirv %t.spv -o %t.spt --to-text
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv --spirv-max-version=1.4
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -o %t.spt --to-text
 ; RUN: FileCheck %s --input-file %t.spt -check-prefixes=SPV,SPV14
-; RUN: llvm-spirv %t.bc -o %t.spv --spirv-max-version=1.1
-; RUN: llvm-spirv %t.spv -o %t.spt --to-text
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc -o %t.spv --spirv-max-version=1.1
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -o %t.spt --to-text
 ; RUN: FileCheck %s --input-file %t.spt -check-prefix=SPV-NEGATIVE
 
 ; ModuleID = 'float_control.bc'

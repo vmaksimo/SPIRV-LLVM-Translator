@@ -1,10 +1,9 @@
-; Test if llvm-spirv type scavenging has an assertion 
+; Test if llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers type scavenging has an assertion 
 ; failure due to incorrect lookup of an equivalence class leader.
 
-; RUN: llvm-as < %s | llvm-spirv -o %t.spv
+; RUN: llvm-as < %s | llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -o %t.spv
 ; RUN: spirv-val %t.spv
-; RUN: llvm-spirv %t.spv -o - -to-text | FileCheck %s --check-prefix=CHECK-SPIRV
-; RUN: llvm-spirv %t.spv -o - -r | llvm-dis | FileCheck %s --check-prefix=CHECK-LLVM
+; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.spv -o - -r | llvm-dis | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; Incorrect lookup of equivalence class leader caused an assertion failure when
 ; processing call instruction to this name
