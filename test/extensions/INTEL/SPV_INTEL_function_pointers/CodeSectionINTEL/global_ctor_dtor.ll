@@ -1,8 +1,11 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_function_pointers -spirv-text -o - | FileCheck %s
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers %t.bc --spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
-; RUN: llvm-spirv --spirv-ext=+SPV_KHR_untyped_pointers -r -spirv-emit-function-ptr-addr-space %t.spv
+; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers -spirv-text -o - | FileCheck %s --check-prefixes=CHECK,CHECK-TYPED-PTR
+; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
+; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.rev.bc
 
+; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text -o - | FileCheck %s --check-prefixes=CHECK,CHECK-UNTYPED-PTR
+; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -o %t.spv
+; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv
 
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024-n8:16:32:64"
 target triple = "spir64-unknown-unknown"
@@ -20,15 +23,18 @@ target triple = "spir64-unknown-unknown"
 ; CHECK-DAG: Decorate {{[0-9]+}} LinkageAttributes "llvm.global_ctors" Export
 ; CHECK-DAG: Decorate {{[0-9]+}} LinkageAttributes "llvm.global_dtors" Export
 
+; CHECK-UNTYPED-PTR: TypeUntypedPointerKHR [[TP:[0-9]+]] [[#]]
 ; CHECK: TypeFunction {{[0-9]+}} [[TF:[0-9]+]]
 
-; CHECK: TypePointer [[TP:[0-9]+]]
+; CHECK-TYPED-PTR: TypePointer [[TP:[0-9]+]]
 ; CHECK: ConstantFunctionPointerINTEL [[TP]] [[FPCtor:[0-9]+]] [[NameCtor]]
-; CHECK: SpecConstantOp {{[0-9]+}} [[FPCtorI8:[0-9]+]] 124 [[FPCtor]]
-; CHECK: ConstantComposite {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} [[FPCtorI8]]
+; CHECK-TYPED-PTR: SpecConstantOp {{[0-9]+}} [[FPCtorI8:[0-9]+]] 124 [[FPCtor]]
+; CHECK-TYPED-PTR: ConstantComposite {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} [[FPCtorI8]]
+; CHECK-UNTYPED-PTR: ConstantComposite {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} [[FPCtor]]
 ; CHECK: ConstantFunctionPointerINTEL [[TP]] [[FPDtor:[0-9]+]] [[NameDtor]]
-; CHECK: SpecConstantOp {{[0-9]+}} [[FPDtorI8:[0-9]+]] 124 [[FPDtor]]
-; CHECK: ConstantComposite {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} [[FPDtorI8]]
+; CHECK-TYPED-PTR: SpecConstantOp {{[0-9]+}} [[FPDtorI8:[0-9]+]] 124 [[FPDtor]]
+; CHECK-TYPED-PTR: ConstantComposite {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} [[FPDtorI8]]
+; CHECK-UNTYPED-PTR: ConstantComposite {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} [[FPDtor]]
 
 ; CHECK: 5 Function [[TF]] [[NameCtor]] 0
 ; CHECK-EMPTY:
