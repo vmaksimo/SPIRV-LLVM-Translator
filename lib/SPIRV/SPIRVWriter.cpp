@@ -6757,7 +6757,10 @@ LLVMToSPIRVBase::transBuiltinToInstWithoutDecoration(Op OC, CallInst *CI,
           transValue(CI->getArgOperand(0)->stripPointerCasts(), BB);
       SPIRVId ScopeId = transValue(CI->getArgOperand(1), BB)->getId();
       SPIRVValue *Delta = transValue(CI->getArgOperand(3), BB);
-      SPIRVValue *Composite0 = BM->addLoadInst(InValue, {}, BB);
+      SPIRVType* LoadTy = nullptr;
+      if (InValue->isUntypedVariable())
+        LoadTy = static_cast<SPIRVUntypedVariableKHR*>(InValue)->getDataType();
+      SPIRVValue *Composite0 = BM->addLoadInst(InValue, {}, BB, LoadTy);
       Type *MemberTy = St->getElementType(0);
       SPIRVType *ElementTy = transType(MemberTy);
       SPIRVValue *Element0 =
