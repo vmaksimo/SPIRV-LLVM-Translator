@@ -2221,9 +2221,11 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
       SPIRVValue *Source = transValue(LD->getPointerOperand(), BB);
       SPIRVType *PtrElTy = Source->getType()->getPointerElementType();
       SPIRVType *LoadTy = transType(LD->getType());
-      // For special types (images, pipes, etc.) do not use explicit load type,
-      // but rather use the source type (calculated in SPIRVLoad constructor)
-      if (LoadTy->isTypeUntypedPointerKHR() && PtrElTy->isSPIRVOpaqueType()) {
+      // For special types (images, pipes, etc.) and also for arrays and vectors
+      // do not use explicit load type, but rather use the source type
+      // (calculated in SPIRVLoad constructor)
+      if (LoadTy->isTypeUntypedPointerKHR() && PtrElTy->isSPIRVOpaqueType() ||
+          PtrElTy->isTypeVector() || PtrElTy->isTypeArray()) {
         LoadTy = nullptr;
       }
       return mapValue(V, BM->addLoadInst(Source, MemoryAccess, BB, LoadTy));
