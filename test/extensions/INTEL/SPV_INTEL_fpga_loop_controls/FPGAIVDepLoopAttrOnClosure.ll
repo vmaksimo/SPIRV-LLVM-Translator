@@ -44,6 +44,13 @@
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc -o %t.rev.ll
 
+; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_fpga_loop_controls,+SPV_KHR_untyped_pointers -o %t.spv
+; RUN: llvm-spirv -to-text %t.spv -o %t.spt
+; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+
+; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
+; RUN: llvm-dis %t.rev.bc -o %t.rev.ll
+
 ; CHECK-LLVM is the base prefix, which includes simple checks for
 ; "llvm.loop.parallel_access_indices" MD nodes with only 1 index group operand
 ; CHECK-LLVM-MD-OP-<N> is the group of prefixes to check for more

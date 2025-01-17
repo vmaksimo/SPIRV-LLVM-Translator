@@ -1,14 +1,28 @@
 // RUN: %clang_cc1 -triple spir -cl-std=cl2.0 -disable-llvm-passes -fdeclare-opencl-builtins -finclude-default-header %s -emit-llvm-bc -o %t.bc
 
-// RUN: llvm-spirv --spirv-max-version=1.1 %t.bc -spirv-text -o - | FileCheck %s --check-prefixes=CHECK-SPIRV1_1,CHECK-SPIRV
+// RUN: llvm-spirv --spirv-max-version=1.1 %t.bc -spirv-text -o - | FileCheck %s --check-prefixes=CHECK-SPIRV1_1,CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 // RUN: llvm-spirv --spirv-max-version=1.1 %t.bc -o %t.spirv1.1.spv
 // RUN: spirv-val --target-env spv1.1 %t.spirv1.1.spv
 // RUN: llvm-spirv -r %t.spirv1.1.spv -o %t.rev.bc
 // RUN: llvm-dis %t.rev.bc
 // RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM
 
-// RUN: llvm-spirv --spirv-max-version=1.4 %t.bc -spirv-text -o - | FileCheck %s --check-prefixes=CHECK-SPIRV1_4,CHECK-SPIRV
+// RUN: llvm-spirv --spirv-max-version=1.4 %t.bc -spirv-text -o - | FileCheck %s --check-prefixes=CHECK-SPIRV1_4,CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 // RUN: llvm-spirv --spirv-max-version=1.4 %t.bc -o %t.spirv1.4.spv
+// RUN: spirv-val --target-env spv1.4 %t.spirv1.4.spv
+// RUN: llvm-spirv -r %t.spirv1.4.spv -o %t.rev.bc
+// RUN: llvm-dis %t.rev.bc
+// RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM
+
+// RUN: llvm-spirv --spirv-max-version=1.1 %t.bc --spirv-ext=+SPV_KHR_untyped_pointers -spirv-text -o - | FileCheck %s --check-prefixes=CHECK-SPIRV1_1,CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
+// RUN: llvm-spirv --spirv-max-version=1.1 %t.bc --spirv-ext=+SPV_KHR_untyped_pointers -o %t.spirv1.1.spv
+// RUN: spirv-val --target-env spv1.1 %t.spirv1.1.spv
+// RUN: llvm-spirv -r %t.spirv1.1.spv -o %t.rev.bc
+// RUN: llvm-dis %t.rev.bc
+// RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM
+
+// RUN: llvm-spirv --spirv-max-version=1.4 %t.bc --spirv-ext=+SPV_KHR_untyped_pointers -spirv-text -o - | FileCheck %s --check-prefixes=CHECK-SPIRV1_4,CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
+// RUN: llvm-spirv --spirv-max-version=1.4 %t.bc --spirv-ext=+SPV_KHR_untyped_pointers -o %t.spirv1.4.spv
 // RUN: spirv-val --target-env spv1.4 %t.spirv1.4.spv
 // RUN: llvm-spirv -r %t.spirv1.4.spv -o %t.rev.bc
 // RUN: llvm-dis %t.rev.bc
@@ -42,13 +56,18 @@ kernel void block_ret_struct(__global int* res)
 
 // CHECK-SPIRV: 4 TypeInt [[IntTy:[0-9]+]] 32
 // CHECK-SPIRV: 4 TypeInt [[Int8Ty:[0-9]+]] 8
-// CHECK-SPIRV: 4 TypePointer [[Int8Ptr:[0-9]+]] 8 [[Int8Ty]]
+// CHECK-SPIRV-TYPED-PTR: 4 TypePointer [[Int8Ptr:[0-9]+]] 8 [[Int8Ty]]
+// CHECK-SPIRV-UNTYPED-PTR: 3 TypeUntypedPointerKHR [[Ptr:[0-9]+]] 8
+// CHECK-SPIRV-UNTYPED-PTR: 3 TypeUntypedPointerKHR [[PtrTy:[0-9]+]] 7
 // CHECK-SPIRV: 3 TypeStruct [[StructTy:[0-9]+]] [[IntTy]]
-// CHECK-SPIRV: 4 TypePointer [[StructPtrTy:[0-9]+]] 7 [[StructTy]]
+// CHECK-SPIRV-TYPED-PTR: 4 TypePointer [[StructPtrTy:[0-9]+]] 7 [[StructTy]]
 
-// CHECK-SPIRV: 4 Variable [[StructPtrTy]] [[StructArg:[0-9]+]] 7
-// CHECK-SPIRV: 4 Variable [[StructPtrTy]] [[StructRet:[0-9]+]] 7
-// CHECK-SPIRV: 4 Bitcast [[Int8Ptr]] [[BlockLit:[0-9]+]] {{[0-9]+}}
+// CHECK-SPIRV-TYPED-PTR: 4 Variable [[StructPtrTy]] [[StructArg:[0-9]+]] 7
+// CHECK-SPIRV-TYPED-PTR: 4 Variable [[StructPtrTy]] [[StructRet:[0-9]+]] 7
+// CHECK-SPIRV-UNTYPED-PTR: 5 UntypedVariableKHR [[PtrTy]] [[StructArg:[0-9]+]] 7 [[StructTy]]
+// CHECK-SPIRV-UNTYPED-PTR: 5 UntypedVariableKHR [[PtrTy]] [[StructRet:[0-9]+]] 7 [[StructTy]]
+// CHECK-SPIRV-TYPED-PTR: 4 Bitcast [[Int8Ptr]] [[BlockLit:[0-9]+]] {{[0-9]+}}
+// CHECK-SPIRV-UNTYPED-PTR: 4 Bitcast [[Ptr]] [[BlockLit:[0-9]+]] {{[0-9]+}}
 // CHECK-SPIRV: 7 FunctionCall {{[0-9]+}} {{[0-9]+}} [[BlockInv]] [[StructRet]] [[BlockLit]] [[StructArg]]
 
 // CHECK-LLVM: %[[StructA:.*]] = type { i32 }

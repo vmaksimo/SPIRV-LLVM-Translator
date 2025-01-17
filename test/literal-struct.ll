@@ -17,6 +17,11 @@
 ; RUN: llvm-spirv %t.bc -o %t.spv
 ; RUN: spirv-val %t.spv
 
+; RUN: llvm-spirv %t.bc -spirv-text --spirv-ext=+SPV_KHR_untyped_pointers -o %t
+; RUN: FileCheck < %t %s
+; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_KHR_untyped_pointers -o %t.spv
+; RUN: spirv-val %t.spv
+
 ; CHECK: TypeInt [[Int:[0-9]+]] 32 0
 ; CHECK: TypeInt [[Int8:[0-9]+]] 8 0
 ; CHECK: TypePointer [[Int8Ptr:[0-9]+]] 8 [[Int8]]
