@@ -2280,13 +2280,16 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
          BaseSPVTy->isTypeCooperativeMatrixKHR())) {
       return mapValue(BV, transSPIRVBuiltinFromInst(AC, BB));
     }
-    Type *BaseTy =
-        BaseSPVTy->isTypeVector()
-            ? transType(
-                  BaseSPVTy->getVectorComponentType()->getPointerElementType())
-        : BaseSPVTy->isTypePointer()
-            ? transType(BaseSPVTy->getPointerElementType())
-            : transType(BaseSPVTy);
+
+    Type *BaseTy;
+    if (BaseSPVTy->isTypeVector() && BaseSPVTy->getVectorComponentType()->isTypePointer()) {
+        BaseTy = transType(BaseSPVTy->getVectorComponentType()->getPointerElementType());
+    } else if (BaseSPVTy->isTypePointer()) {
+      BaseTy = transType(BaseSPVTy->getPointerElementType());
+    } else {
+      BaseTy = transType(BaseSPVTy);
+    }
+
     auto Index = transValue(AC->getIndices(), F, BB);
     if (!AC->hasPtrIndex())
       Index.insert(Index.begin(), getInt32(M, 0));
