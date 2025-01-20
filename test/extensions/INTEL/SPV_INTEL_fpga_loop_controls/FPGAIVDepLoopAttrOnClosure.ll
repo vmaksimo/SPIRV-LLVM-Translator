@@ -39,14 +39,22 @@
 ; RUN: llvm-as < %s > %t.bc
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_fpga_loop_controls -o %t.spv
 ; RUN: llvm-spirv -to-text %t.spv -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc -o %t.rev.ll
 
+; CHECK-LLVM is the base prefix, which includes simple checks for
+; "llvm.loop.parallel_access_indices" MD nodes with only 1 index group operand
+; CHECK-LLVM-MD-OP-<N> is the group of prefixes to check for more
+; complicated cases of "llvm.loop.parallel_access_indices" nodes, the ones
+; containing multiple index group operands that could come in indeterminate order
+; RUN: FileCheck < %t.rev.ll %s --check-prefixes=CHECK-LLVM,CHECK-LLVM-MD-OP1
+; RUN: FileCheck < %t.rev.ll %s --check-prefixes=CHECK-LLVM,CHECK-LLVM-MD-OP2
+
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_fpga_loop_controls,+SPV_KHR_untyped_pointers -o %t.spv
 ; RUN: llvm-spirv -to-text %t.spv -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis %t.rev.bc -o %t.rev.ll
@@ -68,24 +76,27 @@
 ; CHECK-SPIRV-DAG: Constant [[TYPE_INT_32]] [[OFFSET_CONST_0:[0-9]+]] 0
 ; CHECK-SPIRV-DAG: Constant [[TYPE_INT_32]] [[OFFSET_CONST_1:[0-9]+]] 1
 ; CHECK-SPIRV: TypeArray [[TYPE_ARRAY:[0-9]+]] [[TYPE_INT_32]] [[SIZE]]
+; CHECK-SPIRV-UNTYPED-PTR: TypeUntypedPointerKHR [[PTR:[0-9]+]] 7
 ; CHECK-SPIRV: TypeStruct [[TYPE_EMB_CLOSURE_STRUCT:[0-9]+]] [[TYPE_ARRAY]] [[TYPE_ARRAY]]
 ; The next type is only used when initializing the memory fields
-; CHECK-SPIRV: TypePointer [[TYPE_CLOSURE_INIT_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_EMB_CLOSURE_STRUCT]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[TYPE_CLOSURE_INIT_PTR:[0-9]+]] 7 [[TYPE_EMB_CLOSURE_STRUCT]]
 ; This is the type used in the kernel function
-; CHECK-SPIRV: TypePointer [[TYPE_EMB_CLOSURE_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_EMB_CLOSURE_STRUCT]]
-; CHECK-SPIRV: TypeFunction [[TYPE_EMB_FUNC:[0-9]+]] {{[0-9]+}} [[TYPE_EMB_CLOSURE_PTR]]
-; CHECK-SPIRV: TypePointer [[TYPE_EMB_CLOSURE_PARAM_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_EMB_CLOSURE_PTR]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[TYPE_EMB_CLOSURE_PTR:[0-9]+]] 8 [[TYPE_EMB_CLOSURE_STRUCT]]
+; CHECK-SPIRV-UNTYPED-PTR: TypeUntypedPointerKHR [[TYPE_EMB_CLOSURE_PTR:[0-9]+]] 8
+; CHECK-SPIRV: TypeFunction [[TYPE_EMB_FUNC:[0-9]+]] 2 [[TYPE_EMB_CLOSURE_PTR]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[TYPE_EMB_CLOSURE_PARAM_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_EMB_CLOSURE_PTR]]
 ; CHECK-SPIRV: TypePointer [[TYPE_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_ARRAY]]
-; CHECK-SPIRV: TypePointer [[TYPE_INT_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_INT_32]]
-; CHECK-SPIRV: TypePointer [[TYPE_I8_PTR:[0-9]+]] 8 [[TYPE_INT_8]]
-; CHECK-SPIRV: TypeStruct [[TYPE_SFLN_CLOSURE_STRUCT:[0-9]+]] [[TYPE_I8_PTR]] [[TYPE_I8_PTR]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[TYPE_INT_PTR:[0-9]+]] 8 [[TYPE_INT_32]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[TYPE_I8_PTR:[0-9]+]] 8 [[TYPE_INT_8]]
+; CHECK-SPIRV-TYPED-PTR: TypeStruct [[TYPE_SFLN_CLOSURE_STRUCT:[0-9]+]] [[TYPE_I8_PTR]] [[TYPE_I8_PTR]]
+; CHECK-SPIRV-UNTYPED-PTR: TypeStruct [[TYPE_SFLN_CLOSURE_STRUCT:[0-9]+]] [[TYPE_EMB_CLOSURE_PTR]] [[TYPE_EMB_CLOSURE_PTR]]
 ; The next type is only used when initializing the memory fields
-; CHECK-SPIRV: TypePointer [[TYPE_CLOSURE_INIT_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_SFLN_CLOSURE_STRUCT]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[TYPE_CLOSURE_INIT_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_SFLN_CLOSURE_STRUCT]]
 ; This is the type used in the kernel function
-; CHECK-SPIRV: TypePointer [[TYPE_SFLN_CLOSURE_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_SFLN_CLOSURE_STRUCT]]
-; CHECK-SPIRV: TypeFunction [[TYPE_SFLN_FUNC:[0-9]+]] {{[0-9]+}} [[TYPE_SFLN_CLOSURE_PTR]]
-; CHECK-SPIRV: TypePointer [[TYPE_SFLN_CLOSURE_PARAM_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_SFLN_CLOSURE_PTR]]
-; CHECK-SPIRV: TypePointer [[TYPE_SFLN_INT_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_I8_PTR]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[TYPE_SFLN_CLOSURE_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_SFLN_CLOSURE_STRUCT]]
+; CHECK-SPIRV-TYPED-PTR: TypeFunction [[TYPE_SFLN_FUNC:[0-9]+]] {{[0-9]+}} [[TYPE_SFLN_CLOSURE_PTR]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[TYPE_SFLN_CLOSURE_PARAM_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_SFLN_CLOSURE_PTR]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[TYPE_SFLN_INT_PTR:[0-9]+]] {{[0-9]+}} [[TYPE_I8_PTR]]
 
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024-n8:16:32:64"
 target triple = "spir64-unknown-unknown"
@@ -150,7 +161,8 @@ declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #1
 ; Function Attrs: convergent inlinehint norecurse nounwind uwtable
 define internal spir_func void @"_ZZ4mainEN3$_0clEv"(%"class._ZTSZ4mainE3$_0.anon" addrspace(4)* %this) #2 align 2 {
 entry:
-  ; CHECK-SPIRV: Variable [[TYPE_EMB_CLOSURE_PARAM_PTR]] [[THIS_EMB_ID:[0-9]+]]
+  ; CHECK-SPIRV-TYPED-PTR: Variable [[TYPE_EMB_CLOSURE_PARAM_PTR]] [[THIS_EMB_ID:[0-9]+]]
+  ; CHECK-SPIRV-UNTYPED-PTR: UntypedVariableKHR [[PTR]] [[THIS_EMB_ID:[0-9]+]] 7 [[TYPE_EMB_CLOSURE_PTR]]
   ; CHECK-LLVM: %this.addr = alloca ptr addrspace(4)
   %this.addr = alloca %"class._ZTSZ4mainE3$_0.anon" addrspace(4)*, align 8
   %i = alloca i32, align 4
@@ -190,7 +202,9 @@ for.body:                                         ; preds = %for.cond
   %arrayidx = getelementptr inbounds [10 x i32], [10 x i32] addrspace(4)* %3, i64 0, i64 %idxprom
   %5 = load i32, i32 addrspace(4)* %arrayidx, align 4, !tbaa !5
   %add2 = add nsw i32 %5, 42
-  ; CHECK-SPIRV: InBoundsPtrAccessChain [[TYPE_PTR]] [[BUF1_EMB_OUTER_ID]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
+  ; CHECK-SPIRV-TYPED-PTR: InBoundsPtrAccessChain [[TYPE_PTR]] [[BUF1_EMB_OUTER_ID]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
+  ; TODO: why types are different?? TYPE_PTR and TYPE_EMB_CLOSURE_STRUCT
+  ; CHECK-SPIRV-UNTYPED-PTR: UntypedInBoundsPtrAccessChainKHR [[TYPE_EMB_CLOSURE_PTR]] [[BUF1_EMB_OUTER_ID]] [[TYPE_EMB_CLOSURE_STRUCT]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
   ; CHECK-LLVM: %[[BUF1_EMB_OUTER_CLOSURE_ACCESS:[0-9]+]] = getelementptr inbounds %[[CLOSURE_NAME_EMB]], ptr addrspace(4) %this1, i32 0, i32 0
   %6 = getelementptr inbounds %"class._ZTSZ4mainE3$_0.anon", %"class._ZTSZ4mainE3$_0.anon" addrspace(4)* %this1, i32 0, i32 0
   %7 = load i32, i32* %i, align 4, !tbaa !5
@@ -221,7 +235,8 @@ for.cond.cleanup7:                                ; preds = %for.cond5
   br label %for.end
 
 for.body8:                                        ; preds = %for.cond5
-  ; CHECK-SPIRV: InBoundsPtrAccessChain [[TYPE_PTR]] [[BUF1_EMB_INNER_ID]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
+  ; CHECK-SPIRV-TYPED-PTR: InBoundsPtrAccessChain [[TYPE_PTR]] [[BUF1_EMB_INNER_ID]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
+  ; CHECK-SPIRV-UNTYPED-PTR: UntypedInBoundsPtrAccessChainKHR [[TYPE_EMB_CLOSURE_PTR]] [[BUF1_EMB_INNER_ID]] [[TYPE_EMB_CLOSURE_STRUCT]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
   ; CHECK-LLVM: %[[BUF1_EMB_INNER_CLOSURE_ACCESS:[0-9]+]] = getelementptr inbounds %[[CLOSURE_NAME_EMB]], ptr addrspace(4) %this1, i32 0, i32 0
   %12 = getelementptr inbounds %"class._ZTSZ4mainE3$_0.anon", %"class._ZTSZ4mainE3$_0.anon" addrspace(4)* %this1, i32 0, i32 0
   %13 = load i32, i32* %i, align 4, !tbaa !5
@@ -229,7 +244,8 @@ for.body8:                                        ; preds = %for.cond5
   ; CHECK-LLVM: getelementptr inbounds [10 x i32], ptr addrspace(4) %[[BUF1_EMB_INNER_CLOSURE_ACCESS]]{{.*}}, !llvm.index.group ![[BUF1_EMB_INNER_IDX_GR:[0-9]+]]
   %arrayidx10 = getelementptr inbounds [10 x i32], [10 x i32] addrspace(4)* %12, i64 0, i64 %idxprom9, !llvm.index.group !12
   %14 = load i32, i32 addrspace(4)* %arrayidx10, align 4, !tbaa !5
-  ; CHECK-SPIRV: InBoundsPtrAccessChain [[TYPE_PTR]] [[BUF2_EMB_INNER_PRE_ADD_ID]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
+  ; CHECK-SPIRV-TYPED-PTR: InBoundsPtrAccessChain [[TYPE_PTR]] [[BUF2_EMB_INNER_PRE_ADD_ID]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
+  ; CHECK-SPIRV-UNTYPED-PTR: UntypedInBoundsPtrAccessChainKHR [[TYPE_EMB_CLOSURE_PTR]] [[BUF2_EMB_INNER_PRE_ADD_ID]] [[TYPE_EMB_CLOSURE_STRUCT]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
   ; CHECK-LLVM: %[[BUF2_EMB_INNER_CLOSURE_ACCESS:[0-9]+]] = getelementptr inbounds %[[CLOSURE_NAME_EMB]], ptr addrspace(4) %this1, i32 0, i32 1
   %15 = getelementptr inbounds %"class._ZTSZ4mainE3$_0.anon", %"class._ZTSZ4mainE3$_0.anon" addrspace(4)* %this1, i32 0, i32 1
   %16 = load i32, i32* %i, align 4, !tbaa !5
@@ -239,7 +255,8 @@ for.body8:                                        ; preds = %for.cond5
   %arrayidx13 = getelementptr inbounds [10 x i32], [10 x i32] addrspace(4)* %15, i64 0, i64 %idxprom12, !llvm.index.group !14
   %17 = load i32, i32 addrspace(4)* %arrayidx13, align 4, !tbaa !5
   %add14 = add nsw i32 %14, %17
-  ; CHECK-SPIRV: InBoundsPtrAccessChain [[TYPE_PTR]] [[BUF2_EMB_INNER_PRE_MUL_ID]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
+  ; CHECK-SPIRV-TYPED-PTR: InBoundsPtrAccessChain [[TYPE_PTR]] [[BUF2_EMB_INNER_PRE_MUL_ID]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
+  ; CHECK-SPIRV-UNTYPED-PTR: UntypedInBoundsPtrAccessChainKHR [[TYPE_EMB_CLOSURE_PTR]] [[BUF2_EMB_INNER_PRE_MUL_ID]] [[TYPE_EMB_CLOSURE_STRUCT]] [[THIS_EMB_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
   ; CHECK-LLVM: %[[BUF2_EMB_INNER_CLOSURE_ACCESS:[0-9]+]] = getelementptr inbounds %[[CLOSURE_NAME_EMB]], ptr addrspace(4) %this1, i32 0, i32 1
   %18 = getelementptr inbounds %"class._ZTSZ4mainE3$_0.anon", %"class._ZTSZ4mainE3$_0.anon" addrspace(4)* %this1, i32 0, i32 1
   %19 = load i32, i32* %i, align 4, !tbaa !5
@@ -300,17 +317,21 @@ entry:
   ret void
 }
 
-; CHECK-SPIRV: Function {{.*}} [[TYPE_SFLN_FUNC]]
+; CHECK-SPIRV-TYPED-PTR: Function {{.*}} [[TYPE_SFLN_FUNC]]
+; CHECK-SPIRV-UNTYPED-PTR: Function {{.*}} [[TYPE_EMB_FUNC]]
 ; CHECK-LLVM: define internal spir_func void {{.*}}(ptr addrspace(4) %this)
 ; Function Attrs: convergent inlinehint norecurse nounwind
 define internal spir_func void @"_ZZ4mainEN3$_1clEv"(%"class._ZTSZ4mainE3$_0.anon.0" addrspace(4)* %this) #2 align 2 {
 entry:
-  ; CHECK-SPIRV: Variable [[TYPE_SFLN_CLOSURE_PARAM_PTR]] [[THIS_SFLN_ID:[0-9]+]]
+  ; CHECK-SPIRV-TYPED-PTR: Variable [[TYPE_SFLN_CLOSURE_PARAM_PTR]] [[THIS_SFLN_ID:[0-9]+]]
+  ; TODO: why i32, not i8?
+  ; CHECK-SPIRV-UNTYPED-PTR: UntypedVariableKHR [[PTR]] [[THIS_SFLN_ID:[0-9]+]] 7 [[TYPE_EMB_CLOSURE_PTR]]
   ; CHECK-LLVM: %this.addr = alloca ptr addrspace(4)
   %this.addr = alloca %"class._ZTSZ4mainE3$_0.anon.0" addrspace(4)*, align 8
   %i = alloca i32, align 4
   store %"class._ZTSZ4mainE3$_0.anon.0" addrspace(4)* %this, %"class._ZTSZ4mainE3$_0.anon.0" addrspace(4)** %this.addr, align 8, !tbaa !9
-  ; CHECK-SPIRV: Load [[TYPE_SFLN_CLOSURE_PTR]] [[THIS_SFLN_LOAD:[0-9]+]] [[THIS_SFLN_ID]]
+  ; CHECK-SPIRV-TYPED-PTR: Load [[TYPE_SFLN_CLOSURE_PTR]] [[THIS_SFLN_LOAD:[0-9]+]] [[THIS_SFLN_ID]]
+  ; CHECK-SPIRV-UNTYPED-PTR: Load [[TYPE_EMB_CLOSURE_PTR]] [[THIS_SFLN_LOAD:[0-9]+]] [[THIS_SFLN_ID]]
   ; CHECK-LLVM: %this1 = load ptr addrspace(4), ptr %this.addr
   %this1 = load %"class._ZTSZ4mainE3$_0.anon.0" addrspace(4)*, %"class._ZTSZ4mainE3$_0.anon.0" addrspace(4)** %this.addr, align 8
   %0 = bitcast i32* %i to i8*
@@ -333,7 +354,8 @@ for.cond.cleanup:                                 ; preds = %for.cond
   br label %for.end
 
 for.body:                                         ; preds = %for.cond
-  ; CHECK-SPIRV: InBoundsPtrAccessChain [[TYPE_SFLN_INT_PTR]] [[BUF2_SFLN_PRE_ADD_1_ID]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
+  ; CHECK-SPIRV-TYPED-PTR: InBoundsPtrAccessChain [[TYPE_SFLN_INT_PTR]] [[BUF2_SFLN_PRE_ADD_1_ID]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
+  ; CHECK-SPIRV-UNTYPED-PTR: UntypedInBoundsPtrAccessChainKHR [[TYPE_EMB_CLOSURE_PTR]] [[BUF2_SFLN_PRE_ADD_1_ID]] [[TYPE_SFLN_CLOSURE_STRUCT]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
   ; CHECK-LLVM: %[[BUF2_SFLN_CLOSURE_ACCESS:[0-9]+]] = getelementptr inbounds %[[CLOSURE_NAME_SFLN]], ptr addrspace(4) %this1, i32 0, i32 1
   ; CHECK-LLVM: %[[BUF2_SFLN_CLOSURE_ACCESS_LOAD:[0-9]+]] = load ptr addrspace(4), ptr addrspace(4) %[[BUF2_SFLN_CLOSURE_ACCESS]]
   %3 = getelementptr inbounds %"class._ZTSZ4mainE3$_0.anon.0", %"class._ZTSZ4mainE3$_0.anon.0" addrspace(4)* %this1, i32 0, i32 1
@@ -346,7 +368,8 @@ for.body:                                         ; preds = %for.cond
   %ptridx = getelementptr inbounds i32, i32 addrspace(4)* %4, i64 %idxprom, !llvm.index.group !23
   %6 = load i32, i32 addrspace(4)* %ptridx, align 4, !tbaa !5
   %add2 = add nsw i32 %6, 42
-  ; CHECK-SPIRV: InBoundsPtrAccessChain [[TYPE_SFLN_INT_PTR]] [[BUF1_SFLN_PRE_MUL_ID]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
+  ; CHECK-SPIRV-TYPED-PTR: InBoundsPtrAccessChain [[TYPE_SFLN_INT_PTR]] [[BUF1_SFLN_PRE_MUL_ID]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
+  ; CHECK-SPIRV-UNTYPED-PTR: UntypedInBoundsPtrAccessChainKHR [[TYPE_EMB_CLOSURE_PTR]] [[BUF1_SFLN_PRE_MUL_ID]] [[TYPE_SFLN_CLOSURE_STRUCT]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
   ; CHECK-LLVM: %[[BUF1_SFLN_CLOSURE_ACCESS:[0-9]+]] = getelementptr inbounds %[[CLOSURE_NAME_SFLN]], ptr addrspace(4) %this1, i32 0, i32 0
   ; CHECK-LLVM: %[[BUF1_SFLN_CLOSURE_ACCESS_LOAD:[0-9]+]] = load ptr addrspace(4), ptr addrspace(4) %[[BUF1_SFLN_CLOSURE_ACCESS]]
   %7 = getelementptr inbounds %"class._ZTSZ4mainE3$_0.anon.0", %"class._ZTSZ4mainE3$_0.anon.0" addrspace(4)* %this1, i32 0, i32 0
@@ -359,7 +382,8 @@ for.body:                                         ; preds = %for.cond
   %10 = load i32, i32 addrspace(4)* %ptridx4, align 4, !tbaa !5
   %mul = mul nsw i32 %10, %add2
   store i32 %mul, i32 addrspace(4)* %ptridx4, align 4, !tbaa !5
-  ; CHECK-SPIRV: InBoundsPtrAccessChain [[TYPE_SFLN_INT_PTR]] [[BUF1_SFLN_PRE_STORE_ID]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
+  ; CHECK-SPIRV-TYPED-PTR: InBoundsPtrAccessChain [[TYPE_SFLN_INT_PTR]] [[BUF1_SFLN_PRE_STORE_ID]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
+  ; CHECK-SPIRV-UNTYPED-PTR: UntypedInBoundsPtrAccessChainKHR [[TYPE_EMB_CLOSURE_PTR]] [[BUF1_SFLN_PRE_STORE_ID]] [[TYPE_SFLN_CLOSURE_STRUCT]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_0]]
   ; CHECK-LLVM: %[[BUF1_SFLN_CLOSURE_ACCESS:[0-9]+]] = getelementptr inbounds %[[CLOSURE_NAME_SFLN]], ptr addrspace(4) %this1, i32 0, i32 0
   ; CHECK-LLVM: %[[BUF1_SFLN_CLOSURE_ACCESS_LOAD:[0-9]+]] = load ptr addrspace(4), ptr addrspace(4) %[[BUF1_SFLN_CLOSURE_ACCESS]]
   %11 = getelementptr inbounds %"class._ZTSZ4mainE3$_0.anon.0", %"class._ZTSZ4mainE3$_0.anon.0" addrspace(4)* %this1, i32 0, i32 0
@@ -370,7 +394,8 @@ for.body:                                         ; preds = %for.cond
   ; CHECK-LLVM: getelementptr inbounds i32, ptr addrspace(4) %[[BUF1_SFLN_CLOSURE_ACCESS_LOAD_BC]]{{.*}}, !llvm.index.group ![[BUF1_SFLN_INDEX_GROUP]]
   %ptridx6 = getelementptr inbounds i32, i32 addrspace(4)* %12, i64 %idxprom5, !llvm.index.group !24
   %14 = load i32, i32 addrspace(4)* %ptridx6, align 4, !tbaa !5
-  ; CHECK-SPIRV: InBoundsPtrAccessChain [[TYPE_SFLN_INT_PTR]] [[BUF2_SFLN_PRE_ADD_2_ID]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
+  ; CHECK-SPIRV-TYPED-PTR: InBoundsPtrAccessChain [[TYPE_SFLN_INT_PTR]] [[BUF2_SFLN_PRE_ADD_2_ID]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
+  ; CHECK-SPIRV-UNTYPED-PTR: UntypedInBoundsPtrAccessChainKHR [[TYPE_EMB_CLOSURE_PTR]] [[BUF2_SFLN_PRE_ADD_2_ID]] [[TYPE_SFLN_CLOSURE_STRUCT]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
   ; CHECK-LLVM: %[[BUF2_SFLN_CLOSURE_ACCESS:[0-9]+]] = getelementptr inbounds %[[CLOSURE_NAME_SFLN]], ptr addrspace(4) %this1, i32 0, i32 1
   ; CHECK-LLVM: %[[BUF2_SFLN_CLOSURE_ACCESS_LOAD:[0-9]+]] = load ptr addrspace(4), ptr addrspace(4) %[[BUF2_SFLN_CLOSURE_ACCESS]]
   %15 = getelementptr inbounds %"class._ZTSZ4mainE3$_0.anon.0", %"class._ZTSZ4mainE3$_0.anon.0" addrspace(4)* %this1, i32 0, i32 1
@@ -383,7 +408,8 @@ for.body:                                         ; preds = %for.cond
   %ptridx9 = getelementptr inbounds i32, i32 addrspace(4)* %16, i64 %idxprom8, !llvm.index.group !23
   %18 = load i32, i32 addrspace(4)* %ptridx9, align 4, !tbaa !5
   %add10 = add nsw i32 %14, %18
-  ; CHECK-SPIRV: InBoundsPtrAccessChain [[TYPE_SFLN_INT_PTR]] [[BUF2_SFLN_PRE_STORE_ID]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
+  ; CHECK-SPIRV-TYPED-PTR: InBoundsPtrAccessChain [[TYPE_SFLN_INT_PTR]] [[BUF2_SFLN_PRE_STORE_ID]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
+  ; CHECK-SPIRV-UNTYPED-PTR: UntypedInBoundsPtrAccessChainKHR [[TYPE_EMB_CLOSURE_PTR]] [[BUF2_SFLN_PRE_STORE_ID]] [[TYPE_SFLN_CLOSURE_STRUCT]] [[THIS_SFLN_LOAD]] [[OFFSET_CONST_0]] [[OFFSET_CONST_1]]
   ; CHECK-LLVM: %[[BUF2_SFLN_CLOSURE_ACCESS:[0-9]+]] = getelementptr inbounds %[[CLOSURE_NAME_SFLN]], ptr addrspace(4) %this1, i32 0, i32 1
   ; CHECK-LLVM: %[[BUF2_SFLN_CLOSURE_ACCESS_LOAD:[0-9]+]] = load ptr addrspace(4), ptr addrspace(4) %[[BUF2_SFLN_CLOSURE_ACCESS]]
   %19 = getelementptr inbounds %"class._ZTSZ4mainE3$_0.anon.0", %"class._ZTSZ4mainE3$_0.anon.0" addrspace(4)* %this1, i32 0, i32 1

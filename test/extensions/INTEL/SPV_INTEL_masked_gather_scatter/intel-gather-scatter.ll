@@ -1,27 +1,27 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_masked_gather_scatter -o %t.spv
 ; RUN: llvm-spirv %t.spv --to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_masked_gather_scatter -o %t.spv -spirv-allow-unknown-intrinsics
 ; RUN: llvm-spirv %t.spv --to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 
 ; RUN: not llvm-spirv %t.bc 2>&1 | FileCheck %s --check-prefix=CHECK-ERROR
 
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_masked_gather_scatter,+SPV_KHR_untyped_pointers -o %t.spv
 ; RUN: llvm-spirv %t.spv --to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_masked_gather_scatter,+SPV_KHR_untyped_pointers -o %t.spv -spirv-allow-unknown-intrinsics
 ; RUN: llvm-spirv %t.spv --to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 
 ; RUN: not llvm-spirv %t.bc --spirv-ext=+SPV_KHR_untyped_pointers 2>&1 | FileCheck %s --check-prefix=CHECK-ERROR
 
@@ -36,7 +36,8 @@
 ; CHECK-SPIRV-DAG: Extension "SPV_INTEL_masked_gather_scatter"
 
 ; CHECK-SPIRV-DAG: TypeInt [[#TYPEINT:]] 32 0
-; CHECK-SPIRV-DAG: TypePointer [[#TYPEPTRINT:]] [[#]] [[#TYPEINT]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#TYPEPTRINT:]] [[#]] [[#TYPEINT]]
+; CHECK-SPIRV-UNTYPED-PTR-DAG: TypeUntypedPointerKHR [[#TYPEPTRINT:]] [[#]]
 ; CHECK-SPIRV-DAG: TypeVector [[#TYPEVECPTR:]] [[#TYPEPTRINT]] 4
 ; CHECK-SPIRV-DAG: TypeVector [[#TYPEVECINT:]] [[#TYPEINT]] 4
 
@@ -51,7 +52,7 @@
 
 ; CHECK-SPIRV: Load [[#TYPEVECPTR]] [[#VECGATHER:]]
 ; CHECK-SPIRV: Load [[#TYPEVECPTR]] [[#VECSCATTER:]]
-; CHECK-SPIRV: MaskedGatherINTEL [[#TYPEVECINT]] [[#GATHER:]] [[#VECGATHER]] 4 [[#MASK1]] 23
+; CHECK-SPIRV: MaskedGatherINTEL [[#TYPEVECINT]] [[#GATHER:]] [[#VECGATHER]] 4 [[#MASK1]] [[#FILL]]
 ; CHECK-SPIRV: MaskedScatterINTEL [[#GATHER]] [[#VECSCATTER]] 4 [[#MASK2]]
 
 ; CHECK-LLVM: %[[#VECGATHER:]] = load <4 x ptr addrspace(4)>, ptr

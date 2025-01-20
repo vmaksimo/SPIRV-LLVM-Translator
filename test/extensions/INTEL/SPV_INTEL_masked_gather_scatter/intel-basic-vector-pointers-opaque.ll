@@ -1,7 +1,7 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_masked_gather_scatter -o %t.spv
 ; RUN: llvm-spirv %t.spv --to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM-OPAQUE
@@ -10,7 +10,7 @@
 
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_masked_gather_scatter,+SPV_KHR_untyped_pointers -o %t.spv
 ; RUN: llvm-spirv %t.spv --to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
 ; RUN: llvm-dis < %t.rev.bc | FileCheck %s --check-prefix=CHECK-LLVM-OPAQUE
@@ -27,14 +27,17 @@
 
 ; CHECK-SPIRV-DAG: TypeInt [[#TYPEINT1:]] 8 0
 ; CHECK-SPIRV-DAG: TypeInt [[#TYPEINT2:]] 32 0
-; CHECK-SPIRV-DAG: TypePointer [[#TYPEPTR1:]] 5 [[#TYPEINT1]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#TYPEPTR1:]] 5 [[#TYPEINT1]]
+; CHECK-SPIRV-UNTYPED-PTR-DAG: TypeUntypedPointerKHR [[#TYPEPTR1:]] 5
 ; CHECK-SPIRV-DAG: TypeVector [[#TYPEVEC1:]] [[#TYPEPTR1]] 4
 ; CHECK-SPIRV-DAG: TypeVoid [[#TYPEVOID:]]
-; CHECK-SPIRV-DAG: TypePointer [[#TYPEPTR2:]] 8 [[#TYPEINT1]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#TYPEPTR2:]] 8 [[#TYPEINT1]]
+; CHECK-SPIRV-UNTYPED-PTR-DAG: TypeUntypedPointerKHR [[#TYPEPTR2:]] 8
 ; CHECK-SPIRV-DAG: TypeVector [[#TYPEVEC2:]] [[#TYPEPTR2]] 4
 ; CHECK-SPIRV-DAG: TypePointer [[#PTRTOVECTYPE:]] 7 [[#TYPEVEC2]]
-; CHECK-SPIRV-DAG: TypePointer [[#TYPEPTR4:]] 5 [[#TYPEINT2]]
-; CHECK-SPIRV-DAG: TypeVector [[#TYPEVEC3:]] [[#TYPEPTR4]] 4
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#TYPEPTR4:]] 5 [[#TYPEINT2]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypeVector [[#TYPEVEC3:]] [[#TYPEPTR4]] 4
+; CHECK-SPIRV-UNTYPED-PTR-DAG: TypeVector [[#TYPEVEC3:]] [[#TYPEPTR2]] 4
 
 ; CHECK-SPIRV: Variable [[#PTRTOVECTYPE]]
 ; CHECK-SPIRV: Variable [[#PTRTOVECTYPE]]
