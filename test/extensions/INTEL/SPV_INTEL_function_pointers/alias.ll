@@ -1,6 +1,10 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers %t.bc -o %t.spv
+; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
+
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024"
@@ -14,20 +18,25 @@ target triple = "spir64-unknown-unknown"
 ; CHECK-SPIRV-DAG: Name [[#Y:]] "y"
 ; CHECK-SPIRV-DAG: Name [[#FOOPTR:]] "foo.alias"
 ; CHECK-SPIRV-DAG: Decorate [[#FOO]] LinkageAttributes "foo" Export
-; CHECK-SPIRV-DAG: Decorate [[#BAR]] LinkageAttributes "bar" Export
 ; CHECK-SPIRV-DAG: TypeInt [[#I32:]] 32 0
+; CHECK-SPIRV-DAG: Decorate [[#BAR]] LinkageAttributes "bar" Export
 ; CHECK-SPIRV-DAG: TypeInt [[#I64:]] 64 0
 ; CHECK-SPIRV-DAG: TypeFunction [[#FOO_TYPE:]] [[#I32]] [[#I32]]
 ; CHECK-SPIRV-DAG: TypeVoid [[#VOID:]]
-; CHECK-SPIRV-DAG: TypePointer [[#I64PTR:]] 7 [[#I64]]
-; CHECK-SPIRV-DAG: TypeFunction [[#BAR_TYPE:]] [[#VOID]] [[#I64PTR]]
-; CHECK-SPIRV-DAG: TypePointer [[#FOOPTR_TYPE:]] 7 [[#FOO_TYPE]]
-; CHECK-SPIRV-DAG: ConstantFunctionPointerINTEL [[#FOOPTR_TYPE]] [[#FOOPTR]] [[#FOO]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#I64PTR:]] 7 [[#I64]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypeFunction [[#BAR_TYPE:]] [[#VOID]] [[#I64PTR]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#FOOPTR_TYPE:]] 7 [[#FOO_TYPE]]
+; CHECK-SPIRV-TYPED-PTR-DAG: ConstantFunctionPointerINTEL [[#FOOPTR_TYPE]] [[#FOOPTR]] [[#FOO]]
+; CHECK-SPIRV-UNTYPED-PTR-DAG: TypeUntypedPointerKHR [[#PTR_TYPE:]] 7
+; CHECK-SPIRV-UNTYPED-PTR-DAG: TypeFunction [[#BAR_TYPE:]] [[#VOID]] [[#PTR_TYPE]]
+; CHECK-SPIRV-UNTYPED-PTR-DAG: ConstantFunctionPointerINTEL [[#PTR_TYPE]] [[#FOOPTR]] [[#FOO]]
 
 ; CHECK-SPIRV: Function [[#I32]] [[#FOO]] 0 [[#FOO_TYPE]]
 
-; CHECK-SPIRV: Function [[#VOID]] [[#BAR]] 0 [[#BAR_TYPE]]
-; CHECK-SPIRV: FunctionParameter [[#I64PTR]] [[#Y]]
+; CHECK-SPIRV-TYPED-PTR: Function [[#VOID]] [[#BAR]] 0 [[#BAR_TYPE]]
+; CHECK-SPIRV-UNTYPED-PTR: Function [[#VOID]] [[#BAR]] 0 [[#BAR_TYPE]]
+; CHECK-SPIRV-TYPED-PTR: FunctionParameter [[#I64PTR]] [[#Y]]
+; CHECK-SPIRV-UNTYPED-PTR: FunctionParameter [[#PTR_TYPE]] [[#Y]]
 ; CHECK-SPIRV: ConvertPtrToU [[#I64]] [[#PTRTOINT:]] [[#FOOPTR]]
 ; CHECK-SPIRV: Store [[#Y]] [[#PTRTOINT]] 2 8
 

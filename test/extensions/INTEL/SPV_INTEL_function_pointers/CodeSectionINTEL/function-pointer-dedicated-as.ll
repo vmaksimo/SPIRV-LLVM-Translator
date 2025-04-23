@@ -7,7 +7,7 @@
 ; The option is passed to the reverse translation stage - function pointers are in addrspace(9)
 ;
 ; Overall IR generation is tested elsewhere, here checks are very simple
-
+; TODO:
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc -spirv-text --spirv-ext=+SPV_INTEL_function_pointers -spirv-emit-function-ptr-addr-space -o %t.spt
 ; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV-AS

@@ -6,6 +6,10 @@
 ; RUN: llvm-dis %t.r.bc -o %t.r.ll
 ; RUN: FileCheck < %t.r.ll %s --check-prefix=CHECK-LLVM
 
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
+; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
+
 ; CHECK-SPIRV: Name [[#KERNEL_ID:]] "_ZTS6kernel"
 ; CHECK-SPIRV-DAG: Name [[#BAR:]] "_Z3barii"
 ; CHECK-SPIRV-DAG: Name [[#BAZ:]] "_Z3bazii"
