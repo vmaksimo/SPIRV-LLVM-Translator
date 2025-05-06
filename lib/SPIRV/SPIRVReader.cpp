@@ -387,8 +387,6 @@ Type *SPIRVToLLVM::transType(SPIRVType *T, bool UseTPT) {
     unsigned AS = SPIRSPIRVAddrSpaceMap::rmap(T->getPointerStorageClass());
     if (AS == SPIRAS_CodeSectionINTEL && !BM->shouldEmitFunctionPtrAddrSpace())
       AS = SPIRAS_Private;
-    // if (BM->shouldEmitFunctionPtrAddrSpace() && AS == SPIRAS_Private)
-    //   AS = SPIRAS_CodeSectionINTEL;
     return mapType(T, PointerType::get(*Context, AS));
   }
   case OpTypeVector:
@@ -1659,19 +1657,12 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
       auto *UntypedVar = static_cast<SPIRVUntypedVariableKHR *>(BVar);
       if (SPIRVType *DT = UntypedVar->getDataType())
         PreTransTy = DT;
-      // if (BM->shouldEmitFunctionPtrAddrSpace()) {
-      // if (UntypedVar->getInitializer() && UntypedVar->getInitializer()->getOpCode() == OpConstantFunctionPointerINTEL) {
-      //   // AddrSpace = SPIRAS_CodeSectionINTEL;
-
-      // }
     }
     auto *Ty = transType(PreTransTy);
     bool IsConst = BVar->isConstant();
     llvm::GlobalValue::LinkageTypes LinkageTy = transLinkageType(BVar);
     SPIRVStorageClassKind BS = BVar->getStorageClass();
     SPIRVValue *Init = BVar->getInitializer();
-        // if (BM->shouldEmitFunctionPtrAddrSpace() && AS == SPIRAS_Private)
-    //   AS = SPIRAS_CodeSectionINTEL;
 
     if (PreTransTy->isTypeSampler() && BS == StorageClassUniformConstant) {
       // Skip generating llvm code during translation of a variable definition,
@@ -1715,10 +1706,6 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     if (IsVectorCompute) {
       AddrSpace = VectorComputeUtil::getVCGlobalVarAddressSpace(BS);
       Initializer = PoisonValue::get(Ty);
-    // } else if (BM->shouldEmitFunctionPtrAddrSpace()) {
-    //   if (Init && Init->getOpCode() == OpConstantFunctionPointerINTEL) {
-    //     AddrSpace = SPIRAS_CodeSectionINTEL;
-    //   }
     } else
       AddrSpace = SPIRSPIRVAddrSpaceMap::rmap(BS);
     // Force SPIRV BuiltIn variable's name to be __spirv_BuiltInXXXX.
