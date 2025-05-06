@@ -1689,6 +1689,16 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
       return mapValue(BV, AI);
     }
 
+    // If the variable is initialized with a function pointer, and we want to
+    // emit function pointer address space, we need to adjust the variable's
+    // address space.
+    if (BM->shouldEmitFunctionPtrAddrSpace() &&
+        PreTransTy->isTypeUntypedPointerKHR()) {
+      if (Init && Init->getOpCode() == OpConstantFunctionPointerINTEL) {
+        Ty = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
+      }
+    }
+
     SPIRAddressSpace AddrSpace;
     bool IsVectorCompute =
         BVar->hasDecorate(DecorationVectorComputeVariableINTEL);
