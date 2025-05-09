@@ -1,13 +1,14 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc -spirv-text --spirv-ext=+SPV_INTEL_function_pointers -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.r.bc
 ; RUN: llvm-dis %t.r.bc -o %t.r.ll
 ; RUN: FileCheck < %t.r.ll %s --check-prefix=CHECK-LLVM
 ;
-; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
+; RUN: llvm-spirv -to-text %t.spv -o %t.spt
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 ;
 ; Generated from:
@@ -26,13 +27,16 @@
 ; CHECK-SPIRV: Name [[KERNEL_ID:[0-9]+]] "test"
 ; CHECK-SPIRV: TypeInt [[TYPE_INT_ID:[0-9]+]]
 ; CHECK-SPIRV: TypeFunction [[FOO_TYPE_ID:[0-9]+]] [[TYPE_INT_ID]] [[TYPE_INT_ID]]
-; CHECK-SPIRV: TypePointer [[FOO_PTR_ID:[0-9]+]] {{[0-9]+}} [[FOO_TYPE_ID]]
-; CHECK-SPIRV: TypePointer [[FOO_PTR_ALLOCA_ID:[0-9]+]] 7 [[FOO_PTR_ID]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[FOO_PTR_ID:[0-9]+]] {{[0-9]+}} [[FOO_TYPE_ID]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[FOO_PTR_ALLOCA_ID:[0-9]+]] 7 [[FOO_PTR_ID]]
+; CHECK-SPIRV-UNTYPED-PTR: TypeUntypedPointerKHR [[FOO_PTR_ID:[0-9]+]] {{[0-9]+}}
+; CHECK-SPIRV-UNTYPED-PTR: TypeUntypedPointerKHR [[FOO_PTR_ALLOCA_ID:[0-9]+]] {{[0-9]+}}
 ; CHECK-SPIRV: ConstantFunctionPointerINTEL [[FOO_PTR_ID]] [[FOO_PTR:[0-9]+]] [[FOO_ID:[0-9]+]]
 ;
 ; CHECK-SPIRV: Function {{[0-9]+}} [[FOO_ID]] {{[0-9]+}} [[FOO_TYPE_ID]]
 ; CHECK-SPIRV: Function {{[0-9]+}} [[KERNEL_ID]]
-; CHECK-SPIRV: Variable [[FOO_PTR_ALLOCA_ID]] [[FOO_PTR_ALLOCA:[0-9]+]]
+; CHECK-SPIRV-TYPED-PTR: Variable [[FOO_PTR_ALLOCA_ID]] [[FOO_PTR_ALLOCA:[0-9]+]]
+; CHECK-SPIRV-UNTYPED-PTR: UntypedVariableKHR [[FOO_PTR_ID]] [[FOO_PTR_ALLOCA:[0-9]+]] {{[0-9]+}} [[FOO_PTR_ID]]
 ; CHECK-SPIRV: Store [[FOO_PTR_ALLOCA]] [[FOO_PTR]]
 ; CHECK-SPIRV: Load [[FOO_PTR_ID]] [[LOADED_FOO_PTR:[0-9]+]] [[FOO_PTR_ALLOCA]]
 ; CHECK-SPIRV: FunctionPointerCallINTEL 2 {{[0-9]+}} [[LOADED_FOO_PTR]]

@@ -1,9 +1,9 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers %t.bc -o %t.spv
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
-; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
@@ -23,15 +23,19 @@ target triple = "spir64-unknown-unknown"
 ; CHECK-SPIRV-DAG: TypeInt [[#I64:]] 64 0
 ; CHECK-SPIRV-DAG: TypeFunction [[#FOO_TYPE:]] [[#I32]] [[#I32]]
 ; CHECK-SPIRV-DAG: TypeVoid [[#VOID:]]
-; CHECK-SPIRV-DAG: TypePointer [[#I64PTR:]] 7 [[#I64]]
-; CHECK-SPIRV-DAG: TypeFunction [[#BAR_TYPE:]] [[#VOID]] [[#I64PTR]]
-; CHECK-SPIRV-DAG: TypePointer [[#FOOPTR_TYPE:]] 7 [[#FOO_TYPE]]
-; CHECK-SPIRV-DAG: ConstantFunctionPointerINTEL [[#FOOPTR_TYPE]] [[#FOOPTR]] [[#FOO]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#I64PTR:]] 7 [[#I64]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypeFunction [[#BAR_TYPE:]] [[#VOID]] [[#I64PTR]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#FOOPTR_TYPE:]] 7 [[#FOO_TYPE]]
+; CHECK-SPIRV-TYPED-PTR-DAG: ConstantFunctionPointerINTEL [[#FOOPTR_TYPE]] [[#FOOPTR]] [[#FOO]]
+; CHECK-SPIRV-UNTYPED-PTR-DAG: TypeUntypedPointerKHR [[#PTR:]] 7
+; CHECK-SPIRV-UNTYPED-PTR-DAG: TypeFunction [[#BAR_TYPE:]] [[#VOID]] [[#PTR]]
+; CHECK-SPIRV-UNTYPED-PTR-DAG: ConstantFunctionPointerINTEL [[#PTR]] [[#FOOPTR]] [[#FOO]]
 
 ; CHECK-SPIRV: Function [[#I32]] [[#FOO]] 0 [[#FOO_TYPE]]
 
 ; CHECK-SPIRV: Function [[#VOID]] [[#BAR]] 0 [[#BAR_TYPE]]
-; CHECK-SPIRV: FunctionParameter [[#I64PTR]] [[#Y]]
+; CHECK-SPIRV-TYPED-PTR: FunctionParameter [[#I64PTR]] [[#Y]]
+; CHECK-SPIRV-UNTYPED-PTR: FunctionParameter [[#PTR]] [[#Y]]
 ; CHECK-SPIRV: ConvertPtrToU [[#I64]] [[#PTRTOINT:]] [[#FOOPTR]]
 ; CHECK-SPIRV: Store [[#Y]] [[#PTRTOINT]] 2 8
 

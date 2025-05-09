@@ -1,12 +1,12 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
 ; RUN: llvm-spirv %t.spv -to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.r.bc
 ; RUN: llvm-dis %t.r.bc -o %t.r.ll
 ; RUN: FileCheck < %t.r.ll %s --check-prefix=CHECK-LLVM
 
-; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
@@ -14,16 +14,23 @@
 ; CHECK-SPIRV-DAG: Name [[#BAR:]] "_Z3barii"
 ; CHECK-SPIRV-DAG: Name [[#BAZ:]] "_Z3bazii"
 ; CHECK-SPIRV: TypeInt [[#INT32:]] 32
+; CHECK-SPIRV-UNTYPED-PTR-DAG: TypeUntypedPointerKHR [[#UNTYPED_PTR:]] 7
 ; CHECK-SPIRV: TypeFunction [[#FUNC_TYPE:]] [[#INT32]] [[#INT32]]
-; CHECK-SPIRV: TypePointer [[#FUNC_PTR_TYPE:]] [[#]] [[#FUNC_TYPE]]
-; CHECK-SPIRV: TypePointer [[#FUNC_PTR_ALLOCA_TYPE:]] [[#]] [[#FUNC_PTR_TYPE]]
-; CHECK-SPIRV-DAG: ConstantFunctionPointerINTEL [[#FUNC_PTR_TYPE]] [[#BARPTR:]] [[#BAR]]
-; CHECK-SPIRV-DAG: ConstantFunctionPointerINTEL [[#FUNC_PTR_TYPE]] [[#BAZPTR:]] [[#BAZ]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#FUNC_PTR_TYPE:]] 7 [[#FUNC_TYPE]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#FUNC_PTR_ALLOCA_TYPE:]] [[#]] [[#FUNC_PTR_TYPE]]
+; CHECK-SPIRV-TYPED-PTR-DAG: ConstantFunctionPointerINTEL [[#FUNC_PTR_TYPE]] [[#BARPTR:]] [[#BAR]]
+; CHECK-SPIRV-TYPED-PTR-DAG: ConstantFunctionPointerINTEL [[#FUNC_PTR_TYPE]] [[#BAZPTR:]] [[#BAZ]]
+; CHECK-SPIRV-UNTYPED-PTR-DAG: TypeUntypedPointerKHR [[#UNTYPED_PTR_8:]] 8
+; CHECK-SPIRV-UNTYPED-PTR-DAG: ConstantFunctionPointerINTEL [[#UNTYPED_PTR]] [[#BARPTR:]] [[#BAR]]
+; CHECK-SPIRV-UNTYPED-PTR-DAG: ConstantFunctionPointerINTEL [[#UNTYPED_PTR]] [[#BAZPTR:]] [[#BAZ]]
 ; CHECK-SPIRV: Function [[#]] [[#KERNEL_ID]]
-; CHECK-SPIRV: Variable [[#FUNC_PTR_ALLOCA_TYPE]] [[#FPTR:]]
-; CHECK-SPIRV: Select [[#FUNC_PTR_TYPE]] [[#SELECT:]] [[#]] [[#BARPTR]] [[#BAZPTR]]
+; CHECK-SPIRV-TYPED-PTR: Variable [[#FUNC_PTR_ALLOCA_TYPE]] [[#FPTR:]]
+; CHECK-SPIRV-UNTYPED-PTR: UntypedVariableKHR [[#UNTYPED_PTR]] [[#FPTR:]]
+; CHECK-SPIRV-TYPED-PTR: Select [[#FUNC_PTR_TYPE]] [[#SELECT:]] [[#]] [[#BARPTR]] [[#BAZPTR]]
+; CHECK-SPIRV-UNTYPED-PTR: Select [[#UNTYPED_PTR]] [[#SELECT:]] [[#]] [[#BARPTR]] [[#BAZPTR]]
 ; CHECK-SPIRV: Store [[#FPTR]] [[#SELECT]]
-; CHECK-SPIRV: Load [[#FUNC_PTR_TYPE]] [[#LOAD:]] [[#FPTR]]
+; CHECK-SPIRV-TYPED-PTR: Load [[#FUNC_PTR_TYPE]] [[#LOAD:]] [[#FPTR]]
+; CHECK-SPIRV-UNTYPED-PTR: Load [[#UNTYPED_PTR]] [[#LOAD:]] [[#FPTR]]
 ; CHECK-SPIRV: FunctionPointerCallINTEL [[#]] [[#]] [[#LOAD]]
 
 ; CHECK-LLVM: define spir_kernel void @_ZTS6kernel

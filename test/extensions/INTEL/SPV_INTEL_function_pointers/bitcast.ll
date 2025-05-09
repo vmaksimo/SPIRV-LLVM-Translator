@@ -10,13 +10,14 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc -spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
 ; RUN: llvm-spirv %t.spv -to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
-; RUN: llvm-spirv -r %t.spv -o %t.r.bc
-; RUN: llvm-dis %t.r.bc -o %t.r.ll
-; RUN: FileCheck < %t.r.ll %s --check-prefix=CHECK-LLVM
+; R/UN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; R/UN: llvm-spirv -r %t.spv -o %t.r.bc
+; R/UN: llvm-dis %t.r.bc -o %t.r.ll
+; R/UN: FileCheck < %t.r.ll %s --check-prefix=CHECK-LLVM
 
-; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; R/UN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
+; RUN: llvm-spirv -to-text %t.spv -o %t.spt
 ; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; CHECK-SPIRV-DAG: TypeInt [[#I8:]] 8

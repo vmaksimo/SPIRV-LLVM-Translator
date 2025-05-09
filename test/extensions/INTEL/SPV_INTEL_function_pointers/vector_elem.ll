@@ -1,5 +1,5 @@
-; RUN: llvm-as < %s | llvm-spirv -spirv-text --spirv-ext=+SPV_INTEL_function_pointers,+SPV_INTEL_masked_gather_scatter | FileCheck %s --check-prefix=CHECK-SPIRV
-; RUN: llvm-as < %s | llvm-spirv -spirv-text --spirv-ext=+SPV_INTEL_function_pointers,+SPV_INTEL_masked_gather_scatter,+SPV_KHR_untyped_pointers | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-as < %s | llvm-spirv -spirv-text --spirv-ext=+SPV_INTEL_function_pointers,+SPV_INTEL_masked_gather_scatter | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
+; RUN: llvm-as < %s | llvm-spirv -spirv-text --spirv-ext=+SPV_INTEL_function_pointers,+SPV_INTEL_masked_gather_scatter,+SPV_KHR_untyped_pointers | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 
 ; CHECK-SPIRV-DAG: 6 Name [[F1:[0-9+]]] "_Z2f1u2CMvb32_j"
 ; CHECK-SPIRV-DAG: 6 Name [[F2:[0-9+]]] "_Z2f2u2CMvb32_j"
@@ -7,7 +7,8 @@
 
 ; CHECK-SPIRV: 4 TypeInt [[TypeInt32:[0-9]+]] 32 0
 ; CHECK-SPIRV: 4 TypeFunction [[TypeFunc:[0-9]+]] [[TypeInt32]] [[TypeInt32]]
-; CHECK-SPIRV: 4 TypePointer [[TypePtr:[0-9]+]] {{[0-9]+}} [[TypeFunc]]
+; CHECK-SPIRV-TYPED-PTR: 4 TypePointer [[TypePtr:[0-9]+]] {{[0-9]+}} [[TypeFunc]]
+; CHECK-SPIRV-UNTYPED-PTR: 3 TypeUntypedPointerKHR [[TypePtr:[0-9]+]] {{[0-9]+}}
 ; CHECK-SPIRV: 4 TypeVector [[TypeVec:[0-9]+]] [[TypePtr]] [[TypeInt32]]
 ; CHECK-SPIRV-DAG: 3 Undef [[TypeVec]] [[TypeUndef:[0-9]+]]
 ; CHECK-SPIRV-DAG: 4 ConstantFunctionPointerINTEL [[TypePtr]] [[F1Ptr:[0-9]+]] [[F1]]

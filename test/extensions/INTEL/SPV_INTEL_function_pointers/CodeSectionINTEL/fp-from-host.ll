@@ -1,12 +1,12 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc -spirv-text --spirv-ext=+SPV_INTEL_function_pointers -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
 ; RUN: llvm-spirv -r %t.spv -spirv-emit-function-ptr-addr-space -o %t.r.bc
 ; RUN: llvm-dis %t.r.bc -o %t.r.ll
 ; RUN: FileCheck < %t.r.ll %s --check-prefix=CHECK-LLVM
 ;
-; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 ;
@@ -22,15 +22,20 @@
 ; CHECK-SPIRV: Extension "SPV_INTEL_function_pointers"
 ;
 ; CHECK-SPIRV: Name [[KERNEL_ID:[0-9]+]] "test"
+; CHECK-SPIRV: Name [[FP:[0-9]+]] "fp"
 ; CHECK-SPIRV: TypeInt [[INT32_TYPE_ID:[0-9]+]] 32
-; CHECK-SPIRV: TypePointer [[INT_PTR:[0-9]+]] 5 [[INT32_TYPE_ID]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[INT_PTR:[0-9]+]] 5 [[INT32_TYPE_ID]]
+; CHECK-SPIRV-UNTYPED-PTR: TypeUntypedPointerKHR [[PTR:[0-9]+]] 5
 ; CHECK-SPIRV: TypeFunction [[FOO_TYPE_ID:[0-9]+]] [[INT32_TYPE_ID]] [[INT32_TYPE_ID]]
-; CHECK-SPIRV: TypePointer [[FOO_TYPE_PTR_ID:[0-9]+]] {{[0-9]+}} [[FOO_TYPE_ID]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[FOO_TYPE_PTR_ID:[0-9]+]] 7 [[FOO_TYPE_ID]]
+; CHECK-SPIRV-UNTYPED-PTR: TypeUntypedPointerKHR [[FN_PTR:[0-9]+]] 7
 ;
 ; CHECK-SPIRV: Function {{[0-9]+}} [[KERNEL_ID]]
-; CHECK-SPIRV: FunctionParameter [[INT_PTR]] [[FP:[0-9]+]]
+; CHECK-SPIRV-TYPED-PTR: FunctionParameter [[INT_PTR]] [[FP:[0-9]+]]
+; CHECK-SPIRV-UNTYPED-PTR: FunctionParameter [[PTR]] [[FP:[0-9]+]]
 ; CHECK-SPIRV: Load [[INT32_TYPE_ID]] [[FUNC_ADDR:[0-9]+]] [[FP]]
-; CHECK-SPIRV: ConvertUToPtr [[FOO_TYPE_PTR_ID]] [[FOO_PTR:[0-9]+]] [[FUNC_ADDR]]
+; CHECK-SPIRV-TYPED-PTR: ConvertUToPtr [[FOO_TYPE_PTR_ID]] [[FOO_PTR:[0-9]+]] [[FUNC_ADDR]]
+; CHECK-SPIRV-UNTYPED-PTR: ConvertUToPtr [[FN_PTR]] [[FOO_PTR:[0-9]+]] [[FUNC_ADDR]]
 ; CHECK-SPIRV: FunctionPointerCallINTEL [[INT32_TYPE_ID]] {{[0-9]+}} [[FOO_PTR]]
 ;
 ; CHECK-LLVM: define spir_kernel void @test(ptr addrspace(1)

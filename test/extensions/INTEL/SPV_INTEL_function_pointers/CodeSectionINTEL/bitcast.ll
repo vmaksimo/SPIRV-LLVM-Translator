@@ -10,25 +10,29 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc -spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
 ; RUN: llvm-spirv %t.spv -to-text -o %t.spt
-; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
+; RUN: FileCheck < %t.spt %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.r.bc
 ; RUN: llvm-dis %t.r.bc -o %t.r.ll
 ; RUN: FileCheck < %t.r.ll %s --check-prefix=CHECK-LLVM
 
-; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
+; RUN: llvm-spirv %t.spv -to-text -o %t.spt
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; CHECK-SPIRV-DAG: TypeInt [[#I8:]] 8
 ; CHECK-SPIRV-DAG: TypeInt [[#I32:]] 32
 ; CHECK-SPIRV-DAG: TypeFunction [[#FOO_TY:]] [[#I8]] [[#I8]]
 ; CHECK-SPIRV-DAG: TypeFunction [[#DEST_TY:]] [[#I32]] [[#I32]]
-; CHECK-SPIRV-DAG: TypePointer [[#DEST_TY_PTR:]] [[#]] [[#DEST_TY]]
-; CHECK-SPIRV-DAG: TypePointer [[#FOO_TY_PTR:]] [[#]] [[#FOO_TY]]
-; CHECK-SPIRV: ConstantFunctionPointerINTEL [[#FOO_TY_PTR]] [[#FOO_PTR:]] [[#FOO:]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#DEST_TY_PTR:]] [[#]] [[#DEST_TY]]
+; CHECK-SPIRV-TYPED-PTR-DAG: TypePointer [[#FOO_TY_PTR:]] [[#]] [[#FOO_TY]]
+; CHECK-SPIRV-TYPED-PTR: ConstantFunctionPointerINTEL [[#FOO_TY_PTR]] [[#FOO_PTR:]] [[#FOO:]]
+; CHECK-SPIRV-UNTYPED-PTR-DAG: TypeUntypedPointerKHR [[#PTR:]] [[#]]
+; CHECK-SPIRV-UNTYPED-PTR: ConstantFunctionPointerINTEL [[#PTR]] [[#FOO_PTR:]] [[#FOO:]]
 ; CHECK-SPIRV: Function [[#]] [[#FOO]] [[#]] [[#FOO_TY]]
 
-; CHECK-SPIRV: Bitcast [[#DEST_TY_PTR]] [[#]] [[#FOO_PTR]]
+; CHECK-SPIRV-TYPED-PTR: Bitcast [[#DEST_TY_PTR]] [[#]] [[#FOO_PTR]]
+; CHECK-SPIRV-UNTYPED-PTR: Bitcast [[#PTR]] [[#]] [[#FOO_PTR]]
 
 ; CHECK-LLVM: bitcast ptr addrspace(9) @foo to ptr addrspace(9)
 

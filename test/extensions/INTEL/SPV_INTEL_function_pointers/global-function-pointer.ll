@@ -1,9 +1,9 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc -spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
-; RUN: llvm-spirv %t.spv -spirv-ext=+SPV_INTEL_function_pointers -to-text -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv %t.spv -spirv-ext=+SPV_INTEL_function_pointers -to-text -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 ; RUN: llvm-spirv -r %t.spv -o - | llvm-dis | FileCheck %s --check-prefix=CHECK-LLVM
 
-; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
@@ -13,8 +13,9 @@ target triple = "spir64"
 
 ; CHECK-SPIRV: Capability FunctionPointersINTEL
 ; CHECK-SPIRV: Extension "SPV_INTEL_function_pointers"
+; CHECK-SPIRV-UNTYPED-PTR: TypeUntypedPointerKHR [[#FOO_TY_PTR:]] [[#]]
 ; CHECK-SPIRV: TypeFunction [[#FOO_TY:]] [[#]] [[#]]
-; CHECK-SPIRV: TypePointer [[#FOO_TY_PTR:]] [[#]] [[#FOO_TY]]
+; CHECK-SPIRV-TYPED-PTR: TypePointer [[#FOO_TY_PTR:]] [[#]] [[#FOO_TY]]
 ; CHECK-SPIRV: ConstantFunctionPointerINTEL [[#FOO_TY_PTR]] [[#FOO_PTR:]] [[#FOO:]]
 ; CHECK-SPIRV: Function [[#]] [[#]] [[#]] [[#FOO_TY]]
 
