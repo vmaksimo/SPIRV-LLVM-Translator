@@ -2085,6 +2085,10 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
           }
         }
       }
+      // TODO: if the SPIR-V module is using SPV_KHR_untyped_pointers extension,
+      // SPV_INTEL_function_pointers extension and the Ty is not a pointer type,
+      // then we should go to the else branch. It is needed to correctly
+      // translate [2 x ptr] [ptr @f1, ptr @f2] Init value.
       if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_untyped_pointers)) {
         BVarInit = transConstantUse(Init, transType(Init->getType()));
       } else {
