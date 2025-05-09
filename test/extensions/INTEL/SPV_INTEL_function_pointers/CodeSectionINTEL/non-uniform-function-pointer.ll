@@ -6,9 +6,8 @@
 ; RUN: llvm-dis %t.r.bc -o %t.r.ll
 ; RUN: FileCheck < %t.r.ll %s --check-prefix=CHECK-LLVM
 
-; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
-; RUN: llvm-spirv -to-text %t.spv -o %t.spt
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 ;
 ; Generated from:
@@ -48,7 +47,7 @@
 ;
 ; CHECK-SPIRV: Function {{[0-9]+}} [[KERNEL_ID]]
 ; CHECK-SPIRV-TYPED-PTR: Variable [[FOO_PTR_ALLOCA_TYPE_ID]] [[FOO_PTR_ALLOCA_ID:[0-9]+]]
-; CHECK-SPIRV-UNTYPED-PTR-COUNT-3: UntypedVariableKHR [[FOO_PTR_TYPE_ID]] [[FOO_PTR_ALLOCA_ID:[0-9]+]]
+; CHECK-SPIRV-UNTYPED-PTR: UntypedVariableKHR [[FOO_PTR_TYPE_ID]] [[FOO_PTR_ALLOCA_ID:[0-9]+]] [[#]] [[FOO_PTR_TYPE_ID]]
 ; CHECK-SPIRV: Store [[FOO_PTR_ALLOCA_ID]] [[FOO_PTR_ID]]
 ; CHECK-SPIRV: Store [[FOO_PTR_ALLOCA_ID]] [[BAR_PTR_ID]]
 ; CHECK-SPIRV: Load [[FOO_PTR_TYPE_ID]] [[LOADED_FOO_PTR:[0-9]+]] [[FOO_PTR_ALLOCA_ID]]

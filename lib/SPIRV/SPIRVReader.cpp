@@ -2611,7 +2611,8 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
         static_cast<SPIRVFunctionPointerCallINTEL *>(BV);
     auto *V = transValue(BC->getCalledValue(), F, BB);
     auto *SpirvFnTy = BC->getCalledValue()->getType()->getPointerElementType();
-    auto *FnTy = cast<FunctionType>(transType(SpirvFnTy));
+    auto *FnTySpv = transType(SpirvFnTy);
+    auto *FnTy = cast<FunctionType>(FnTySpv);
     auto *Call = CallInst::Create(
         FnTy, V, transValue(BC->getArgumentValues(), F, BB), BC->getName(), BB);
     transFunctionPointerCallArgumentAttributes(
