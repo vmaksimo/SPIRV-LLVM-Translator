@@ -387,6 +387,9 @@ Type *SPIRVToLLVM::transType(SPIRVType *T, bool UseTPT) {
     unsigned AS = SPIRSPIRVAddrSpaceMap::rmap(T->getPointerStorageClass());
     if (AS == SPIRAS_CodeSectionINTEL && !BM->shouldEmitFunctionPtrAddrSpace())
       AS = SPIRAS_Private;
+    // if (BM->shouldEmitFunctionPtrAddrSpace() && T->isTypeUntypedPointerKHR() &&
+    //     AS == SPIRAS_Private)
+    //   AS = SPIRAS_CodeSectionINTEL;
     return mapType(T, PointerType::get(*Context, AS));
   }
   case OpTypeVector:
@@ -1064,6 +1067,15 @@ Value *SPIRVToLLVM::transConvertInst(SPIRVValue *BV, Function *F,
   SPIRVUnary *BC = static_cast<SPIRVUnary *>(BV);
   auto *Src = transValue(BC->getOperand(0), F, BB, BB ? true : false);
   auto *Dst = transType(BC->getType());
+    // If the variable is initialized with a function pointer, and we want to
+    // emit function pointer address space, we need to adjust the variable's
+    // address space.
+    if (BM->shouldEmitFunctionPtrAddrSpace() &&
+        BC->getType()->isTypeUntypedPointerKHR()) {
+      // if (Init && Init->getOpCode() == OpConstantFunctionPointerINTEL) {
+      //   Ty = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
+      // }
+    }
   CastInst::CastOps CO = Instruction::BitCast;
   bool IsExt =
       Dst->getScalarSizeInBits() > Src->getType()->getScalarSizeInBits();
@@ -2611,8 +2623,15 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
         static_cast<SPIRVFunctionPointerCallINTEL *>(BV);
     auto *V = transValue(BC->getCalledValue(), F, BB);
     auto *SpirvFnTy = BC->getCalledValue()->getType()->getPointerElementType();
-    auto *FnTySpv = transType(SpirvFnTy);
-    auto *FnTy = cast<FunctionType>(FnTySpv);
+    FunctionType *FnTy = nullptr;
+    // TODO: Still can't get the correct return type for function pointer call.
+    // This actually fixes only three tests.
+    if (SpirvFnTy->isTypeUntypedPointerKHR()) {
+      FnTy = FunctionType::get(
+          V->getType(),
+          transTypeVector(BC->getValueTypes(BC->getArguments()), true), false);
+    } else
+      FnTy = cast<FunctionType>(transType(SpirvFnTy));
     auto *Call = CallInst::Create(
         FnTy, V, transValue(BC->getArgumentValues(), F, BB), BC->getName(), BB);
     transFunctionPointerCallArgumentAttributes(
