@@ -1,11 +1,15 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers %t.bc -o %t.spv
+; RUN: llvm-spirv -to-text %t.spv -o %t.spt
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
+; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.rev.bc
+; RUN: llvm-dis %t.rev.bc -o %t.rev.ll
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
+; stripPointerCastsAndAliases ??
 
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024"
 target triple = "spir64-unknown-unknown"
@@ -41,7 +45,7 @@ target triple = "spir64-unknown-unknown"
 
 ; CHECK-LLVM: define spir_func i32 @foo(i32 %x) addrspace(9)
 
-; CHECK-LLVM: define spir_kernel void @bar(ptr %y)
+; CHECK-LLVM: define spir_kernel void @bar(ptr addrspace(9) %y)
 ; CHECK-LLVM: [[PTRTOINT:%.*]] = ptrtoint ptr addrspace(9) @foo to i64
 ; CHECK-LLVM: store i64 [[PTRTOINT]], ptr %y, align 8
 

@@ -264,8 +264,18 @@ SPIRVEntry::getValues(const std::vector<SPIRVId> &IdVec) const {
 std::vector<SPIRVType *>
 SPIRVEntry::getValueTypes(const std::vector<SPIRVId> &IdVec) const {
   std::vector<SPIRVType *> TypeVec;
-  for (auto I : IdVec)
-    TypeVec.push_back(getValue(I)->getType());
+  for (auto I : IdVec) {
+    auto *Val = getValue(I);
+    TypeVec.push_back(
+        // Val->isUntypedVariable()
+        //     ? Module->addPointerType(
+        //           static_cast<const SPIRVUntypedVariableKHR *>(Val)
+        //               ->getStorageClass(),
+        //           static_cast<const SPIRVUntypedVariableKHR *>(Val)
+        //               ->getDataType())
+            // : 
+            Val->getType());
+  }
   return TypeVec;
 }
 
