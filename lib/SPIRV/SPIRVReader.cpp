@@ -387,8 +387,8 @@ Type *SPIRVToLLVM::transType(SPIRVType *T, bool UseTPT) {
     unsigned AS = SPIRSPIRVAddrSpaceMap::rmap(T->getPointerStorageClass());
     if (AS == SPIRAS_CodeSectionINTEL && !BM->shouldEmitFunctionPtrAddrSpace())
       AS = SPIRAS_Private;
-    if (BM->shouldEmitFunctionPtrAddrSpace() && AS == SPIRAS_Private)
-      AS = SPIRAS_CodeSectionINTEL;
+    // if (BM->shouldEmitFunctionPtrAddrSpace() && AS == SPIRAS_Private)
+    //   AS = SPIRAS_CodeSectionINTEL;
     return mapType(T, PointerType::get(*Context, AS));
   }
   case OpTypeVector:
@@ -1691,6 +1691,24 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
       return transValue(Init, F, BB);
     }
 
+    // If the variable is initialized with a function pointer, and we want to
+    // emit function pointer address space, we need to adjust the variable's
+    // address space.
+    if (BM->shouldEmitFunctionPtrAddrSpace() &&
+        PreTransTy->isTypeUntypedPointerKHR()) {
+      if (Init && Init->getOpCode() == OpConstantFunctionPointerINTEL) {
+        Ty = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
+// } else {
+//         // Check if the variable is used in a function pointer call
+//         for (auto *User : BV->getUses()) {
+//           if (User->getOpCode() == OpFunctionPointerCallINTEL) {
+//             Ty = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
+//             break;
+//           }
+//         }
+      }
+    }
+
     if (BS == StorageClassFunction) {
       // A Function storage class variable needs storage for each dynamic
       // execution instance, so emit an alloca instead of a global.
@@ -1704,16 +1722,6 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
       }
       return mapValue(BV, AI);
     }
-
-    // If the variable is initialized with a function pointer, and we want to
-    // emit function pointer address space, we need to adjust the variable's
-    // address space.
-    // if (BM->shouldEmitFunctionPtrAddrSpace() &&
-    //     PreTransTy->isTypeUntypedPointerKHR()) {
-    //   if (Init && Init->getOpCode() == OpConstantFunctionPointerINTEL) {
-    //     Ty = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
-    //   }
-    // }
 
     SPIRAddressSpace AddrSpace;
     bool IsVectorCompute =
@@ -2625,7 +2633,33 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
   case OpFunctionPointerCallINTEL: {
     SPIRVFunctionPointerCallINTEL *BC =
         static_cast<SPIRVFunctionPointerCallINTEL *>(BV);
-    auto *V = transValue(BC->getCalledValue(), F, BB);
+    auto *CalledFunc = BC->getCalledValue();
+    auto *V = transValue(CalledFunc, F, BB);
+
+    // CalledFunc is a result from Load;
+    // Get the pointer from where the Load is loading;
+    // It loaded from UntypedVariable which storage class is 7.
+    // If shouldEmitFunctionPtrAddrSpace() is true, we need to change the type of alloca V to ptr addrspace(9).
+    if (BM->shouldEmitFunctionPtrAddrSpace()) {
+      // Try to find alloca instruction for statically allocated variables.
+      // Alloca might be hidden by a couple of casts.
+      Instruction *AI = dyn_cast<Instruction>(V);
+      bool isStaticMemoryAttribute = isa<AllocaInst>(AI) ? true : false;
+      while (!isStaticMemoryAttribute && AI) {
+        
+            //  && (isa<BitCastInst>(AI) || isa<AddrSpaceCastInst>(AI))) {
+        AI = dyn_cast<Instruction>(AI->getOperand(0));
+        isStaticMemoryAttribute = (AI && isa<AllocaInst>(AI));
+      }
+      
+      if (AI && isa<AllocaInst>(AI)) {
+        // auto *NewType = PointerType::get(AI->getAllocatedType(), 9);
+        auto *NewType = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
+        // AI->mutateType(NewType);
+        cast<AllocaInst>(AI)->setAllocatedType(NewType);
+      }
+    }
+    
     auto *SpirvFnTy = BC->getCalledValue()->getType()->getPointerElementType();
     FunctionType *FnTy = nullptr;
     // TODO: Still can't get the correct return type for function pointer call.
