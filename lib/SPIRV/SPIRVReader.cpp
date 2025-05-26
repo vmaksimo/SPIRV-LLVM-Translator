@@ -1926,7 +1926,24 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
 
     bool isVolatile = BS->SPIRVMemoryAccess::isVolatile();
     uint64_t AlignValue = BS->SPIRVMemoryAccess::getAlignment();
-    if (0 == AlignValue)
+
+    if (BM->shouldEmitFunctionPtrAddrSpace() &&
+        BS->getSrc()->getOpCode() == OpConstantFunctionPointerINTEL &&
+        Dst->getType()->getPointerAddressSpace() != SPIRAS_CodeSectionINTEL) {
+      // If the source is a function pointer, we would perform a memory copying
+      // from addrspace(9) to private instead of store.
+      Type *Ty = transType(BS->getSrc()->getType()->getPointerElementType());
+      uint64_t Size =
+          M->getDataLayout().getPointerSize(SPIRAS_CodeSectionINTEL);
+      // uint64_t SrcAlign =
+      // M->getDataLayout().getPointerABIAlignment(SPIRAS_CodeSectionINTEL);
+      IRBuilder<> Builder(BB);
+      CallInst *CI = Builder.CreateMemCpy(
+          Dst, Align(AlignValue), Src,
+          M->getDataLayout().getPointerABIAlignment(SPIRAS_CodeSectionINTEL),
+          // SrcAlign,
+          Size, isVolatile);
+    } else if (0 == AlignValue)
       SI = new StoreInst(Src, Dst, isVolatile, BB);
     else
       SI = new StoreInst(Src, Dst, isVolatile, Align(AlignValue), BB);
@@ -2636,30 +2653,14 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     auto *CalledFunc = BC->getCalledValue();
     auto *V = transValue(CalledFunc, F, BB);
 
-    // CalledFunc is a result from Load;
-    // Get the pointer from where the Load is loading;
-    // It loaded from UntypedVariable which storage class is 7.
-    // If shouldEmitFunctionPtrAddrSpace() is true, we need to change the type of alloca V to ptr addrspace(9).
-    if (BM->shouldEmitFunctionPtrAddrSpace()) {
-      // Try to find alloca instruction for statically allocated variables.
-      // Alloca might be hidden by a couple of casts.
-      Instruction *AI = dyn_cast<Instruction>(V);
-      bool isStaticMemoryAttribute = isa<AllocaInst>(AI) ? true : false;
-      while (!isStaticMemoryAttribute && AI) {
-        
-            //  && (isa<BitCastInst>(AI) || isa<AddrSpaceCastInst>(AI))) {
-        AI = dyn_cast<Instruction>(AI->getOperand(0));
-        isStaticMemoryAttribute = (AI && isa<AllocaInst>(AI));
-      }
-      
-      if (AI && isa<AllocaInst>(AI)) {
-        // auto *NewType = PointerType::get(AI->getAllocatedType(), 9);
-        auto *NewType = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
-        // AI->mutateType(NewType);
-        cast<AllocaInst>(AI)->setAllocatedType(NewType);
-      }
+    // Do the addrspace cast of a called function pointer to addrspace 9
+    if (BM->shouldEmitFunctionPtrAddrSpace() &&
+        V->getType()->getPointerAddressSpace() != SPIRAS_CodeSectionINTEL) {
+      // auto *NewType = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
+      // V = new AddrSpaceCastInst(V, NewType, "", BB);
+
     }
-    
+
     auto *SpirvFnTy = BC->getCalledValue()->getType()->getPointerElementType();
     FunctionType *FnTy = nullptr;
     // TODO: Still can't get the correct return type for function pointer call.
