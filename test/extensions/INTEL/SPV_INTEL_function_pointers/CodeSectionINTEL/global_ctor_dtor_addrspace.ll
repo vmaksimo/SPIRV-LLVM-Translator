@@ -13,11 +13,13 @@
 ;
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
-; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv
+; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.bc
+; RUN: llvm-dis %t.bc -o %t.ll
 ;
-; RUN: llvm-as %s -o %t.bc
-; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -o %t.spv
-; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv
+; R/UN: llvm-as %s -o %t.bc
+; R/UN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -o %t.spv
+; R/UN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.bc
+; R/UN: llvm-dis %t.bc -o %t.ll
 
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024-n8:16:32:64"
 target triple = "spir64-unknown-unknown"

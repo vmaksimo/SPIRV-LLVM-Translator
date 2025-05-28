@@ -4,13 +4,15 @@
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.r.bc
 ; RUN: llvm-dis %t.r.bc -o %t.r.ll
-; RUN: FileCheck < %t.r.ll %s --check-prefix=CHECK-LLVM
+; R/UN: FileCheck < %t.r.ll %s -check-prefixes=CHECK-LLVM,CHECK-LLVM-TYPED-PTR
 ;
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: llvm-spirv -to-text %t.spv -o %t.spt
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
-; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
-;
+; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.r.bc
+; RUN: llvm-dis %t.r.bc -o %t.r.ll
+; RUN: FileCheck < %t.r.ll %s --check-prefixes=CHECK-LLVM,CHECK-LLVM-UNTYPED-PTR
+
 ; Generated from:
 ; int foo(int arg) {
 ;   return arg + 10;
@@ -42,10 +44,14 @@
 ; CHECK-SPIRV: FunctionPointerCallINTEL 2 {{[0-9]+}} [[LOADED_FOO_PTR]]
 ;
 ; CHECK-LLVM: define spir_kernel void @test
-; CHECK-LLVM: %fp = alloca ptr addrspace(9)
+; CHECK-LLVM-TYPED-PTR: %fp = alloca ptr addrspace(9)
+; CHECK-LLVM-UNTYPED-PTR: %fp = alloca ptr
 ; CHECK-LLVM: store ptr addrspace(9) @foo, ptr %fp
-; CHECK-LLVM: %0 = load ptr addrspace(9), ptr %fp
-; CHECK-LLVM: %call = call spir_func addrspace(9) i32 %0(i32 %1)
+; CHECK-LLVM-TYPED-PTR: %0 = load ptr addrspace(9), ptr %fp
+; CHECK-LLVM-UNTYPED-PTR: %0 = load ptr, ptr %fp
+; CHECK-LLVM-UNTYPED-PTR: %2 = addrspacecast ptr %0 to ptr addrspace(9)
+; CHECK-LLVM-TYPED-PTR: %call = call spir_func addrspace(9) i32 %0(i32 %1)
+; CHECK-LLVM-UNTYPED-PTR: %call = call spir_func addrspace(9) i32 %2(i32 %1)
 
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024"
 target triple = "spir64-unknown-unknown"

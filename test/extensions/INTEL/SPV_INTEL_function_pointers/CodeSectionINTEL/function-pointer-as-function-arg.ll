@@ -4,11 +4,14 @@
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.r.bc
 ; RUN: llvm-dis %t.r.bc -o %t.r.ll
-; RUN: FileCheck < %t.r.ll %s --check-prefix=CHECK-LLVM
+; R/UN: FileCheck < %t.r.ll %s --check-prefixes=CHECK-LLVM,CHECK-LLVM-TYPED-PTR
 
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
-; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
+; RUN: llvm-spirv -to-text %t.spv -o %t.spt
+; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.r.bc
+; RUN: llvm-dis %t.r.bc -o %t.r.ll
+; RUN: FileCheck < %t.r.ll %s --check-prefixes=CHECK-LLVM,CHECK-LLVM-UNTYPED-PTR
 
 ; Generated from:
 ; int helper(int (*f)(int), int arg) {
@@ -74,21 +77,34 @@
 ; CHECK-SPIRV: Load [[FOO_PTR_TYPE_ID]] [[LOADED_F_PTR:[0-9]+]] [[F_PTR_ALLOCA_ID]]
 ; CHECK-SPIRV: FunctionCall {{[0-9]+}} {{[0-9]+}} [[HELPER_ID]] [[LOADED_F_PTR]]
 ;
-; CHECK-LLVM: define spir_func i32 @helper(ptr addrspace(9) %[[F:.*]],
-; CHECK-LLVM: %[[F_ADDR:.*]] = alloca ptr addrspace(9)
-; CHECK-LLVM: store ptr addrspace(9) %[[F]], ptr %[[F_ADDR]]
-; CHECK-LLVM: %[[F_LOADED:.*]] = load ptr addrspace(9), ptr %[[F_ADDR]]
-; CHECK-LLVM: %[[CALL:.*]] = call spir_func addrspace(9) i32 %[[F_LOADED]]
-; CHECK-LLVM: ret i32 %[[CALL]]
-;
-; CHECK-LLVM: define spir_kernel void @test
-; CHECK-LLVM: %{{.*}} = alloca ptr
-; CHECK-LLVM: %[[FP:.*]] = alloca ptr addrspace(9)
-; CHECK-LLVM: store ptr addrspace(9) @foo, ptr %[[FP]]
-; CHECK-LLVM: store ptr addrspace(9) @bar, ptr %[[FP]]
-; CHECK-LLVM: %[[FP_LOADED:.*]] = load ptr addrspace(9), ptr %[[FP]]
-; CHECK-LLVM: call spir_func i32 @helper(ptr addrspace(9) %[[FP_LOADED]]
+; CHECK-LLVM-TYPED-PTR: define spir_func i32 @helper(ptr addrspace(9) %[[F:.*]],
+; CHECK-LLVM-TYPED-PTR: %[[F_ADDR:.*]] = alloca ptr addrspace(9)
+; CHECK-LLVM-TYPED-PTR: store ptr addrspace(9) %[[F]], ptr %[[F_ADDR]]
+; CHECK-LLVM-TYPED-PTR: %[[F_LOADED:.*]] = load ptr addrspace(9), ptr %[[F_ADDR]]
+; CHECK-LLVM-TYPED-PTR: %[[CALL:.*]] = call spir_func addrspace(9) i32 %[[F_LOADED]]
+; CHECK-LLVM-TYPED-PTR: ret i32 %[[CALL]]
 
+; CHECK-LLVM-UNTYPED-PTR: define spir_func i32 @helper(ptr %[[F:.*]],
+; CHECK-LLVM-UNTYPED-PTR: %[[F_ADDR:.*]] = alloca ptr
+; CHECK-LLVM-UNTYPED-PTR: store ptr %[[F]], ptr %[[F_ADDR]]
+; CHECK-LLVM-UNTYPED-PTR: %[[F_LOADED:.*]] = load ptr, ptr %[[F_ADDR]]
+; CHECK-LLVM-UNTYPED-PTR: %[[CALL:.*]] = call spir_func i32 %[[F_LOADED]]
+; CHECK-LLVM-UNTYPED-PTR: ret i32 %[[CALL]]
+
+; CHECK-LLVM: define spir_kernel void @test
+; CHECK-LLVM-TYPED-PTR: %{{.*}} = alloca ptr
+; CHECK-LLVM-TYPED-PTR: %[[FP:.*]] = alloca ptr addrspace(9)
+; CHECK-LLVM-TYPED-PTR: store ptr addrspace(9) @foo, ptr %[[FP]]
+; CHECK-LLVM-TYPED-PTR: store ptr addrspace(9) @bar, ptr %[[FP]]
+; CHECK-LLVM-TYPED-PTR: %[[FP_LOADED:.*]] = load ptr addrspace(9), ptr %[[FP]]
+; CHECK-LLVM-TYPED-PTR: call spir_func i32 @helper(ptr addrspace(9) %[[FP_LOADED]]
+
+; CHECK-LLVM-UNTYPED-PTR: %{{.*}} = alloca ptr
+; CHECK-LLVM-UNTYPED-PTR: %[[FP:.*]] = alloca ptr
+; CHECK-LLVM-UNTYPED-PTR: store ptr addrspace(9) @foo, ptr %[[FP]]
+; CHECK-LLVM-UNTYPED-PTR: store ptr addrspace(9) @bar, ptr %[[FP]]
+; CHECK-LLVM-UNTYPED-PTR: %[[FP_LOADED:.*]] = load ptr addrspace(9), ptr %[[FP]]
+; CHECK-LLVM-UNTYPED-PTR: call spir_func i32 @helper(ptr addrspace(9) %[[FP_LOADED]]
 
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024"
 target triple = "spir64-unknown-unknown"
