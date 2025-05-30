@@ -1,11 +1,11 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_INTEL_function_pointers -o %t.spv
-; RUN: llvm-spirv %t.spv -to-text -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv %t.spv -to-text -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-TYPED-PTR
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o %t.r.bc
 ; RUN: llvm-dis %t.r.bc -o %t.r.ll
 ; RUN: FileCheck < %t.r.ll %s --check-prefix=CHECK-LLVM
 
-; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers -spirv-text %t.bc -o - | FileCheck %s --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-UNTYPED-PTR
 ; RUN: llvm-spirv -spirv-ext=+SPV_INTEL_function_pointers,+SPV_KHR_untyped_pointers %t.bc -o %t.spv
 ; RUN: llvm-spirv -r -spirv-emit-function-ptr-addr-space %t.spv -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 
@@ -23,7 +23,8 @@
 ; CHECK-SPIRV: ConstantComposite {{[0-9]+}} [[ConstComp:[0-9]+]] [[F1]] [[F2]]
 ; CHECK-SPIRV: Variable {{[0-9]+}} [[Var:[0-9]+]] {{[0-9]+}} [[ConstComp]]
 
-; CHECK-SPIRV: InBoundsPtrAccessChain {{[0-9]+}} [[GEP:[0-9]+]] [[Var]] {{[0-9]+}} {{[0-9]+}}
+; CHECK-SPIRV-TYPED-PTR: InBoundsPtrAccessChain {{[0-9]+}} [[GEP:[0-9]+]] [[Var]] {{[0-9]+}} {{[0-9]+}}
+; CHECK-SPIRV-UNTYPED-PTR: UntypedInBoundsPtrAccessChainKHR {{[0-9]+}} [[GEP:[0-9]+]] {{[0-9]+}} [[Var]] {{[0-9]+}} {{[0-9]+}}
 ; CHECK-SPIRV: Load {{[0-9]+}} [[FuncPtr:[0-9]+]] [[GEP]]
 ; CHECK-SPIRV: FunctionPointerCallINTEL [[Int32]] {{[0-9]+}} [[FuncPtr]] [[XArg]] [[YArg]]
 

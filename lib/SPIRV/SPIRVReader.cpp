@@ -1551,8 +1551,9 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
   case OpConstantComposite:
   case OpSpecConstantComposite: {
     auto *BCC = static_cast<SPIRVConstantComposite *>(BV);
+    std::vector<SPIRVValue *> Elements = BCC->getElements();
     std::vector<Constant *> CV;
-    for (auto &I : BCC->getElements())
+    for (auto &I : Elements)
       CV.push_back(dyn_cast<Constant>(transValue(I, F, BB)));
     for (auto &CI : BCC->getContinuedInstructions()) {
       for (auto &I : CI->getElements())
@@ -1564,6 +1565,12 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     case OpTypeMatrix:
     case OpTypeArray: {
       auto *AT = cast<ArrayType>(transType(BCC->getType()));
+      if (BM->shouldEmitFunctionPtrAddrSpace() &&
+          AT->getElementType()->isPointerTy() &&
+          Elements[0]->getOpCode() == OpConstantFunctionPointerINTEL) {
+        AT = ArrayType::get(PointerType::get(*Context, SPIRAS_CodeSectionINTEL),
+                            AT->getNumElements());
+      }
       for (size_t I = 0; I != AT->getNumElements(); ++I) {
         auto *ElemTy = AT->getElementType();
         if (auto *ElemPtrTy = dyn_cast<PointerType>(ElemTy)) {
@@ -1694,18 +1701,26 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     // If the variable is initialized with a function pointer, and we want to
     // emit function pointer address space, we need to adjust the variable's
     // address space.
-    if (BM->shouldEmitFunctionPtrAddrSpace() &&
-        PreTransTy->isTypeUntypedPointerKHR()) {
-      if (Init && Init->getOpCode() == OpConstantFunctionPointerINTEL) {
+    if (BM->shouldEmitFunctionPtrAddrSpace()) {
+      if (PreTransTy->isTypeUntypedPointerKHR() && Init &&
+          Init->getOpCode() == OpConstantFunctionPointerINTEL) {
         Ty = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
-// } else {
-//         // Check if the variable is used in a function pointer call
-//         for (auto *User : BV->getUses()) {
-//           if (User->getOpCode() == OpFunctionPointerCallINTEL) {
-//             Ty = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
-//             break;
-//           }
-//         }
+        // } else {
+        //         // Check if the variable is used in a function pointer call
+        //         for (auto *User : BV->getUses()) {
+        //           if (User->getOpCode() == OpFunctionPointerCallINTEL) {
+        //             Ty = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
+        //             break;
+        //           }
+        //         }
+      } else if (Init) {
+        Value *In = transValue(Init, F, BB);
+        // In is [2 x ptr addrspace(9)] [ptr addrspace(9) @f1, ptr addrspace(9) @f2]
+        if (In->getType() != Ty)
+          Ty = In->getType();
+        // Also need to verify if Init contains OpConstantFunctionPointerINTEL
+        
+        // }
       }
     }
 
@@ -2654,12 +2669,12 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     auto *V = transValue(CalledFunc, F, BB);
 
     // Do the addrspace cast of a called function pointer to addrspace 9
-    if (BM->shouldEmitFunctionPtrAddrSpace() &&
-        V->getType()->getPointerAddressSpace() != SPIRAS_CodeSectionINTEL) {
-      // auto *NewType = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
-      // V = new AddrSpaceCastInst(V, NewType, "", BB);
+    // if (BM->shouldEmitFunctionPtrAddrSpace() &&
+    //     V->getType()->getPointerAddressSpace() != SPIRAS_CodeSectionINTEL) {
+    //   // auto *NewType = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
+    //   // V = new AddrSpaceCastInst(V, NewType, "", BB);
 
-    }
+    // }
 
     auto *SpirvFnTy = BC->getCalledValue()->getType()->getPointerElementType();
     FunctionType *FnTy = nullptr;

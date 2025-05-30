@@ -1367,7 +1367,11 @@ SPIRVValue *LLVMToSPIRVBase::transConstantUse(Constant *C,
 }
 
 SPIRVValue *LLVMToSPIRVBase::transConstant(Value *V) {
-  SPIRVType *ExpectedType = transScavengedType(V);
+  SPIRVType *ExpectedType =
+      BM->isAllowedToUseExtension( SPIRV::ExtensionID::SPV_KHR_untyped_pointers)
+          ? transType(V->getType())
+          : transScavengedType(V);
+  // SPIRVType *ExpectedType = transScavengedType(V);
   if (isa<ConstantPointerNull>(V))
     return BM->addNullConstant(bcast<SPIRVTypePointer>(ExpectedType));
 
