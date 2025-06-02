@@ -366,6 +366,16 @@ Type *SPIRVToLLVM::transType(SPIRVType *T, bool UseTPT) {
     // and evaluated before the LLVM ArrayType can be constructed.
     auto *LenExpr = static_cast<const SPIRVTypeArray *>(T)->getLength();
     auto *LenValue = cast<ConstantInt>(transValue(LenExpr, nullptr, nullptr));
+
+    if (T->getArrayElementType()->isTypeUntypedPointerKHR() &&
+        BM->shouldEmitFunctionPtrAddrSpace()) {
+      SPIRVTypeUntypedPointerKHR *TUP =
+          static_cast<SPIRVTypeUntypedPointerKHR *>(T->getArrayElementType());
+      if (TUP->getPointerStorageClass() == StorageClassFunction)
+        return mapType(T, ArrayType::get(PointerType::get(
+                                             *Context, SPIRAS_CodeSectionINTEL),
+                                         LenValue->getZExtValue()));
+    }
     return mapType(T, ArrayType::get(transType(T->getArrayElementType()),
                                      LenValue->getZExtValue()));
   }
