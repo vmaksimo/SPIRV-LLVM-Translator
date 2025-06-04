@@ -1025,12 +1025,12 @@ SPIRVType *SPIRVModuleImpl::addPointerType(SPIRVStorageClassKind StorageClass,
                                            SPIRVType *ElementType = nullptr) {
   if (ElementType == nullptr) {
     // Untyped pointer
-    auto Loc = UntypedPtrTyMap.find(StorageClass);
-    if (Loc != UntypedPtrTyMap.end())
-      return Loc->second;
+    // auto Loc = UntypedPtrTyMap.find(StorageClass);
+    // if (Loc != UntypedPtrTyMap.end())
+    //   return Loc->second;
 
     auto *Ty = new SPIRVTypeUntypedPointerKHR(this, getId(), StorageClass);
-    UntypedPtrTyMap[StorageClass] = Ty;
+    // UntypedPtrTyMap[StorageClass] = Ty;
     return addType(Ty);
   }
 

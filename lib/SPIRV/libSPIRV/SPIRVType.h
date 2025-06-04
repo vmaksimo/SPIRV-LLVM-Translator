@@ -301,6 +301,10 @@ public:
 
   SPIRVStorageClassKind getStorageClass() const { return ElemStorageClass; }
 
+  void setStorageClass(SPIRVStorageClassKind TheStorageClass) {
+    ElemStorageClass = TheStorageClass;
+  }
+
 protected:
   _SPIRV_DEF_ENCDEC2(Id, ElemStorageClass)
   void validate() const override {

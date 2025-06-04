@@ -372,9 +372,11 @@ Type *SPIRVToLLVM::transType(SPIRVType *T, bool UseTPT) {
       SPIRVTypeUntypedPointerKHR *TUP =
           static_cast<SPIRVTypeUntypedPointerKHR *>(T->getArrayElementType());
       if (TUP->getPointerStorageClass() == StorageClassFunction)
-        return mapType(T, ArrayType::get(PointerType::get(
-                                             *Context, SPIRAS_CodeSectionINTEL),
-                                         LenValue->getZExtValue()));
+        TUP->setStorageClass(StorageClassCodeSectionINTEL);
+      // return mapType(T, ArrayType::get(PointerType::get(
+      //                                      *Context,
+      //                                      SPIRAS_CodeSectionINTEL),
+      //                                  LenValue->getZExtValue()));
     }
     return mapType(T, ArrayType::get(transType(T->getArrayElementType()),
                                      LenValue->getZExtValue()));
@@ -1711,10 +1713,14 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     // If the variable is initialized with a function pointer, and we want to
     // emit function pointer address space, we need to adjust the variable's
     // address space.
-    if (BM->shouldEmitFunctionPtrAddrSpace()) {
+    
+if (BM->shouldEmitFunctionPtrAddrSpace()) {
       if (PreTransTy->isTypeUntypedPointerKHR() && Init &&
           Init->getOpCode() == OpConstantFunctionPointerINTEL) {
-        Ty = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
+        // Ty = PointerType::get(*Context, SPIRAS_CodeSectionINTEL);
+        static_cast<SPIRVTypeUntypedPointerKHR *>(PreTransTy)
+            ->setStorageClass(StorageClassCodeSectionINTEL);
+        Ty = transType(PreTransTy);
         // } else {
         //         // Check if the variable is used in a function pointer call
         //         for (auto *User : BV->getUses()) {
@@ -2384,6 +2390,8 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
          BaseSPVTy->isTypeCooperativeMatrixKHR())) {
       return mapValue(BV, transSPIRVBuiltinFromInst(AC, BB));
     }
+    // maybe to check if Base->getType() contains a pointer to addrspace (9)? then assign it to BaseTy.
+
     Type *BaseTy =
         BaseSPVTy->isTypeVector()
             ? transType(
