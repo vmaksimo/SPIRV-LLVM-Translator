@@ -6696,6 +6696,18 @@ LLVMToSPIRVBase::transBuiltinToInstWithoutDecoration(Op OC, CallInst *CI,
   } break;
   case OpGroupAsyncCopy: {
     auto BArgs = transValue(getArguments(CI), BB);
+    // if source is untyped pointer, then we need to add element num bytes
+    // argument after this argument.
+    if (BArgs[1]->getType()->isTypeUntypedPointerKHR()) {
+      //       if (isUntypedAccessChainOpCode(OC)) {
+      //   // Untyped access chain instructions have an additional argument
+      //   BaseTy. Type *Ty = Scavenger->getScavengedType(Args[0]); SPIRVType
+      //   *PtrTy = nullptr; if (auto *TPT = dyn_cast<TypedPointerType>(Ty)) {
+      //     PtrTy = transType(TPT->getElementType());
+      //     SPArgs.push_back(PtrTy->getId());
+      //   }
+      // }
+    }
     return BM->addAsyncGroupCopy(BArgs[0], BArgs[1], BArgs[2], BArgs[3],
                                  BArgs[4], BArgs[5], BB);
   } break;

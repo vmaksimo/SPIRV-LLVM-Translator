@@ -294,7 +294,9 @@ template <> void SPIRVMap<std::string, Op, SPIRVInstruction>::init() {
 #define _SPIRV_OP(x, y) add(#x, Op##y);
   _SPIRV_OP(dot, Dot)
   _SPIRV_OP(async_work_group_copy, GroupAsyncCopy)
+  _SPIRV_OP(async_work_group_copy, UntypedGroupAsyncCopyKHR)
   _SPIRV_OP(async_work_group_strided_copy, GroupAsyncCopy)
+  _SPIRV_OP(async_work_group_strided_copy, UntypedGroupAsyncCopyKHR)
   _SPIRV_OP(wait_group_events, GroupWaitEvents)
   _SPIRV_OP(isequal, FOrdEqual)
   _SPIRV_OP(isnotequal, FUnordNotEqual)

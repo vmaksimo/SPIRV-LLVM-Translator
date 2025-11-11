@@ -1925,6 +1925,12 @@ SPIRVModuleImpl::addPtrAccessChainInst(SPIRVType *Type,
 SPIRVInstruction *SPIRVModuleImpl::addAsyncGroupCopy(
     SPIRVValue *Scope, SPIRVValue *Dest, SPIRVValue *Src, SPIRVValue *NumElems,
     SPIRVValue *Stride, SPIRVValue *Event, SPIRVBasicBlock *BB) {
+  if (Src->getType()->isTypeUntypedPointerKHR())
+    // TODO: translate actual scalar constant with the size of elements
+    return addInstruction(new SPIRVUntypedGroupAsyncCopyKHR(
+                              Scope, getId(), Dest, Src, NumElems,
+                              getLiteralAsConstant(0), Stride, Event, BB),
+                          BB);
   return addInstruction(new SPIRVGroupAsyncCopy(Scope, getId(), Dest, Src,
                                                 NumElems, Stride, Event, BB),
                         BB);

@@ -168,7 +168,7 @@ void SPIRVToOCLBase::visitCallInst(CallInst &CI) {
     visitCallSPIRVCvtBuiltin(&CI, OC, DemangledName);
     return;
   }
-  if (OC == OpGroupAsyncCopy) {
+  if (OC == OpGroupAsyncCopy || OC == OpUntypedGroupAsyncCopyKHR) {
     visitCallAsyncWorkGroupCopy(&CI, OC);
     return;
   }

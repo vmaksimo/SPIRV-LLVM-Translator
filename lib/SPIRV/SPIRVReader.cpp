@@ -2368,13 +2368,14 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
          BaseSPVTy->isTypeCooperativeMatrixKHR())) {
       return mapValue(BV, transSPIRVBuiltinFromInst(AC, BB));
     }
-    Type *BaseTy =
-        BaseSPVTy->isTypeVector()
-            ? transType(
-                  BaseSPVTy->getVectorComponentType()->getPointerElementType())
-        : BaseSPVTy->isTypePointer()
-            ? transType(BaseSPVTy->getPointerElementType())
-            : transType(BaseSPVTy);
+    Type *BaseTy = BaseSPVTy->isTypeVector()
+                       ? BaseSPVTy->getVectorComponentType()->isTypePointer()
+                             ? transType(BaseSPVTy->getVectorComponentType()
+                                             ->getPointerElementType())
+                             : transType(BaseSPVTy->getVectorComponentType())
+                   : BaseSPVTy->isTypePointer()
+                       ? transType(BaseSPVTy->getPointerElementType())
+                       : transType(BaseSPVTy);
     auto Index = transValue(AC->getIndices(), F, BB);
     if (!AC->hasPtrIndex())
       Index.insert(Index.begin(), getInt32(M, 0));
@@ -3656,6 +3657,13 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
           transType(AI->getSemanticType()),
           SPIRSPIRVAddrSpaceMap::rmap(
               BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
+    } else if (OC == OpUntypedGroupAsyncCopyKHR) {
+      auto *AGC = static_cast<SPIRVUntypedGroupAsyncCopyKHR *>(BI);
+      // get type here?? it is not known
+      // ArgTys[Ptr] = TypedPointerType::get(
+      //     transType(AGC->getDataType()),
+      //     SPIRSPIRVAddrSpaceMap::rmap(
+      //         BI->getValueType(Ops[Ptr]->getId())->getPointerStorageClass()));
     }
   }
 

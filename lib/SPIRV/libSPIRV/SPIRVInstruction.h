@@ -2549,15 +2549,14 @@ protected:
 typedef SPIRVLifetime<OpLifetimeStart> SPIRVLifetimeStart;
 typedef SPIRVLifetime<OpLifetimeStop> SPIRVLifetimeStop;
 
-class SPIRVGroupAsyncCopy : public SPIRVInstruction {
+class SPIRVGroupAsyncCopyBase : public SPIRVInstruction {
 public:
-  static const Op OC = OpGroupAsyncCopy;
-  static const SPIRVWord WC = 9;
   // Complete constructor
-  SPIRVGroupAsyncCopy(SPIRVValue *TheScope, SPIRVId TheId, SPIRVValue *TheDest,
-                      SPIRVValue *TheSrc, SPIRVValue *TheNumElems,
-                      SPIRVValue *TheStride, SPIRVValue *TheEvent,
-                      SPIRVBasicBlock *TheBB)
+  SPIRVGroupAsyncCopyBase(Op OC, SPIRVValue *TheScope, SPIRVId TheId,
+                          SPIRVValue *TheDest, SPIRVValue *TheSrc,
+                          SPIRVValue *TheNumElems, SPIRVValue *TheStride,
+                          SPIRVValue *TheEvent, SPIRVBasicBlock *TheBB,
+                          SPIRVWord WC)
       : SPIRVInstruction(WC, OC, TheEvent->getType(), TheId, TheBB),
         ExecScope(TheScope->getId()), Destination(TheDest->getId()),
         Source(TheSrc->getId()), NumElements(TheNumElems->getId()),
@@ -2565,12 +2564,18 @@ public:
     validate();
     assert(TheBB && "Invalid BB");
   }
-  // Incomplete constructor
-  SPIRVGroupAsyncCopy()
+  // Incomplete constructors
+  SPIRVGroupAsyncCopyBase(Op OC)
       : SPIRVInstruction(OC), ExecScope(SPIRVID_INVALID),
         Destination(SPIRVID_INVALID), Source(SPIRVID_INVALID),
         NumElements(SPIRVID_INVALID), Stride(SPIRVID_INVALID),
         Event(SPIRVID_INVALID) {}
+  SPIRVGroupAsyncCopyBase()
+      : SPIRVInstruction(OpNop), ExecScope(SPIRVID_INVALID),
+        Destination(SPIRVID_INVALID), Source(SPIRVID_INVALID),
+        NumElements(SPIRVID_INVALID), Stride(SPIRVID_INVALID),
+        Event(SPIRVID_INVALID) {}
+
   SPIRVValue *getExecScope() const { return getValue(ExecScope); }
   SPIRVValue *getDestination() const { return getValue(Destination); }
   SPIRVValue *getSource() const { return getValue(Source); }
@@ -2589,6 +2594,32 @@ public:
   }
 
 protected:
+  SPIRVId ExecScope;
+  SPIRVId Destination;
+  SPIRVId Source;
+  SPIRVId NumElements;
+  SPIRVId Stride;
+  SPIRVId Event;
+};
+
+class SPIRVGroupAsyncCopy : public SPIRVGroupAsyncCopyBase {
+public:
+  static const Op OC = OpGroupAsyncCopy;
+  static const SPIRVWord WC = 9;
+  // Complete constructor
+  SPIRVGroupAsyncCopy(SPIRVValue *TheScope, SPIRVId TheId, SPIRVValue *TheDest,
+                      SPIRVValue *TheSrc, SPIRVValue *TheNumElems,
+                      SPIRVValue *TheStride, SPIRVValue *TheEvent,
+                      SPIRVBasicBlock *TheBB)
+      : SPIRVGroupAsyncCopyBase(OC, TheScope, TheId, TheDest, TheSrc,
+                                TheNumElems, TheStride, TheEvent, TheBB, WC) {
+    validate();
+    assert(TheBB && "Invalid BB");
+  }
+  // Incomplete constructor
+  SPIRVGroupAsyncCopy() : SPIRVGroupAsyncCopyBase(OC) {}
+
+protected:
   _SPIRV_DEF_ENCDEC8(Type, Id, ExecScope, Destination, Source, NumElements,
                      Stride, Event)
   void validate() const override {
@@ -2596,12 +2627,36 @@ protected:
     assert(WordCount == WC);
     SPIRVInstruction::validate();
   }
-  SPIRVId ExecScope;
-  SPIRVId Destination;
-  SPIRVId Source;
-  SPIRVId NumElements;
-  SPIRVId Stride;
-  SPIRVId Event;
+};
+
+class SPIRVUntypedGroupAsyncCopyKHR : public SPIRVGroupAsyncCopyBase {
+public:
+  static const Op OC = OpUntypedGroupAsyncCopyKHR;
+  static const SPIRVWord WC = 10;
+  // Complete constructor
+  SPIRVUntypedGroupAsyncCopyKHR(SPIRVValue *TheScope, SPIRVId TheId,
+                                SPIRVValue *TheDest, SPIRVValue *TheSrc,
+                                SPIRVValue *TheElemNumBytes,
+                                SPIRVValue *TheNumElems, SPIRVValue *TheStride,
+                                SPIRVValue *TheEvent, SPIRVBasicBlock *TheBB)
+      : SPIRVGroupAsyncCopyBase(OC, TheScope, TheId, TheDest, TheSrc,
+                                TheNumElems, TheStride, TheEvent, TheBB, WC),
+        ElNumBytes(TheElemNumBytes->getId()) {
+    validate();
+    assert(TheBB && "Invalid BB");
+  }
+  // Incomplete constructor
+  SPIRVUntypedGroupAsyncCopyKHR() : SPIRVGroupAsyncCopyBase(OC) {}
+
+protected:
+  _SPIRV_DEF_ENCDEC9(Type, Id, ExecScope, Destination, Source, ElNumBytes,
+                     NumElements, Stride, Event)
+  void validate() const override {
+    assert(OpCode == OC);
+    assert(WordCount >= WC);
+    SPIRVInstruction::validate();
+  }
+  SPIRVId ElNumBytes;
 };
 
 enum SPIRVOpKind { SPIRVOPK_Id, SPIRVOPK_Literal, SPIRVOPK_Count };
