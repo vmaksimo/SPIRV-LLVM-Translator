@@ -7223,6 +7223,22 @@ LLVMToSPIRVBase::transBuiltinToInstWithoutDecoration(Op OC, CallInst *CI,
           SPArgs.push_back(cast<ConstantInt>(Args[I])->getZExtValue());
         }
       }
+      if (OC == OpSubgroupBlockWriteINTEL) {
+        // First argument should be a pointer to the same type as the second
+        // argument is. Do the bitcast if the pointer is untyped.
+        if (BM->getValue(SPArgs[0])->getType()->isTypeUntypedPointerKHR()) {
+          // create pointer to the same type as the second argument is.
+          // TODO: rewrite vector of IDs to vector of values
+          SPIRVType *ScalarTy =
+              BM->getValue(SPArgs[1])->getType()->getScalarType();
+          SPIRVType *NewPtrTy = BM->addPointerType(
+              BM->getValue(SPArgs[0])->getType()->getPointerStorageClass(),
+              ScalarTy);
+          SPIRVValue *NewPtr = BM->addUnaryInst(OpBitcast, NewPtrTy,
+                                                BM->getValue(SPArgs[0]), BB);
+          SPArgs[0] = NewPtr->getId();
+        }
+      }
       BM->addInstTemplate(SPI, SPArgs, BB, SPRetTy);
       if (!SPRetTy || !SPRetTy->isTypeStruct())
         return SPI;
