@@ -2412,9 +2412,11 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
       return mapValue(BV, transSPIRVBuiltinFromInst(AC, BB));
     }
     Type *BaseTy =
-        BaseSPVTy->isTypeVector()
-            ? transType(
+        BaseSPVTy->isTypeVector() ?
+        BaseSPVTy->getVectorComponentType()->isTypePointer()
+                   ? transType(
                   BaseSPVTy->getVectorComponentType()->getPointerElementType())
+                    : transType(BaseSPVTy->getVectorComponentType())
         : BaseSPVTy->isTypePointer()
             ? transType(BaseSPVTy->getPointerElementType())
             : transType(BaseSPVTy);
