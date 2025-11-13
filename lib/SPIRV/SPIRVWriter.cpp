@@ -7172,6 +7172,18 @@ LLVMToSPIRVBase::transBuiltinToInstWithoutDecoration(Op OC, CallInst *CI,
       return BM->addBinaryInst(OC, transScavengedType(CI),
                                transValue(CI->getArgOperand(0), BB),
                                transValue(CI->getArgOperand(1), BB), BB);
+    } else if (OC == OpSubgroupBlockReadINTEL) {
+      SPIRVType *RetTy = transScavengedType(CI);
+      SPIRVValue *Ptr = transValue(CI->getArgOperand(0), BB);
+
+      if (Ptr->getType()->getPointerElementType() != RetTy &&
+          Ptr->getType()->getPointerElementType()->isTypeUntypedPointerKHR()) {
+        // bitcast untyped pointer to typed pointer
+        SPIRVType *ExpectedType =
+            BM->addPointerType(Ptr->getType()->getPointerStorageClass(), RetTy->getScalarType());
+        Ptr = BM->addUnaryInst(OpBitcast, ExpectedType, Ptr, BB);
+      }
+      return BM->addUnaryInst(OC, RetTy, Ptr, BB);
     } else if (CI->arg_size() == 1 && !CI->getType()->isVoidTy() &&
                !hasExecScope(OC) && !isAtomicOpCode(OC)) {
       return BM->addUnaryInst(OC, transScavengedType(CI),
@@ -7229,6 +7241,7 @@ LLVMToSPIRVBase::transBuiltinToInstWithoutDecoration(Op OC, CallInst *CI,
         if (BM->getValue(SPArgs[0])->getType()->isTypeUntypedPointerKHR()) {
           // create pointer to the same type as the second argument is.
           // TODO: rewrite vector of IDs to vector of values
+          // TODO: clarify comments
           SPIRVType *ScalarTy =
               BM->getValue(SPArgs[1])->getType()->getScalarType();
           SPIRVType *NewPtrTy = BM->addPointerType(
