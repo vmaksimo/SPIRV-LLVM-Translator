@@ -13,24 +13,27 @@ target triple = "spir64"
 ; CHECK-SPIRV: Capability SubgroupBufferBlockIOINTEL
 ; CHECK-SPIRV: Extension "SPV_INTEL_subgroups"
 
-; CHECK-SPIRV: TypeInt [[#Int:]] 32 0
-; CHECK-SPIRV-DAG: TypeVector [[#IntVec2:]] [[#Int]] 2
-; CHECK-SPIRV-DAG: TypeUntypedPointerKHR [[#Ptr:]] 5
-; CHECK-SPIRV-DAG: TypePointer [[#IntPtr:]] 5 [[#Int]]
-; CHECK-SPIRV-DAG: TypeVector [[#IntVec4:]] [[#Int]] 4
+; CHECK-SPIRV: TypeInt [[#Int32:]] 32 0
+; CHECK-SPIRV: TypeInt [[#Int64:]] 64 0
+; CHECK-SPIRV-DAG: TypeVector [[#IntVec2:]] [[#Int32]] 2
+; CHECK-SPIRV-DAG: TypeUntypedPointerKHR [[#PtrTy:]] 5
+; CHECK-SPIRV-DAG: TypePointer [[#Int32Ptr:]] 5 [[#Int32]]
+; CHECK-SPIRV-DAG: TypePointer [[#Int64Ptr:]] 5 [[#Int64]]
 
 ; CHECK-SPIRV: Function
+; CHECK-SPIRV: FunctionParameter [[#PtrTy]] [[#ParamPtr:]]
 
-; CHECK-SPIRV: Bitcast [[#IntPtr]] [[#TypedPtr:]] [[#ParamPtr:]]
+; CHECK-SPIRV: Bitcast [[#Int32Ptr]] [[#TypedPtr:]] [[#]]
 ; CHECK-SPIRV: SubgroupBlockReadINTEL [[#IntVec2]] [[#Res:]] [[#TypedPtr]]
-; CHECK-SPIRV: Bitcast [[#IntPtr]] [[#TypedPtr:]] [[#ParamPtr]]
+; CHECK-SPIRV: Bitcast [[#Int32Ptr]] [[#TypedPtr:]] [[#ParamPtr]]
 ; CHECK-SPIRV: SubgroupBlockWriteINTEL [[#TypedPtr]] [[#Res]]
 
 ; CHECK-SPIRV: SubgroupBlockReadINTEL
 ; CHECK-SPIRV: SubgroupBlockWriteINTEL
 
-; CHECK-SPIRV: Bitcast [[#IntPtr]] [[#TypedPtr2:]] [[#ParamPtr2:]]
-; CHECK-SPIRV: SubgroupBlockReadINTEL [[#IntVec4]] [[#Res2:]] [[#TypedPtr2]]
+; CHECK-SPIRV: Function
+; CHECK-SPIRV: Bitcast [[#Int64Ptr]] [[#TypedPtr:]] [[#]]
+; CHECK-SPIRV: SubgroupBlockReadINTEL [[#Int64]] [[#Res:]] [[#TypedPtr]]
 
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024"
 target triple = "spir64"
@@ -44,6 +47,7 @@ define spir_kernel void @test_subgroup_block_read_write(<2 x float> %x, i32 %c, 
 ; without fix                                             @_Z27intel_sub_group_block_read2PU3AS1Kh
 ; CHECK-LLVM-NEXT:    [[P1:%.*]] = bitcast ptr addrspace(1) [[P]] to ptr addrspace(1)
 ; CHECK-LLVM-NEXT:    call spir_func void @_Z28intel_sub_group_block_write2PU3AS1jDv2_j(ptr addrspace(1) [[P1]], <2 x i32> [[CALL5]])
+; without fix                             @_Z28intel_sub_group_block_write2PU3AS1hDv2_j
 
 ; CHECK-LLVM-NEXT:    [[CP0:%.*]] = bitcast ptr addrspace(1) [[CP:%.*]] to ptr addrspace(1)
 ; CHECK-LLVM-NEXT:    [[CALL13:%.*]] = call spir_func <16 x i8> @_Z31intel_sub_group_block_read_uc16PU3AS1Kh(ptr addrspace(1) [[CP0]])
@@ -70,6 +74,7 @@ entry:
 }
 
 ; sub_group_as_vec
+; CHECK-LLVM: _Z29intel_sub_group_block_read_ulPU3AS1Km
 ; bad case: _Z29intel_sub_group_block_read_ulPU3AS1Kh
 ;           _Z30intel_sub_group_block_write_ulPU3AS1hm
 %"class.sycl::_V1::id" = type { %"class.sycl::_V1::detail::array" }
@@ -86,9 +91,6 @@ entry:
   %call1.i.i = tail call spir_func noundef i64 @_Z30__spirv_SubgroupBlockReadINTELImET_PU3AS1Km(ptr addrspace(1) noundef %call.i.i)
   ret void
 }
-; load_store
-; bad case: _Z26intel_sub_group_block_readPU3AS1Kh
-;           _Z27intel_sub_group_block_writePU3AS1h
 
 ; Function Attrs: convergent
 declare spir_func <2 x i32> @_Z27intel_sub_group_block_read2PU3AS1Kj(ptr addrspace(1)) local_unnamed_addr #1
@@ -122,6 +124,6 @@ attributes #2 = { convergent nounwind }
 !1 = !{i32 0, i32 0, i32 1, i32 1, i32 0, i32 1, i32 1, i32 1, i32 1}
 !2 = !{!"none", !"none", !"read_only", !"write_only", !"none", !"none", !"none", !"none", !"none"}
 !3 = !{!"float2", !"uint", !"image2d_t", !"image2d_t", !"int2", !"uint*", !"ushort*", !"uchar*", !"ulong*"}
-!4 = !{!"float __attribute__((ext_vector_type(2)))", !"uint", !"image2d_t", !"image2d_t", !"int __attribute__((ext_vector_type(2)))", !"uint*", !"ushort*", !"uchar*", !"ulong*"}
+!4 = !{!"float __attribute__((ext_vector_type(2)))", !"uint", !"image2d_t", !"image2d_t", !"Int32 __attribute__((ext_vector_type(2)))", !"uint*", !"ushort*", !"uchar*", !"ulong*"}
 !5 = !{!"", !"", !"", !"", !"", !"", !"", !"", !""}
 !6 = !{!"x", !"c", !"image_in", !"image_out", !"coord", !"p", !"sp", !"cp", !"lp"}
