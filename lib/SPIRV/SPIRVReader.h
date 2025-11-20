@@ -90,6 +90,12 @@ public:
   std::string transTypeToOCLTypeName(SPIRVType *BT, bool IsSigned = true);
   std::vector<Type *> transTypeVector(const std::vector<SPIRVType *> &,
                                       bool UseTypedPointerTypes = false);
+    // Build a typed LLVM pointer type for a SPIR-V untyped pointer operand by
+    // inferring an element LLVM type from the operand's SPIR-V value and
+    // desired semantic and preserving its storage class as an LLVM address
+    // space. Returns nullptr if no better element type than i8 can be found.
+    Type *makeTypedPtrFromUntypedOperand(SPIRVValue *Op, SPIRVInstruction *ContextInst,
+                                         Type *FallbackElemTy = nullptr);
   bool translate();
   bool transAddressingModel();
 

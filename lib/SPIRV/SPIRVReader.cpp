@@ -3700,52 +3700,56 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
           continue;
       }
       if (OpTy->isTypeUntypedPointerKHR()) {
-        auto *Val = transValue(Ops[I], BB->getParent(), BB);
-        Val = Val->stripPointerCasts();
-        if (isUntypedAccessChainOpCode(Ops[I]->getOpCode())) {
-          SPIRVType *BaseTy =
-              reinterpret_cast<SPIRVAccessChainBase *>(Ops[I])->getBaseType();
-
-          Type *Ty = nullptr;
-          if (BaseTy->isTypeArray())
-            Ty = transType(BaseTy->getArrayElementType());
-          else if (BaseTy->isTypeVector())
-            Ty = transType(BaseTy->getVectorComponentType());
-          else
-            Ty = transType(BaseTy);
-          ArgTys[I] = TypedPointerType::get(
-              Ty, SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
-        } else if (auto *GEP = dyn_cast<GetElementPtrInst>(Val)) {
-          ArgTys[I] = TypedPointerType::get(
-              GEP->getSourceElementType(),
-              SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
-        } else if (Ops[I]->getOpCode() == OpUntypedVariableKHR) {
-          SPIRVUntypedVariableKHR *UV =
-              static_cast<SPIRVUntypedVariableKHR *>(Ops[I]);
-          Type *Ty = transType(UV->getDataType());
-          ArgTys[I] = TypedPointerType::get(
-              Ty, SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
-        } else if (auto *AI = dyn_cast<AllocaInst>(Val)) {
-          ArgTys[I] = TypedPointerType::get(
-              AI->getAllocatedType(),
-              SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
-        } else if (Ops[I]->getOpCode() == OpFunctionParameter &&
-                   !RetTy->isVoidTy()) {
-          // Pointer could be a function parameter. Assume that the type of
-          // the pointer is the same as the return type.
-          Type *Ty = nullptr;
-          // it return type is array type, assign its element type to Ty
-          if (RetTy->isArrayTy())
-            Ty = RetTy->getArrayElementType();
-          else if (RetTy->isVectorTy())
-            Ty = cast<VectorType>(RetTy)->getElementType();
-          else
-            Ty = RetTy;
-
-          ArgTys[I] = TypedPointerType::get(
-              Ty, SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
-        }
+        if (Type *NewPtrTy = makeTypedPtrFromUntypedOperand(Ops[I], BI, RetTy))
+          ArgTys[I] = NewPtrTy;
       }
+      // if (OpTy->isTypeUntypedPointerKHR()) {
+      //   auto *Val = transValue(Ops[I], BB->getParent(), BB);
+      //   Val = Val->stripPointerCasts();
+      //   if (isUntypedAccessChainOpCode(Ops[I]->getOpCode())) {
+      //     SPIRVType *BaseTy =
+      //         reinterpret_cast<SPIRVAccessChainBase *>(Ops[I])->getBaseType();
+
+      //     Type *Ty = nullptr;
+      //     if (BaseTy->isTypeArray())
+      //       Ty = transType(BaseTy->getArrayElementType());
+      //     else if (BaseTy->isTypeVector())
+      //       Ty = transType(BaseTy->getVectorComponentType());
+      //     else
+      //       Ty = transType(BaseTy);
+      //     ArgTys[I] = TypedPointerType::get(
+      //         Ty, SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
+      //   } else if (auto *GEP = dyn_cast<GetElementPtrInst>(Val)) {
+      //     ArgTys[I] = TypedPointerType::get(
+      //         GEP->getSourceElementType(),
+      //         SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
+      //   } else if (Ops[I]->getOpCode() == OpUntypedVariableKHR) {
+      //     SPIRVUntypedVariableKHR *UV =
+      //         static_cast<SPIRVUntypedVariableKHR *>(Ops[I]);
+      //     Type *Ty = transType(UV->getDataType());
+      //     ArgTys[I] = TypedPointerType::get(
+      //         Ty, SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
+      //   } else if (auto *AI = dyn_cast<AllocaInst>(Val)) {
+      //     ArgTys[I] = TypedPointerType::get(
+      //         AI->getAllocatedType(),
+      //         SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
+      //   } else if (Ops[I]->getOpCode() == OpFunctionParameter &&
+      //              !RetTy->isVoidTy()) {
+      //     // Pointer could be a function parameter. Assume that the type of
+      //     // the pointer is the same as the return type.
+      //     Type *Ty = nullptr;
+      //     // it return type is array type, assign its element type to Ty
+      //     if (RetTy->isArrayTy())
+      //       Ty = RetTy->getArrayElementType();
+      //     else if (RetTy->isVectorTy())
+      //       Ty = cast<VectorType>(RetTy)->getElementType();
+      //     else
+      //       Ty = RetTy;
+
+      //     ArgTys[I] = TypedPointerType::get(
+      //         Ty, SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass()));
+      //   }
+      // }
     }
   }
 
@@ -3814,6 +3818,75 @@ SPIRVToLLVM::SPIRVToLLVM(Module *LLVMModule, SPIRVModule *TheSPIRVModule)
   if (BM->getDesiredBIsRepresentation() == BIsRepresentation::SPIRVFriendlyIR)
     UseTargetTypes = true;
   DbgTran.reset(new SPIRVToLLVMDbgTran(TheSPIRVModule, LLVMModule, this));
+}
+
+Type *SPIRVToLLVM::makeTypedPtrFromUntypedOperand(SPIRVValue *Val,
+                                                  SPIRVInstruction *ContextInst,
+                                                  Type *FallbackElemTy) {
+  auto *OpTy = Val->getType();
+  // if (!OpTy->isTypePointer() || !OpTy->isTypeUntypedPointerKHR())
+  //   return nullptr;
+
+  auto StorageClass = OpTy->getPointerStorageClass();
+  unsigned AS = SPIRSPIRVAddrSpaceMap::rmap(StorageClass);
+
+  // Attempt to infer a more precise element type from the operand value kind.
+  Type *ElementTy = nullptr;
+  Op OC = Val->getOpCode();
+  if (isUntypedAccessChainOpCode(OC)) {
+    // Access chain base type provides element type.
+    SPIRVType *BaseTy =
+        reinterpret_cast<SPIRVAccessChainBase *>(Val)->getBaseType();
+    // TODO: replace with getScalarType
+    if (BaseTy->isTypeArray())
+      ElementTy = transType(BaseTy->getArrayElementType());
+    else if (BaseTy->isTypeVector())
+      ElementTy = transType(BaseTy->getVectorComponentType());
+    else
+      ElementTy = transType(BaseTy);
+    return TypedPointerType::get(
+        ElementTy, SPIRSPIRVAddrSpaceMap::rmap(StorageClass));
+  } else if (OC == OpUntypedVariableKHR) {
+    auto *UV = static_cast<SPIRVUntypedVariableKHR *>(Val);
+    ElementTy = transType(UV->getDataType());
+    return TypedPointerType::get(
+        ElementTy, SPIRSPIRVAddrSpaceMap::rmap(StorageClass));
+  } else if (OC == OpFunctionParameter && FallbackElemTy &&
+             !FallbackElemTy->isVoidTy()) {
+    // Function parameter may match return type.
+    Type *RetTy = FallbackElemTy;
+    if (RetTy->isArrayTy())
+      RetTy = RetTy->getArrayElementType();
+    else if (RetTy->isVectorTy())
+      RetTy = cast<VectorType>(RetTy)->getElementType();
+    ElementTy = RetTy;
+    return TypedPointerType::get(
+        ElementTy, SPIRSPIRVAddrSpaceMap::rmap(StorageClass));
+  }
+
+  // If we couldn't infer a better element type, attempt to derive from an
+  // already translated LLVM value (GEP, Alloca etc.).
+  if (!ElementTy) {
+    if (Value *V = getTranslatedValue(Val)) {
+      V = V->stripPointerCasts();
+      if (auto *GEP = dyn_cast<GetElementPtrInst>(V))
+        ElementTy = GEP->getSourceElementType();
+      else if (auto *AI = dyn_cast<AllocaInst>(V))
+        ElementTy = AI->getAllocatedType();
+      if (ElementTy)
+      return TypedPointerType::get(
+          ElementTy, SPIRSPIRVAddrSpaceMap::rmap(StorageClass));
+    }
+  }
+
+  // // Final fallback to provided FallbackElemTy if still null.
+  if (!ElementTy && FallbackElemTy && !FallbackElemTy->isVoidTy())
+    return TypedPointerType::get(
+        FallbackElemTy,
+        SPIRSPIRVAddrSpaceMap::rmap(StorageClass));
+  //   ElementTy = FallbackElemTy ? FallbackElemTy : Type::getInt8Ty(*Context);
+
+  return nullptr;
 }
 
 std::string getSPIRVFuncSuffix(SPIRVInstruction *BI) {
@@ -5327,57 +5400,61 @@ Instruction *SPIRVToLLVM::transOCLBuiltinFromExtInst(SPIRVExtInst *BC,
     if (!isa<PointerType>(ArgTypes[I]) ||
         !BC->getArgValue(I)->getType()->isTypeUntypedPointerKHR())
       continue;
-    auto *Val = transValue(BC->getArgValue(I), BB->getParent(), BB);
-    Val = Val->stripPointerCasts();
-    if (isUntypedAccessChainOpCode(BC->getArgValue(I)->getOpCode())) {
-      SPIRVType *BaseTy =
-          reinterpret_cast<SPIRVAccessChainBase *>(BC->getArgValue(I))
-              ->getBaseType();
+          // if (OpTy->isTypeUntypedPointerKHR()) {
+        if (Type *NewPtrTy = makeTypedPtrFromUntypedOperand(BC->getArgValue(I), BC, RetTy))
+          ArgTypes[I] = NewPtrTy;
+      // }
+    // auto *Val = transValue(BC->getArgValue(I), BB->getParent(), BB);
+    // Val = Val->stripPointerCasts();
+    // if (isUntypedAccessChainOpCode(BC->getArgValue(I)->getOpCode())) {
+    //   SPIRVType *BaseTy =
+    //       reinterpret_cast<SPIRVAccessChainBase *>(BC->getArgValue(I))
+    //           ->getBaseType();
 
-      Type *Ty = nullptr;
-      if (BaseTy->isTypeArray())
-        Ty = transType(BaseTy->getArrayElementType());
-      else if (BaseTy->isTypeVector())
-        Ty = transType(BaseTy->getVectorComponentType());
-      else
-        Ty = transType(BaseTy);
-      ArgTypes[I] = TypedPointerType::get(
-          Ty, SPIRSPIRVAddrSpaceMap::rmap(
-                  BC->getArgValue(I)->getType()->getPointerStorageClass()));
-    } else if (auto *GEP = dyn_cast<GetElementPtrInst>(Val)) {
-      ArgTypes[I] = TypedPointerType::get(
-          GEP->getSourceElementType(),
-          SPIRSPIRVAddrSpaceMap::rmap(
-              BC->getArgValue(I)->getType()->getPointerStorageClass()));
-    } else if (BC->getArgValue(I)->getOpCode() == OpUntypedVariableKHR) {
-      SPIRVUntypedVariableKHR *UV =
-          static_cast<SPIRVUntypedVariableKHR *>(BC->getArgValue(I));
-      Type *Ty = transType(UV->getDataType());
-      ArgTypes[I] = TypedPointerType::get(
-          Ty, SPIRSPIRVAddrSpaceMap::rmap(
-                  BC->getArgValue(I)->getType()->getPointerStorageClass()));
-    } else if (auto *AI = dyn_cast<AllocaInst>(Val)) {
-      ArgTypes[I] = TypedPointerType::get(
-          AI->getAllocatedType(),
-          SPIRSPIRVAddrSpaceMap::rmap(
-              BC->getArgValue(I)->getType()->getPointerStorageClass()));
-    } else if (BC->getArgValue(I)->getOpCode() == OpFunctionParameter &&
-               !RetTy->isVoidTy()) {
-      // Pointer could be a function parameter. Assume that the type of
-      // the pointer is the same as the return type.
-      Type *Ty = nullptr;
-      // it return type is array type, assign its element type to Ty
-      if (RetTy->isArrayTy())
-        Ty = RetTy->getArrayElementType();
-      else if (RetTy->isVectorTy())
-        Ty = cast<VectorType>(RetTy)->getElementType();
-      else
-        Ty = RetTy;
+    //   Type *Ty = nullptr;
+    //   if (BaseTy->isTypeArray())
+    //     Ty = transType(BaseTy->getArrayElementType());
+    //   else if (BaseTy->isTypeVector())
+    //     Ty = transType(BaseTy->getVectorComponentType());
+    //   else
+    //     Ty = transType(BaseTy);
+    //   ArgTypes[I] = TypedPointerType::get(
+    //       Ty, SPIRSPIRVAddrSpaceMap::rmap(
+    //               BC->getArgValue(I)->getType()->getPointerStorageClass()));
+    // } else if (auto *GEP = dyn_cast<GetElementPtrInst>(Val)) {
+    //   ArgTypes[I] = TypedPointerType::get(
+    //       GEP->getSourceElementType(),
+    //       SPIRSPIRVAddrSpaceMap::rmap(
+    //           BC->getArgValue(I)->getType()->getPointerStorageClass()));
+    // } else if (BC->getArgValue(I)->getOpCode() == OpUntypedVariableKHR) {
+    //   SPIRVUntypedVariableKHR *UV =
+    //       static_cast<SPIRVUntypedVariableKHR *>(BC->getArgValue(I));
+    //   Type *Ty = transType(UV->getDataType());
+    //   ArgTypes[I] = TypedPointerType::get(
+    //       Ty, SPIRSPIRVAddrSpaceMap::rmap(
+    //               BC->getArgValue(I)->getType()->getPointerStorageClass()));
+    // } else if (auto *AI = dyn_cast<AllocaInst>(Val)) {
+    //   ArgTypes[I] = TypedPointerType::get(
+    //       AI->getAllocatedType(),
+    //       SPIRSPIRVAddrSpaceMap::rmap(
+    //           BC->getArgValue(I)->getType()->getPointerStorageClass()));
+    // } else if (BC->getArgValue(I)->getOpCode() == OpFunctionParameter &&
+    //            !RetTy->isVoidTy()) {
+    //   // Pointer could be a function parameter. Assume that the type of
+    //   // the pointer is the same as the return type.
+    //   Type *Ty = nullptr;
+    //   // it return type is array type, assign its element type to Ty
+    //   if (RetTy->isArrayTy())
+    //     Ty = RetTy->getArrayElementType();
+    //   else if (RetTy->isVectorTy())
+    //     Ty = cast<VectorType>(RetTy)->getElementType();
+    //   else
+    //     Ty = RetTy;
 
-      ArgTypes[I] = TypedPointerType::get(
-          Ty, SPIRSPIRVAddrSpaceMap::rmap(
-                  BC->getArgValue(I)->getType()->getPointerStorageClass()));
-    }
+    //   ArgTypes[I] = TypedPointerType::get(
+    //       Ty, SPIRSPIRVAddrSpaceMap::rmap(
+    //               BC->getArgValue(I)->getType()->getPointerStorageClass()));
+    // }
   }
 
   std::string MangledName =
