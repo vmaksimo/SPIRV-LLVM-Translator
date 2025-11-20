@@ -5292,25 +5292,91 @@ Instruction *SPIRVToLLVM::transOCLBuiltinFromExtInst(SPIRVExtInst *BC,
 
   Type *RetTy = transType(BC->getType());
   std::vector<Type *> ArgTypes = transTypeVector(BC->getArgTypes(), true);
+
+  // frexp exp operand must be a pointer(global, local, private, generic) to i32
+  // or vector(2,3,4,8,16) of i32 values, not to float.
+  // remquo quo operand must be a pointer(global, local, private, generic) to
+  // i32 or vector(2,3,4,8,16) of i32 values, not to float.
+  // lgamma_r signp operand must be a pointer(global, local, private, generic) to i32 or
+  // vector(2,3,4,8,16) of i32 values, not to float.
+  // if (ExtOp == OpenCLLIB::Frexp || ExtOp == OpenCLLIB::Remquo ||
+  //     ExtOp == OpenCLLIB::Lgamma_r) {
+  //   if (isa<TypedPointerType>(ArgTypes[ArgTypes.size() - 1])) {
+  //     auto *PtrType = cast<TypedPointerType>(ArgTypes[ArgTypes.size() - 1]);
+  //     Type *DataType = Type::getInt32Ty(*Context);
+  //     if (PtrType->getElementType()->isVectorTy())
+  //       DataType = VectorType::get(
+  //           DataType,
+  //           cast<VectorType>(PtrType->getElementType())->getElementCount());
+
+  //     ArgTypes[ArgTypes.size() - 1] =
+  //         TypedPointerType::get(DataType, PtrType->getAddressSpace());
+  //   } else if (isa<PointerType>(ArgTypes[ArgTypes.size() - 1])) {
+  //     auto *PtrType = cast<PointerType>(ArgTypes[ArgTypes.size() - 1]);
+  //     Type *DataType = Type::getInt32Ty(*Context);
+  //     if (RetTy->isVectorTy())
+  //       DataType = VectorType::get(DataType,
+  //                                  cast<VectorType>(RetTy)->getElementCount());
+  //     ArgTypes[ArgTypes.size() - 1] =
+  //         TypedPointerType::get(DataType, PtrType->getAddressSpace());
+  //   }
+  // }
+  // Generalization or fast approach above?
+
   for (unsigned I = 0; I < ArgTypes.size(); I++) {
-    // Special handling for "truly" untyped pointers to preserve correct OCL
-    // bultin mangling.
-    if (isa<PointerType>(ArgTypes[I]) &&
-        BC->getArgValue(I)->isUntypedVariable()) {
-      auto *BVar = static_cast<SPIRVUntypedVariableKHR *>(BC->getArgValue(I));
+    if (!isa<PointerType>(ArgTypes[I]) ||
+        !BC->getArgValue(I)->getType()->isTypeUntypedPointerKHR())
+      continue;
+    auto *Val = transValue(BC->getArgValue(I), BB->getParent(), BB);
+    Val = Val->stripPointerCasts();
+    if (isUntypedAccessChainOpCode(BC->getArgValue(I)->getOpCode())) {
+      SPIRVType *BaseTy =
+          reinterpret_cast<SPIRVAccessChainBase *>(BC->getArgValue(I))
+              ->getBaseType();
+
+      Type *Ty = nullptr;
+      if (BaseTy->isTypeArray())
+        Ty = transType(BaseTy->getArrayElementType());
+      else if (BaseTy->isTypeVector())
+        Ty = transType(BaseTy->getVectorComponentType());
+      else
+        Ty = transType(BaseTy);
       ArgTypes[I] = TypedPointerType::get(
-          transType(BVar->getDataType()),
-          SPIRSPIRVAddrSpaceMap::rmap(BVar->getStorageClass()));
-    } else if (ArgTypes[I]->isPointerTy() &&
-               BC->getArgValue(I)->getType()->isTypeUntypedPointerKHR()) {
-      // Argument could be a function parameter or the result of any other
-      // operation. In this case the type should be a typed pointer to a data
-      // type (calculation from the result type works for most of OCL builtins).
-      auto *PtrType = cast<PointerType>(ArgTypes[I]);
-      Type *DataType = RetTy;
-      if (!DataType->isVoidTy())
-        ArgTypes[I] =
-            TypedPointerType::get(DataType, PtrType->getAddressSpace());
+          Ty, SPIRSPIRVAddrSpaceMap::rmap(
+                  BC->getArgValue(I)->getType()->getPointerStorageClass()));
+    } else if (auto *GEP = dyn_cast<GetElementPtrInst>(Val)) {
+      ArgTypes[I] = TypedPointerType::get(
+          GEP->getSourceElementType(),
+          SPIRSPIRVAddrSpaceMap::rmap(
+              BC->getArgValue(I)->getType()->getPointerStorageClass()));
+    } else if (BC->getArgValue(I)->getOpCode() == OpUntypedVariableKHR) {
+      SPIRVUntypedVariableKHR *UV =
+          static_cast<SPIRVUntypedVariableKHR *>(BC->getArgValue(I));
+      Type *Ty = transType(UV->getDataType());
+      ArgTypes[I] = TypedPointerType::get(
+          Ty, SPIRSPIRVAddrSpaceMap::rmap(
+                  BC->getArgValue(I)->getType()->getPointerStorageClass()));
+    } else if (auto *AI = dyn_cast<AllocaInst>(Val)) {
+      ArgTypes[I] = TypedPointerType::get(
+          AI->getAllocatedType(),
+          SPIRSPIRVAddrSpaceMap::rmap(
+              BC->getArgValue(I)->getType()->getPointerStorageClass()));
+    } else if (BC->getArgValue(I)->getOpCode() == OpFunctionParameter &&
+               !RetTy->isVoidTy()) {
+      // Pointer could be a function parameter. Assume that the type of
+      // the pointer is the same as the return type.
+      Type *Ty = nullptr;
+      // it return type is array type, assign its element type to Ty
+      if (RetTy->isArrayTy())
+        Ty = RetTy->getArrayElementType();
+      else if (RetTy->isVectorTy())
+        Ty = cast<VectorType>(RetTy)->getElementType();
+      else
+        Ty = RetTy;
+
+      ArgTypes[I] = TypedPointerType::get(
+          Ty, SPIRSPIRVAddrSpaceMap::rmap(
+                  BC->getArgValue(I)->getType()->getPointerStorageClass()));
     }
   }
 
