@@ -3700,7 +3700,7 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
           continue;
       }
       if (OpTy->isTypeUntypedPointerKHR()) {
-        if (Type *NewPtrTy = makeTypedPtrFromUntypedOperand(Ops[I], BI, RetTy))
+        if (Type *NewPtrTy = makeTypedPtrFromUntypedOperand(Ops[I], RetTy))
           ArgTys[I] = NewPtrTy;
       }
     }
@@ -3774,16 +3774,11 @@ SPIRVToLLVM::SPIRVToLLVM(Module *LLVMModule, SPIRVModule *TheSPIRVModule)
 }
 
 Type *SPIRVToLLVM::makeTypedPtrFromUntypedOperand(SPIRVValue *Val,
-                                                  SPIRVInstruction *ContextInst,
                                                   Type *FallbackElemTy) {
   auto *OpTy = Val->getType();
-  // if (!OpTy->isTypePointer() || !OpTy->isTypeUntypedPointerKHR())
-  //   return nullptr;
+  unsigned AddrSpace =
+      SPIRSPIRVAddrSpaceMap::rmap(OpTy->getPointerStorageClass());
 
-  auto StorageClass = OpTy->getPointerStorageClass();
-  unsigned AS = SPIRSPIRVAddrSpaceMap::rmap(StorageClass);
-
-  // Attempt to infer a more precise element type from the operand value kind.
   Type *ElementTy = nullptr;
   Op OC = Val->getOpCode();
   if (isUntypedAccessChainOpCode(OC)) {
@@ -3797,13 +3792,9 @@ Type *SPIRVToLLVM::makeTypedPtrFromUntypedOperand(SPIRVValue *Val,
       ElementTy = transType(BaseTy->getVectorComponentType());
     else
       ElementTy = transType(BaseTy);
-    return TypedPointerType::get(ElementTy,
-                                 SPIRSPIRVAddrSpaceMap::rmap(StorageClass));
   } else if (OC == OpUntypedVariableKHR) {
     auto *UV = static_cast<SPIRVUntypedVariableKHR *>(Val);
     ElementTy = transType(UV->getDataType());
-    return TypedPointerType::get(ElementTy,
-                                 SPIRSPIRVAddrSpaceMap::rmap(StorageClass));
   } else if (OC == OpFunctionParameter && FallbackElemTy &&
              !FallbackElemTy->isVoidTy()) {
     // Function parameter may match return type.
@@ -3813,30 +3804,22 @@ Type *SPIRVToLLVM::makeTypedPtrFromUntypedOperand(SPIRVValue *Val,
     else if (RetTy->isVectorTy())
       RetTy = cast<VectorType>(RetTy)->getElementType();
     ElementTy = RetTy;
-    return TypedPointerType::get(ElementTy,
-                                 SPIRSPIRVAddrSpaceMap::rmap(StorageClass));
   }
+
+  if (ElementTy)
+    return TypedPointerType::get(ElementTy, AddrSpace);
 
   // If we couldn't infer a better element type, attempt to derive from an
-  // already translated LLVM value (GEP, Alloca etc.).
-  if (!ElementTy) {
-    if (Value *V = getTranslatedValue(Val)) {
-      V = V->stripPointerCasts();
-      if (auto *GEP = dyn_cast<GetElementPtrInst>(V))
-        ElementTy = GEP->getSourceElementType();
-      else if (auto *AI = dyn_cast<AllocaInst>(V))
-        ElementTy = AI->getAllocatedType();
-      if (ElementTy)
-        return TypedPointerType::get(ElementTy,
-                                     SPIRSPIRVAddrSpaceMap::rmap(StorageClass));
-    }
+  // already translated LLVM value (GEP, Alloca, etc.).
+  if (Value *V = getTranslatedValue(Val)) {
+    V = V->stripPointerCasts();
+    if (auto *GEP = dyn_cast<GetElementPtrInst>(V))
+      ElementTy = GEP->getSourceElementType();
+    else if (auto *AI = dyn_cast<AllocaInst>(V))
+      ElementTy = AI->getAllocatedType();
+    if (ElementTy)
+      return TypedPointerType::get(ElementTy, AddrSpace);
   }
-
-  // // Final fallback to provided FallbackElemTy if still null.
-  if (!ElementTy && FallbackElemTy && !FallbackElemTy->isVoidTy())
-    return TypedPointerType::get(FallbackElemTy,
-                                 SPIRSPIRVAddrSpaceMap::rmap(StorageClass));
-  //   ElementTy = FallbackElemTy ? FallbackElemTy : Type::getInt8Ty(*Context);
 
   return nullptr;
 }
@@ -5323,7 +5306,7 @@ Instruction *SPIRVToLLVM::transOCLBuiltinFromExtInst(SPIRVExtInst *BC,
         !BC->getArgValue(I)->getType()->isTypeUntypedPointerKHR())
       continue;
     if (Type *NewPtrTy =
-            makeTypedPtrFromUntypedOperand(BC->getArgValue(I), BC, RetTy))
+            makeTypedPtrFromUntypedOperand(BC->getArgValue(I), RetTy))
       ArgTypes[I] = NewPtrTy;
   }
 
