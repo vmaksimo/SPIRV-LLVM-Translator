@@ -24,7 +24,6 @@ target triple = "spirv64-unknown-unknown"
 ; CHECK-SPIRV: TypeVector [[HALFV2:[0-9]+]] [[HALF]] 2
 ; CHECK-SPIRV: TypePointer [[HALFV2PTR:[0-9]+]] 7 [[HALFV2]]
 ; CHECK-SPIRV: Constant [[HALF]] [[CONST:[0-9]+]] 14788
-
 ; CHECK-SPIRV-NOEXT: Variable [[HALFPTR]] [[ADDR:[0-9]+]] 7
 ; CHECK-SPIRV-EXT: UntypedVariableKHR [[HALFPTR]] [[ADDR:[0-9]+]] 7 [[HALF]]
 ; CHECK-SPIRV: Variable [[HALFV2PTR]] [[ADDR2:[0-9]+]] 7
