@@ -95,7 +95,7 @@ public:
   // translated LLVM value. Returns nullptr if no element type can be found.
   // This is needed to preserve correct mangling for builtins.
   Type *makeTypedPtrFromUntypedOperand(SPIRVValue *Op,
-                                       Type *FallbackElemTy = nullptr);
+                                       Type *RetTy);
   bool translate();
   bool transAddressingModel();
 
