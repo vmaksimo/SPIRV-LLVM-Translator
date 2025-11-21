@@ -3700,7 +3700,7 @@ Instruction *SPIRVToLLVM::transBuiltinFromInst(const std::string &FuncName,
           continue;
       }
       if (OpTy->isTypeUntypedPointerKHR()) {
-        if (Type *NewPtrTy = makeTypedPtrFromUntypedOperand(Ops[I], RetTy))
+        if (Type *NewPtrTy = getTypedPtrFromUntypedOperand(Ops[I], RetTy))
           ArgTys[I] = NewPtrTy;
       }
     }
@@ -3773,8 +3773,7 @@ SPIRVToLLVM::SPIRVToLLVM(Module *LLVMModule, SPIRVModule *TheSPIRVModule)
   DbgTran.reset(new SPIRVToLLVMDbgTran(TheSPIRVModule, LLVMModule, this));
 }
 
-Type *SPIRVToLLVM::makeTypedPtrFromUntypedOperand(SPIRVValue *Val,
-                                                  Type *RetTy) {
+Type *SPIRVToLLVM::getTypedPtrFromUntypedOperand(SPIRVValue *Val, Type *RetTy) {
   Type *Ty = nullptr;
   Op OC = Val->getOpCode();
   if (isUntypedAccessChainOpCode(OC)) {
@@ -5297,15 +5296,15 @@ Instruction *SPIRVToLLVM::transOCLBuiltinFromExtInst(SPIRVExtInst *BC,
 
   Type *RetTy = transType(BC->getType());
   std::vector<Type *> ArgTypes = transTypeVector(BC->getArgTypes(), true);
-
   for (unsigned I = 0; I < ArgTypes.size(); I++) {
     // Special handling for "truly" untyped pointers to preserve correct OCL
     // bultin mangling.
     if (!isa<PointerType>(ArgTypes[I]) ||
         !BC->getArgValue(I)->getType()->isTypeUntypedPointerKHR())
       continue;
-    if (Type *NewPtrTy =
-            makeTypedPtrFromUntypedOperand(BC->getArgValue(I), RetTy))
+
+    Type *NewPtrTy = getTypedPtrFromUntypedOperand(BC->getArgValue(I), RetTy);
+    if (NewPtrTy)
       ArgTypes[I] = NewPtrTy;
   }
 
