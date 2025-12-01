@@ -3737,8 +3737,28 @@ protected:
     return ExtensionID::SPV_INTEL_joint_matrix;
   }
   SPIRVCapVec getRequiredCapability() const override {
-    return getVec(
-        internal::CapabilityCooperativeMatrixCheckedInstructionsINTEL);
+    auto CV =
+        getVec(internal::CapabilityCooperativeMatrixCheckedInstructionsINTEL);
+    if (SPIRVValue *LayoutVal = getMemoryLayout()) {
+      if (isConstantOpCode(LayoutVal->getOpCode())) {
+        uint64_t Layout =
+            static_cast<SPIRVConstant *>(LayoutVal)->getZExtIntValue();
+        if (Layout == internal::CooperativeMatrixLayoutPackedINTEL)
+          CV.push_back(internal::CapabilityPackedCooperativeMatrixINTEL);
+      }
+    }
+    return CV;
+  }
+  SPIRVValue *getMemoryLayout() const {
+    if (OpCode == internal::OpCooperativeMatrixLoadCheckedINTEL)
+      return const_cast<
+                 SPIRVCooperativeMatrixCheckedInstructionsINTELInstBase *>(this)
+          ->getOperand(3);
+    if (OpCode == internal::OpCooperativeMatrixStoreCheckedINTEL)
+      return const_cast<
+                 SPIRVCooperativeMatrixCheckedInstructionsINTELInstBase *>(this)
+          ->getOperand(4);
+    return nullptr;
   }
 };
 
@@ -3790,6 +3810,7 @@ protected:
       internal::Op##x##INTEL, __VA_ARGS__>                                     \
       SPIRV##x##INTEL;
 _SPIRV_OP(CooperativeMatrixApplyFunction, true, 5)
+_SPIRV_OP(CooperativeMatrixGetElementCoord, true, 5)
 #undef _SPIRV_OP
 
 class SPIRVCooperativeMatrixKHRInstBase : public SPIRVInstTemplateBase {
@@ -3798,7 +3819,25 @@ protected:
     return ExtensionID::SPV_KHR_cooperative_matrix;
   }
   SPIRVCapVec getRequiredCapability() const override {
-    return getVec(CapabilityCooperativeMatrixKHR);
+    auto CV = getVec(CapabilityCooperativeMatrixKHR);
+    if (SPIRVValue *LayoutVal = getMemoryLayout()) {
+      if (isConstantOpCode(LayoutVal->getOpCode())) {
+        uint64_t Layout =
+            static_cast<SPIRVConstant *>(LayoutVal)->getZExtIntValue();
+        if (Layout == internal::CooperativeMatrixLayoutPackedINTEL)
+          CV.push_back(internal::CapabilityPackedCooperativeMatrixINTEL);
+      }
+    }
+    return CV;
+  }
+  SPIRVValue *getMemoryLayout() const {
+    if (OpCode == OpCooperativeMatrixLoadKHR)
+      return const_cast<SPIRVCooperativeMatrixKHRInstBase *>(this)->getOperand(
+          1);
+    if (OpCode == OpCooperativeMatrixStoreKHR)
+      return const_cast<SPIRVCooperativeMatrixKHRInstBase *>(this)->getOperand(
+          2);
+    return nullptr;
   }
 };
 
