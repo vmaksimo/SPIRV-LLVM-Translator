@@ -1196,9 +1196,7 @@ public:
   std::optional<ExtensionID> getRequiredExtension() const override {
     return ExtensionID::SPV_INTEL_joint_matrix;
   }
-  SPIRVCapVec getRequiredCapability() const override {
-    return {internal::CapabilityJointMatrixINTEL};
-  }
+  SPIRVCapVec getRequiredCapability() const override;
   void setWordCount(SPIRVWord WordCount) override {
     SPIRVType::setWordCount(WordCount);
     Args.resize(WordCount - FixedWC);
