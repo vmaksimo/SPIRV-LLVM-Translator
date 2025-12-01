@@ -88,6 +88,7 @@ enum InternalOp {
   IOpMaskedGatherINTEL = 6428,
   IOpMaskedScatterINTEL = 6429,
   IOpJointMatrixGetElementCoordINTEL = 6440,
+  IOpCooperativeMatrixGetElementCoordINTEL = 6440,
   IOpCooperativeMatrixApplyFunctionINTEL = 6448,
   IOpCooperativeMatrixPrefetchINTEL = 6449,
   IOpConvertHandleToImageINTEL = 6529,
@@ -128,10 +129,13 @@ enum InternalCapability {
   ICapabilityAtomicBFloat16LoadStoreINTEL = 6262,
   ICapabilityCooperativeMatrixPrefetchINTEL = 6411,
   ICapabilityMaskedGatherScatterINTEL = 6427,
+  ICapabilityPackedCooperativeMatrixINTEL = 6434,
   ICapabilityJointMatrixWIInstructionsINTEL = 6435,
   ICapabilityCooperativeMatrixInvocationInstructionsINTEL = 6435,
   ICapabilityJointMatrixTF32ComponentTypeINTEL = 6436,
+  ICapabilityCooperativeMatrixTF32ComponentTypeINTEL = 6436,
   ICapabilityJointMatrixBF16ComponentTypeINTEL = 6437,
+  ICapabilityCooperativeMatrixBFloat16ComponentTypeINTEL = 6437,
   ICapabilityJointMatrixPackedInt2ComponentTypeINTEL = 6438,
   ICapabilityJointMatrixPackedInt4ComponentTypeINTEL = 6439,
   ICapabilitySubgroupRequirementsINTEL = 6445,
@@ -150,6 +154,28 @@ enum InternalJointMatrixLayout {
   ColumnMajor = 1,
   PackedA = 2,
   PackedB = 3
+};
+
+// Cooperative Matrix Layout for SPV_INTEL_joint_matrix extension
+// These values match the SPIR-V spec 3.X "Cooperative Matrix Layout" table:
+// - RowMajorKHR = 0, ColumnMajorKHR = 1, PackedINTEL = 2
+// The value 2 (PackedINTEL) matches InternalJointMatrixLayout::PackedA because
+// PackedINTEL is the cooperative matrix layout used for VNNI format, which
+// corresponds to the joint matrix packed layout. This intentional overlap
+// ensures binary compatibility between both APIs.
+enum InternalCooperativeMatrixLayout {
+  CooperativeMatrixLayoutRowMajorKHR = 0,
+  CooperativeMatrixLayoutColumnMajorKHR = 1,
+  CooperativeMatrixLayoutPackedINTEL = 2
+};
+
+// Cooperative Matrix Operands for SPV_INTEL_joint_matrix extension
+// These are bit flags for component type interpretation in OpCooperativeMatrixMulAddKHR
+enum InternalCooperativeMatrixOperands {
+  CooperativeMatrixOperandsMatrixAAndBTF32ComponentsINTELMask = 0x20,
+  CooperativeMatrixOperandsMatrixAAndBBFloat16ComponentsINTELMask = 0x40,
+  CooperativeMatrixOperandsMatrixCBFloat16ComponentsINTELMask = 0x80,
+  CooperativeMatrixOperandsMatrixResultBFloat16ComponentsINTELMask = 0x100
 };
 
 enum InternalJointMatrixUse { MatrixA = 0, MatrixB = 1, Accumulator = 2 };
@@ -179,6 +205,9 @@ _SPIRV_OP(Capability, JointMatrixTF32ComponentTypeINTEL)
 _SPIRV_OP(Capability, JointMatrixBF16ComponentTypeINTEL)
 _SPIRV_OP(Capability, JointMatrixPackedInt2ComponentTypeINTEL)
 _SPIRV_OP(Capability, JointMatrixPackedInt4ComponentTypeINTEL)
+_SPIRV_OP(Capability, PackedCooperativeMatrixINTEL)
+_SPIRV_OP(Capability, CooperativeMatrixTF32ComponentTypeINTEL)
+_SPIRV_OP(Capability, CooperativeMatrixBFloat16ComponentTypeINTEL)
 _SPIRV_OP(Op, TypeJointMatrixINTEL)
 _SPIRV_OP(Op, TypeJointMatrixINTELv2)
 _SPIRV_OP(Op, JointMatrixLoadINTEL)
@@ -189,6 +218,7 @@ _SPIRV_OP(Op, JointMatrixUSMadINTEL)
 _SPIRV_OP(Op, JointMatrixUUMadINTEL)
 _SPIRV_OP(Op, JointMatrixWorkItemLengthINTEL)
 _SPIRV_OP(Op, JointMatrixGetElementCoordINTEL)
+_SPIRV_OP(Op, CooperativeMatrixGetElementCoordINTEL)
 
 _SPIRV_OP(Capability, CooperativeMatrixPrefetchINTEL)
 _SPIRV_OP(Op, CooperativeMatrixPrefetchINTEL)

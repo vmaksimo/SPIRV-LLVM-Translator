@@ -3813,6 +3813,7 @@ protected:
       internal::Op##x##INTEL, __VA_ARGS__>                                     \
       SPIRV##x##INTEL;
 _SPIRV_OP(CooperativeMatrixApplyFunction, true, 5)
+_SPIRV_OP(CooperativeMatrixGetElementCoord, true, 5)
 #undef _SPIRV_OP
 
 class SPIRVCooperativeMatrixKHRInstBase : public SPIRVInstTemplateBase {
