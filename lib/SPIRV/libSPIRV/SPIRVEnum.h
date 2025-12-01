@@ -215,6 +215,8 @@ template <> inline void SPIRVMap<SPIRVCapabilityKind, SPIRVCapVec>::init() {
                {internal::CapabilityJointMatrixINTEL});
   ADD_VEC_INIT(internal::CapabilityJointMatrixPackedInt4ComponentTypeINTEL,
                {internal::CapabilityJointMatrixINTEL});
+  ADD_VEC_INIT(internal::CapabilityPackedCooperativeMatrixINTEL,
+               {internal::CapabilityJointMatrixINTEL});
   ADD_VEC_INIT(internal::CapabilityCooperativeMatrixPrefetchINTEL,
                {CapabilityCooperativeMatrixKHR});
   ADD_VEC_INIT(internal::CapabilityCooperativeMatrixInvocationInstructionsINTEL,

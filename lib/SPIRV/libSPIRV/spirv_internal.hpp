@@ -149,28 +149,13 @@ enum InternalExecutionMode {
 constexpr LinkageType LinkageTypeInternal =
     static_cast<LinkageType>(ILTInternal);
 
-enum InternalJointMatrixLayout {
-  RowMajor = 0,
-  ColumnMajor = 1,
-  PackedA = 2,
-  PackedB = 3
-};
-
-// Cooperative Matrix Layout for SPV_INTEL_joint_matrix extension
-// These values match the SPIR-V spec 3.X "Cooperative Matrix Layout" table:
-// - RowMajorKHR = 0, ColumnMajorKHR = 1, PackedINTEL = 2
-// The value 2 (PackedINTEL) matches InternalJointMatrixLayout::PackedA because
-// PackedINTEL is the cooperative matrix layout used for VNNI format, which
-// corresponds to the joint matrix packed layout. This intentional overlap
-// ensures binary compatibility between both APIs.
+// Cooperative Matrix Layout for SPV_INTEL_joint_matrix extension.
 enum InternalCooperativeMatrixLayout {
-  CooperativeMatrixLayoutRowMajorKHR = 0,
-  CooperativeMatrixLayoutColumnMajorKHR = 1,
   CooperativeMatrixLayoutPackedINTEL = 2
 };
 
 // Cooperative Matrix Operands for SPV_INTEL_joint_matrix extension
-// These are bit flags for component type interpretation in OpCooperativeMatrixMulAddKHR
+// These are bit flags for component type interpretation.
 enum InternalCooperativeMatrixOperands {
   CooperativeMatrixOperandsMatrixAAndBTF32ComponentsINTELMask = 0x20,
   CooperativeMatrixOperandsMatrixAAndBBFloat16ComponentsINTELMask = 0x40,
