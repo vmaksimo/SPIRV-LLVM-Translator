@@ -192,6 +192,7 @@ _SPIRV_OP(Op, JointMatrixUSMadINTEL)
 _SPIRV_OP(Op, JointMatrixUUMadINTEL)
 _SPIRV_OP(Op, JointMatrixWorkItemLengthINTEL)
 _SPIRV_OP(Op, JointMatrixGetElementCoordINTEL)
+_SPIRV_OP(Capability, PackedCooperativeMatrixINTEL)
 
 _SPIRV_OP(Capability, CooperativeMatrixPrefetchINTEL)
 _SPIRV_OP(Op, CooperativeMatrixPrefetchINTEL)

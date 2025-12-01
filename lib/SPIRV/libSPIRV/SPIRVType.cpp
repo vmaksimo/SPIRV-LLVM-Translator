@@ -345,6 +345,17 @@ void SPIRVTypeJointMatrixINTEL::decode(std::istream &I) {
   Decoder >> Id >> CompType >> Args;
 }
 
+SPIRVCapVec SPIRVTypeJointMatrixINTEL::getRequiredCapability() const {
+  auto CV = getVec(internal::CapabilityJointMatrixINTEL);
+  if (SPIRVValue *LayoutVal = getLayout()) {
+    uint64_t Layout =
+        static_cast<SPIRVConstant *>(LayoutVal)->getZExtIntValue();
+    if (Layout == internal::PackedA || Layout == internal::PackedB)
+      CV.push_back(internal::CapabilityPackedCooperativeMatrixINTEL);
+  }
+  return CV;
+}
+
 SPIRVTypeCooperativeMatrixKHR::SPIRVTypeCooperativeMatrixKHR(
     SPIRVModule *M, SPIRVId TheId, SPIRVType *CompType,
     std::vector<SPIRVValue *> Args)
