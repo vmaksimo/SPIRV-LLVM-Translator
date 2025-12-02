@@ -656,6 +656,7 @@ template <> inline void SPIRVMap<Capability, std::string>::init() {
       "SubgroupMatrixMultiplyAccumulateINTEL");
   add(CapabilityTernaryBitwiseFunctionINTEL, "TernaryBitwiseFunctionINTEL");
   // From spirv_internal.hpp
+  add(internal::CapabilityFmaKHR, "FmaKHR");
   add(internal::CapabilityTokenTypeINTEL, "TokenTypeINTEL");
   add(internal::CapabilityJointMatrixINTEL, "JointMatrixINTEL");
   add(internal::CapabilityHWThreadQueryINTEL, "HWThreadQueryINTEL");
