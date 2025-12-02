@@ -122,9 +122,7 @@ enum InternalCapability {
   ICapabilityPackedCooperativeMatrixINTEL = 6434,
   ICapabilityJointMatrixWIInstructionsINTEL = 6435,
   ICapabilityCooperativeMatrixInvocationInstructionsINTEL = 6435,
-  ICapabilityJointMatrixTF32ComponentTypeINTEL = 6436,
   ICapabilityCooperativeMatrixTF32ComponentTypeINTEL = 6436,
-  ICapabilityJointMatrixBF16ComponentTypeINTEL = 6437,
   ICapabilityCooperativeMatrixBFloat16ComponentTypeINTEL = 6437,
   ICapabilitySubgroupRequirementsINTEL = 6445,
   ICapabilityBindlessImagesINTEL = 6528
@@ -138,9 +136,7 @@ constexpr LinkageType LinkageTypeInternal =
     static_cast<LinkageType>(ILTInternal);
 
 // Cooperative Matrix Layout for SPV_INTEL_joint_matrix extension.
-enum InternalCooperativeMatrixLayout {
-  CooperativeMatrixLayoutPackedINTEL = 2
-};
+enum InternalCooperativeMatrixLayout { CooperativeMatrixLayoutPackedINTEL = 2 };
 
 // Cooperative Matrix Operands for SPV_INTEL_joint_matrix extension
 // These are bit flags for component type interpretation.

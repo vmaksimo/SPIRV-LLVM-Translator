@@ -3829,8 +3829,8 @@ protected:
       }
     }
     if (OpCode == OpCooperativeMatrixMulAddKHR && Ops.size() == 4) {
-      // If Cooperative Matrix Operand literal is present, check for the additional
-      // capabilities it may require.
+      // If Cooperative Matrix Operand literal is present, check for the
+      // additional capabilities it may require.
       uint64_t CoopOperands = Ops[3];
       if (CoopOperands &
           internal::
