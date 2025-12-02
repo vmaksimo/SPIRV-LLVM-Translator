@@ -3691,27 +3691,6 @@ _SPIRV_OP(ConvertFToBF16INTEL)
 _SPIRV_OP(ConvertBF16ToFINTEL)
 #undef _SPIRV_OP
 
-class SPIRVJointMatrixINTELInstBase : public SPIRVInstTemplateBase {
-protected:
-  std::optional<ExtensionID> getRequiredExtension() const override {
-    return ExtensionID::SPV_INTEL_joint_matrix;
-  }
-};
-
-class SPIRVJointMatrixINTELWorkItemInst : public SPIRVJointMatrixINTELInstBase {
-protected:
-  SPIRVCapVec getRequiredCapability() const override {
-    return getVec(internal::CapabilityJointMatrixWIInstructionsINTEL);
-  }
-};
-
-#define _SPIRV_OP(x, ...)                                                      \
-  typedef SPIRVInstTemplate<SPIRVJointMatrixINTELWorkItemInst,                 \
-                            internal::Op##x##INTEL, __VA_ARGS__>               \
-      SPIRV##x##INTEL;
-_SPIRV_OP(JointMatrixGetElementCoord, true, 5)
-#undef _SPIRV_OP
-
 class SPIRVCooperativeMatrixPrefetchINTELInstBase
     : public SPIRVInstTemplateBase {
 protected:

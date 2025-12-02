@@ -78,7 +78,6 @@ enum InternalOp {
   IOpClampConvertFToSINTEL = 6424,
   IOpMaskedGatherINTEL = 6428,
   IOpMaskedScatterINTEL = 6429,
-  IOpJointMatrixGetElementCoordINTEL = 6440,
   IOpCooperativeMatrixGetElementCoordINTEL = 6440,
   IOpCooperativeMatrixApplyFunctionINTEL = 6448,
   IOpCooperativeMatrixPrefetchINTEL = 6449,
@@ -162,7 +161,6 @@ _SPIRV_OP(Capability, JointMatrixWIInstructionsINTEL)
 _SPIRV_OP(Capability, CooperativeMatrixTF32ComponentTypeINTEL)
 _SPIRV_OP(Capability, CooperativeMatrixBFloat16ComponentTypeINTEL)
 _SPIRV_OP(Capability, PackedCooperativeMatrixINTEL)
-_SPIRV_OP(Op, JointMatrixGetElementCoordINTEL)
 _SPIRV_OP(Op, CooperativeMatrixGetElementCoordINTEL)
 
 _SPIRV_OP(Capability, CooperativeMatrixPrefetchINTEL)
