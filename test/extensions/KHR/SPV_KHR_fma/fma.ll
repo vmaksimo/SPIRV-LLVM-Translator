@@ -9,27 +9,26 @@
 ; RUN: llvm-spirv %s -o %t.spv
 ; RUN: spirv-val %t.spv
 ; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o %t.rev.ll
-; RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM-NO-EXT
+; RUN: FileCheck < %t.rev.ll %s --check-prefix=CHECK-LLVM
 
 ; CHECK-SPIRV: Capability FMAKHR
 ; CHECK-SPIRV: Extension "SPV_KHR_fma"
-; CHECK-SPIRV: TypeFloat [[TYPE_FLOAT:[0-9]+]] 32
-; CHECK-SPIRV: TypeVector [[TYPE_VEC:[0-9]+]] [[TYPE_FLOAT]] 4
-; CHECK-SPIRV: FmaKHR [[TYPE_FLOAT]] [[RESULT_SCALAR:[0-9]+]]
-; CHECK-SPIRV: FmaKHR [[TYPE_VEC]] [[RESULT_VEC:[0-9]+]]
-
-; CHECK-LLVM: %{{.*}} = call float @llvm.fma.f32(float %{{.*}}, float %{{.*}}, float %{{.*}})
-; CHECK-LLVM: %{{.*}} = call <4 x float> @llvm.fma.v4f32(<4 x float> %{{.*}}, <4 x float> %{{.*}}, <4 x float> %{{.*}})
+; CHECK-SPIRV: TypeFloat [[#TYPE_FLOAT:]] 32
+; CHECK-SPIRV: TypeVector [[#TYPE_VEC:]] [[#TYPE_FLOAT]] 4
+; CHECK-SPIRV: FmaKHR [[#TYPE_FLOAT]] [[#]]
+; CHECK-SPIRV: FmaKHR [[#TYPE_VEC]] [[#]]
+; CHECK-SPIRV: FmaKHR [[#TYPE_FLOAT]] [[#]]
 
 ; CHECK-SPIRV-NO-EXT-NOT: Capability FMAKHR
 ; CHECK-SPIRV-NO-EXT-NOT: Extension "SPV_KHR_fma"
-; CHECK-SPIRV-NO-EXT: TypeFloat [[TYPE_FLOAT:[0-9]+]] 32
-; CHECK-SPIRV-NO-EXT: TypeVector [[TYPE_VEC:[0-9]+]] [[TYPE_FLOAT]] 4
-; CHECK-SPIRV-NO-EXT: ExtInst [[TYPE_FLOAT]] [[RESULT_SCALAR:[0-9]+]] {{[0-9]+}} fma
-; CHECK-SPIRV-NO-EXT: ExtInst [[TYPE_VEC]] [[RESULT_VEC:[0-9]+]] {{[0-9]+}} fma
+; CHECK-SPIRV-NO-EXT: TypeFloat [[#TYPE_FLOAT:]] 32
+; CHECK-SPIRV-NO-EXT: TypeVector [[#TYPE_VEC:]] [[#TYPE_FLOAT]] 4
+; CHECK-SPIRV-NO-EXT: ExtInst [[#TYPE_FLOAT]] [[#]] [[#]] fma
+; CHECK-SPIRV-NO-EXT: ExtInst [[#TYPE_VEC]] [[#]] [[#]] fma
 
-; CHECK-LLVM-NO-EXT: %{{.*}} = call spir_func float @_Z3fmafff(float %{{.*}}, float %{{.*}}, float %{{.*}})
-; CHECK-LLVM-NO-EXT: %{{.*}} = call spir_func <4 x float> @_Z3fmaDv4_fS_S_(<4 x float> %{{.*}}, <4 x float> %{{.*}}, <4 x float> %{{.*}})
+; CHECK-LLVM: %{{.*}} = call spir_func float @_Z3fmafff(float %{{.*}}, float %{{.*}}, float %{{.*}})
+; CHECK-LLVM: %{{.*}} = call spir_func <4 x float> @_Z3fmaDv4_fS_S_(<4 x float> %{{.*}}, <4 x float> %{{.*}}, <4 x float> %{{.*}})
+; CHECK-LLVM: %{{.*}} = call spir_func float @_Z3fmafff(float %{{.*}}, float %{{.*}}, float %{{.*}})
 
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024"
 target triple = "spir64-unknown-unknown"
@@ -46,5 +45,13 @@ entry:
   ret <4 x float> %result
 }
 
+; case to test fma called via OCL builtins
+define spir_func float @test_fma_ocl_scalar(float %a, float %b, float %c) {
+entry:
+  %result = call spir_func float @_Z15__spirv_ocl_fmafff(float %a, float %b, float %c)
+  ret float %result
+}
+
 declare float @llvm.fma.f32(float, float, float)
 declare <4 x float> @llvm.fma.v4f32(<4 x float>, <4 x float>, <4 x float>)
+declare spir_func float @_Z15__spirv_ocl_fmafff(float, float, float)
