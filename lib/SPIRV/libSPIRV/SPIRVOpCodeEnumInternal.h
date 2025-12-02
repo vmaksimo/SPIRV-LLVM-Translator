@@ -1,6 +1,5 @@
 #include "spirv_internal.hpp"
 
-_SPIRV_OP_INTERNAL(FmaKHR, internal::OpFmaKHR)
 _SPIRV_OP_INTERNAL(Forward, internal::OpForward)
 _SPIRV_OP_INTERNAL(TypeTokenINTEL, internal::OpTypeTokenINTEL)
 _SPIRV_OP_INTERNAL(TypeJointMatrixINTEL, internal::OpTypeJointMatrixINTEL)

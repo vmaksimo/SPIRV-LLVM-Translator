@@ -4606,7 +4606,7 @@ _SPIRV_OP(ClampStochasticRoundFToS, true, 5, true)
 class SPIRVFmaKHRInstBase : public SPIRVInstTemplateBase {
 public:
   SPIRVCapVec getRequiredCapability() const override {
-    return getVec(internal::CapabilityFmaKHR);
+    return getVec(CapabilityFMAKHR);
   }
 
   std::optional<ExtensionID> getRequiredExtension() const override {
@@ -4614,8 +4614,7 @@ public:
   }
 };
 
-typedef SPIRVInstTemplate<SPIRVFmaKHRInstBase, internal::OpFmaKHR, true, 6,
-                          false>
+typedef SPIRVInstTemplate<SPIRVFmaKHRInstBase, OpFmaKHR, true, 6, false>
     SPIRVFmaKHR;
 
 } // namespace SPIRV

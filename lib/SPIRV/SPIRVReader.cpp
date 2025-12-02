@@ -3047,7 +3047,7 @@ Value *SPIRVToLLVM::transValueWithoutDecoration(SPIRVValue *BV, Function *F,
     return mapValue(
         BV, Builder.CreateIntrinsic(Intrinsic::arithmetic_fence, RetTy, Val));
   }
-  case internal::OpFmaKHR: {
+  case OpFmaKHR: {
     IRBuilder<> Builder(BB);
     auto *Inst = static_cast<SPIRVFmaKHR *>(BV);
     Type *RetTy = transType(Inst->getType());
@@ -3923,7 +3923,7 @@ Instruction *SPIRVToLLVM::transSPIRVBuiltinFromInst(SPIRVInstruction *BI,
   case OpUDotAccSatKHR:
   case OpSUDotAccSatKHR:
   case OpReadClockKHR:
-  case internal::OpFmaKHR:
+  case OpFmaKHR:
   case internal::OpJointMatrixLoadINTEL:
   case OpCooperativeMatrixLoadKHR:
   case internal::OpCooperativeMatrixLoadCheckedINTEL:

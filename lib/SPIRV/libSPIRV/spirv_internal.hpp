@@ -58,7 +58,6 @@ enum InternalLinkageType {
 };
 
 enum InternalOp {
-  IOpFmaKHR = 6039,
   IOpTypeTokenINTEL = 6113,
   IOpTypeJointMatrixINTEL = 6119,
   IOpJointMatrixLoadINTEL = 6120,
@@ -109,7 +108,6 @@ enum InternalDecoration {
 };
 
 enum InternalCapability {
-  ICapabilityFmaKHR = 6038,
   ICapTokenTypeINTEL = 6112,
   ICapabilityJointMatrixINTEL = 6118,
   ICapabilityHWThreadQueryINTEL = 6134,
@@ -175,8 +173,6 @@ enum InternalBuiltIn {
 };
 
 #define _SPIRV_OP(x, y) constexpr x x##y = static_cast<x>(I##x##y);
-_SPIRV_OP(Capability, FmaKHR)
-_SPIRV_OP(Op, FmaKHR)
 _SPIRV_OP(Capability, JointMatrixINTEL)
 _SPIRV_OP(Capability, JointMatrixWIInstructionsINTEL)
 _SPIRV_OP(Capability, JointMatrixTF32ComponentTypeINTEL)
