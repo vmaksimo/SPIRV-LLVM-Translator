@@ -3828,8 +3828,34 @@ protected:
           CV.push_back(internal::CapabilityPackedCooperativeMatrixINTEL);
       }
     }
+    if (OpCode == OpCooperativeMatrixMulAddKHR && Ops.size() == 4) {
+      // If Cooperative Matrix Operand literal is present, check for the additional
+      // capabilities it may require.
+      uint64_t CoopOperands = Ops[3];
+      if (CoopOperands &
+          internal::
+              CooperativeMatrixOperandsMatrixAAndBTF32ComponentsINTELMask) {
+        CV.push_back(
+            internal::CapabilityCooperativeMatrixTF32ComponentTypeINTEL);
+        Module->addExtension(ExtensionID::SPV_INTEL_joint_matrix);
+      }
+      if (CoopOperands &
+              internal::
+                  CooperativeMatrixOperandsMatrixAAndBBFloat16ComponentsINTELMask ||
+          CoopOperands &
+              internal::
+                  CooperativeMatrixOperandsMatrixCBFloat16ComponentsINTELMask ||
+          CoopOperands &
+              internal::
+                  CooperativeMatrixOperandsMatrixResultBFloat16ComponentsINTELMask) {
+        CV.push_back(
+            internal::CapabilityCooperativeMatrixBFloat16ComponentTypeINTEL);
+        Module->addExtension(ExtensionID::SPV_INTEL_joint_matrix);
+      }
+    }
     return CV;
   }
+
   SPIRVValue *getMemoryLayout() const {
     if (OpCode == OpCooperativeMatrixLoadKHR)
       return const_cast<SPIRVCooperativeMatrixKHRInstBase *>(this)->getOperand(

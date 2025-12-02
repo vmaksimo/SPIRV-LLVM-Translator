@@ -144,14 +144,12 @@ enum InternalCooperativeMatrixLayout {
 
 // Cooperative Matrix Operands for SPV_INTEL_joint_matrix extension
 // These are bit flags for component type interpretation.
-enum InternalCooperativeMatrixOperands {
+enum InternalCooperativeMatrixOperandsMask {
   CooperativeMatrixOperandsMatrixAAndBTF32ComponentsINTELMask = 0x20,
   CooperativeMatrixOperandsMatrixAAndBBFloat16ComponentsINTELMask = 0x40,
   CooperativeMatrixOperandsMatrixCBFloat16ComponentsINTELMask = 0x80,
   CooperativeMatrixOperandsMatrixResultBFloat16ComponentsINTELMask = 0x100
 };
-
-enum InternalJointMatrixUse { MatrixA = 0, MatrixB = 1, Accumulator = 2 };
 
 enum InternalFPEncoding {
   FPEncodingFloat4E2M1INTEL = 6214,
