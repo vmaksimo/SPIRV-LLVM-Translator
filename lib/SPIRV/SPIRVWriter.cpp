@@ -4516,15 +4516,13 @@ SPIRVValue *LLVMToSPIRVBase::transIntrinsicInst(IntrinsicInst *II,
     if (!checkTypeForSPIRVExtendedInstLowering(II, BM))
       break;
     SPIRVType *STy = transType(II->getType());
-    std::vector<SPIRVWord> Ops{transValue(II->getArgOperand(0), BB)->getId(),
-                               transValue(II->getArgOperand(1), BB)->getId(),
-                               transValue(II->getArgOperand(2), BB)->getId()};
-    if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_fma)) {
-      return BM->addInstTemplate(OpFmaKHR, Ops, BB, STy);
-    }
-    SPIRVWord ExtOp = OpenCLLIB::Fma;
-    return BM->addExtInst(STy, BM->getExtInstSetId(SPIRVEIS_OpenCL), ExtOp, Ops,
-                          BB);
+    std::vector<SPIRVValue *> Ops{transValue(II->getArgOperand(0), BB),
+                                  transValue(II->getArgOperand(1), BB),
+                                  transValue(II->getArgOperand(2), BB)};
+    if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_fma))
+      return BM->addInstTemplate(OpFmaKHR, BM->getIds(Ops), BB, STy);
+    return BM->addExtInst(STy, BM->getExtInstSetId(SPIRVEIS_OpenCL),
+                          OpenCLLIB::Fma, Ops, BB);
   }
   case Intrinsic::abs: {
     if (!checkTypeForSPIRVExtendedInstLowering(II, BM))
@@ -4596,14 +4594,13 @@ SPIRVValue *LLVMToSPIRVBase::transIntrinsicInst(IntrinsicInst *II,
                                    transValue(II->getArgOperand(1), BB),
                                    transValue(II->getArgOperand(2), BB)};
     SPIRVInstruction *BI;
-    if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_fma)) {
-      std::vector<SPIRVId> Ops = BM->getIds(Args);
-      BI = BM->addInstTemplate(OpFmaKHR, Ops, BB, transType(II->getType()));
-    } else {
+    if (BM->isAllowedToUseExtension(ExtensionID::SPV_KHR_fma))
+      BI = BM->addInstTemplate(OpFmaKHR, BM->getIds(Args), BB,
+                               transType(II->getType()));
+    else
       BI = BM->addExtInst(transType(II->getType()),
                           BM->getExtInstSetId(SPIRVEIS_OpenCL), OpenCLLIB::Fma,
                           Args, BB);
-    }
     return applyRoundingModeConstraint(II->getOperand(3), BI);
   }
   case Intrinsic::experimental_constrained_fptoui: {
