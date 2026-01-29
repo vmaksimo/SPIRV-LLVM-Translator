@@ -2670,6 +2670,8 @@ public:
     case OpenCLLIB::Vload_halfn:
     case OpenCLLIB::Vloada_halfn:
     case OpenCLLIB::Vloadn:
+    // TODO: only for half and bfloat?
+    case OpenCLLIB::Nan:
       return true;
     default:
       return false;

@@ -17,6 +17,7 @@ target triple = "spirv64-unknown-unknown"
 ; CHECK-SPIRV: Capability BFloat16ArithmeticINTEL
 ; CHECK-SPIRV: Extension "SPV_INTEL_bfloat16_arithmetic"
 ; CHECK-SPIRV: Extension "SPV_KHR_bfloat16"
+; CHECK-SPIRV: 4 TypeInt [[INT16:[0-9]+]] 16 0
 ; CHECK-SPIRV: 4 TypeFloat [[BFLOAT:[0-9]+]] 16 0
 ; CHECK-SPIRV: 5 Function [[#]] [[#]] [[#]] [[#]]
 ; CHECK-SPIRV: 7 Phi [[BFLOAT]] [[#]] [[#]] [[#]] [[#]] [[#]]
@@ -24,9 +25,11 @@ target triple = "spirv64-unknown-unknown"
 ; CHECK-SPIRV: 4 Variable [[#]] [[ADDR1:[0-9]+]]
 ; CHECK-SPIRV: 4 Variable [[#]] [[ADDR2:[0-9]+]]
 ; CHECK-SPIRV: 4 Variable [[#]] [[ADDR3:[0-9]+]]
+; CHECK-SPIRV: 4 Variable [[#]] [[ADDR4:[0-9]+]]
 ; CHECK-SPIRV: 6 Load [[BFLOAT]] [[DATA1:[0-9]+]] [[ADDR1]]
 ; CHECK-SPIRV: 6 Load [[BFLOAT]] [[DATA2:[0-9]+]] [[ADDR2]]
 ; CHECK-SPIRV: 6 Load [[BFLOAT]] [[DATA3:[0-9]+]] [[ADDR3]]
+; CHECK-SPIRV: 6 Load [[INT16]] [[DATA4:[0-9]+]] [[ADDR4]]
 ;                Undef
 ;                Constant
 ;                ConstantComposite
@@ -71,7 +74,7 @@ target triple = "spirv64-unknown-unknown"
 ; CHECK-SPIRV: 7 ExtInst [[BFLOAT]] [[#]] [[#]] fmax [[DATA1]] [[DATA2]]
 ; CHECK-SPIRV: 7 ExtInst [[BFLOAT]] [[#]] [[#]] fmin [[DATA1]] [[DATA2]]
 ; CHECK-SPIRV: 8 ExtInst [[BFLOAT]] [[#]] [[#]] mad [[DATA1]] [[DATA2]] [[DATA3]]
-; CHECK-SPIRV: 6 ExtInst [[BFLOAT]] [[#]] [[#]] nan [[DATA1]]
+; CHECK-SPIRV: 6 ExtInst [[BFLOAT]] [[#]] [[#]] nan [[DATA4]]
 ; CHECK-SPIRV: 6 ExtInst [[BFLOAT]] [[#]] [[#]] native_cos [[DATA1]]
 ; CHECK-SPIRV: 7 ExtInst [[BFLOAT]] [[#]] [[#]] native_divide [[DATA1]] [[DATA2]]
 ; CHECK-SPIRV: 6 ExtInst [[BFLOAT]] [[#]] [[#]] native_exp [[DATA1]]
@@ -93,9 +96,11 @@ target triple = "spirv64-unknown-unknown"
 ; CHECK-LLVM: [[ADDR1:[%a-z0-9]+]] = alloca bfloat
 ; CHECK-LLVM: [[ADDR2:[%a-z0-9]+]] = alloca bfloat
 ; CHECK-LLVM: [[ADDR3:[%a-z0-9]+]] = alloca bfloat
+; CHECK-LLVM: [[ADDR4:[%a-z0-9]+]] = alloca i16
 ; CHECK-LLVM: [[DATA1:[%a-z0-9]+]] = load bfloat, ptr [[ADDR1]]
 ; CHECK-LLVM: [[DATA2:[%a-z0-9]+]] = load bfloat, ptr [[ADDR2]]
 ; CHECK-LLVM: [[DATA3:[%a-z0-9]+]] = load bfloat, ptr [[ADDR3]]
+; CHECK-LLVM: [[DATA4:[%a-z0-9]+]] = load i16, ptr [[ADDR4]]
 ;             %OpUndef
 ;             %OpConstant
 ;             %OpConstantComposite
@@ -140,7 +145,7 @@ target triple = "spirv64-unknown-unknown"
 ; CHECK-LLVM: %fmax = call spir_func bfloat @_Z4fmaxDF16bDF16b(bfloat [[DATA1]], bfloat [[DATA2]])
 ; CHECK-LLVM: %fmin = call spir_func bfloat @_Z4fminDF16bDF16b(bfloat [[DATA1]], bfloat [[DATA2]])
 ; CHECK-LLVM: %mad = call spir_func bfloat @_Z3madDF16bDF16bDF16b(bfloat [[DATA1]], bfloat [[DATA2]], bfloat [[DATA3]])
-; CHECK-LLVM: %nan = call spir_func bfloat @_Z3nanDF16b(bfloat [[DATA1]])
+; CHECK-LLVM: %nan = call spir_func bfloat @_Z3nant(i16 [[DATA4]])
 ; CHECK-LLVM: %native_cos = call spir_func bfloat @_Z10native_cosDF16b(bfloat [[DATA1]])
 ; CHECK-LLVM: %native_divide = call spir_func bfloat @_Z13native_divideDF16bDF16b(bfloat [[DATA1]], bfloat [[DATA2]])
 ; CHECK-LLVM: %native_exp = call spir_func bfloat @_Z10native_expDF16b(bfloat [[DATA1]])
@@ -157,7 +162,7 @@ target triple = "spirv64-unknown-unknown"
 ; CHECK-LLVM: %native_tan = call spir_func bfloat @_Z10native_tanDF16b(bfloat [[DATA1]])
 
 declare spir_func bfloat @_Z5clampDF16bDF16bDF16b(bfloat, bfloat, bfloat)
-declare spir_func bfloat @_Z3nanDF16b(bfloat)
+declare spir_func bfloat @_Z3nant(i16)
 declare spir_func bfloat @_Z10native_cosDF16b(bfloat)
 declare spir_func bfloat @_Z13native_divideDF16bDF16b(bfloat, bfloat)
 declare spir_func bfloat @_Z10native_expDF16b(bfloat)
@@ -193,9 +198,11 @@ entry:
   %addr1 = alloca bfloat
   %addr2 = alloca bfloat
   %addr3 = alloca bfloat
+  %addr4 = alloca i16
   %data1 = load bfloat, ptr %addr1
   %data2 = load bfloat, ptr %addr2
   %data3 = load bfloat, ptr %addr3
+  %data4 = load i16, ptr %addr4
   ; %OpUndef
   ; %OpConstant
   ; %OpConstantComposite
@@ -240,7 +247,7 @@ entry:
   %fmax = call bfloat @llvm.maxnum.bfloat(bfloat %data1, bfloat %data2)
   %fmin = call bfloat @llvm.minnum.bfloat(bfloat %data1, bfloat %data2)
   %mad = call bfloat @llvm.fmuladd.bfloat(bfloat %data1, bfloat %data2, bfloat %data3)
-  %nan = call spir_func bfloat @_Z3nanDF16b(bfloat %data1)
+  %nan = call spir_func bfloat @_Z3nant(i16 %data4)
   %native_cos = call spir_func bfloat @_Z10native_cosDF16b(bfloat %data1)
   %native_divide = call spir_func bfloat @_Z13native_divideDF16bDF16b(bfloat %data1, bfloat %data2)
   %native_exp = call spir_func bfloat @_Z10native_expDF16b(bfloat %data1)
