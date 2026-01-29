@@ -12,7 +12,10 @@
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024-n8:16:32:64-G1"
 target triple = "spir64"
 
-; CHECK-SPIRV-COUNT-2: ExtInst [[#]] [[#]] [[#]] nan
+; CHECK-SPIRV: TypeFloat [[#BFLOAT:]] 16 0 {{$}}
+; CHECK-SPIRV: TypeFloat [[#HALF:]] 16 {{$}}
+; CHECK-SPIRV: ExtInst [[#BFLOAT]] [[#]] [[#]] nan
+; CHECK-SPIRV: ExtInst [[#HALF]] [[#]] [[#]] nan
 
 ; CHECK-SPV-IR: call spir_func bfloat @_Z23__spirv_ocl_nan_RDF16bt(
 ; CHECK-SPV-IR: call spir_func half @_Z21__spirv_ocl_nan_Rhalft(
