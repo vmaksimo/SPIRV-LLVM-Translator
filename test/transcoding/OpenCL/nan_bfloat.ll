@@ -17,7 +17,7 @@ target triple = "spir64"
 ; CHECK-SPIRV: ExtInst [[#BFLOAT]] [[#]] [[#]] nan
 ; CHECK-SPIRV: ExtInst [[#HALF]] [[#]] [[#]] nan
 
-; CHECK-SPV-IR: call spir_func bfloat @_Z23__spirv_ocl_nan_RDF16bt(
+; CHECK-SPV-IR: call spir_func bfloat @_Z22__spirv_ocl_nan_RDF16bt(
 ; CHECK-SPV-IR: call spir_func half @_Z21__spirv_ocl_nan_Rhalft(
 
 
