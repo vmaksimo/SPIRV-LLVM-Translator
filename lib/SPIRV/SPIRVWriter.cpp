@@ -285,21 +285,12 @@ bool LLVMToSPIRVBase::isBuiltinTransToExtInst(
          "Unsupported extended instruction set");
 
   auto ExtOpName = S.substr(Loc + 1);
-  StringRef Postfix;
-  // auto Splited = ExtOpName.split(kSPIRVPostfix::ExtDivider);
-  if (ExtOpName.contains(kSPIRVPostfix::ExtDivider)) {
-    auto Splited = ExtOpName.split(kSPIRVPostfix::ExtDivider);
-    ExtOpName = Splited.first;
-    Postfix = Splited.second;
-  } else {
-    // Also need to drop off the return type part if there is any, it should be Divider + Return kSPIRVPostfixes;
-    auto Splited = ExtOpName.split("_R");
-    ExtOpName = Splited.first;
-    Postfix = Splited.second;
-  }
+  auto Splited = ExtOpName.split(kSPIRVPostfix::ExtDivider);
+  if (Splited.second.empty())
+    Splited = ExtOpName.split("_R");
 
   OCLExtOpKind EOC;
-  if (!OCLExtOpMap::rfind(ExtOpName.str(), &EOC))
+  if (!OCLExtOpMap::rfind(Splited.first.str(), &EOC))
     return false;
 
   if (ExtSet)
@@ -308,7 +299,7 @@ bool LLVMToSPIRVBase::isBuiltinTransToExtInst(
     *ExtOp = EOC;
   if (Dec) {
     SmallVector<StringRef, 2> P;
-    Postfix.split(P, kSPIRVPostfix::Divider);
+    Splited.second.split(P, kSPIRVPostfix::Divider);
     for (auto &I : P)
       Dec->push_back(I.str());
   }
