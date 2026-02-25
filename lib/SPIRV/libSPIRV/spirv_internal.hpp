@@ -300,6 +300,7 @@ constexpr Capability CapabilityInt16AtomicsINTEL =
     static_cast<Capability>(ICapabilityInt16AtomicsINTEL);
 constexpr Capability CapabilityAtomicBFloat16LoadStoreINTEL =
     static_cast<Capability>(ICapabilityAtomicBFloat16LoadStoreINTEL);
+
 } // namespace internal
 } // namespace spv
 
