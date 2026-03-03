@@ -1140,10 +1140,6 @@ Value *SPIRVToLLVM::transConvertInst(SPIRVValue *BV, Function *F,
         return CallInst::Create(Func, Ops, "", BB);
       }
     }
-    if (OC == OpSConvert) {
-      CO = IsExt ? Instruction::SExt : Instruction::Trunc;
-      break;
-    }
     // These conversions can be done without __builtin_spirv prefixed functions
     // as their operand and result types have native representation in LLVM IR.
     if (OC == internal::OpClampConvertFToFINTEL ||
@@ -1154,6 +1150,10 @@ Value *SPIRVToLLVM::transConvertInst(SPIRVValue *BV, Function *F,
 
     if (OC == OpFConvert) {
       CO = IsExt ? Instruction::FPExt : Instruction::FPTrunc;
+      break;
+    }
+    if (OC == OpSConvert) {
+      CO = IsExt ? Instruction::SExt : Instruction::Trunc;
       break;
     }
     CO = static_cast<CastInst::CastOps>(OpCodeMap::rmap(OC));

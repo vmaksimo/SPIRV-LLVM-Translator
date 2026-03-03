@@ -5708,7 +5708,8 @@ SPIRVValue *LLVMToSPIRVBase::transDirectCallInst(CallInst *CI,
         } else if (FPDesc.SrcEncoding != FPEncodingWrap::Integer ||
                    (SrcTy->isTypeVector() &&
                     (!LLVMSrcTy->isVectorTy() ||
-                     cast<VectorType>(LLVMSrcTy)->getElementCount()
+                     cast<VectorType>(LLVMSrcTy)
+                             ->getElementCount()
                              .getFixedValue() !=
                          SrcTy->getVectorComponentCount()))) {
           // Create bitcast for FP4, FP8 and packed Int4.
