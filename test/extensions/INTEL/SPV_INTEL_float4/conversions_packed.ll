@@ -1,16 +1,8 @@
-; This tests checks if FP4 and Int4 packed conversions specified by
+; This tests checks if FP4 packed conversions specified by
 ; __builtin_spirv_* external function calls translated correctly.
-; Not all of the instructions are tested here, only one per the following
-; cases:
-; 1. from packed FP4 to ... :
-;   a. packed in 32-bit
-;   b. packed in 16-bit
-;   c. packed in 8-bit
-;   d. packed in <2 x i8> vector
-;   e. packed in 64-bit
-; 2. to packed FP4 from ... :
-;   a. packed in 32-bit
-;   b. packed in 8-bit
+; All conversion instructions are covered; packing container variety
+; (i8/i16/i32/i64/<N x i8>) is exercised for the E2M1<->E4M3 pair only,
+; the remaining instructions are tested with the 32-bit (i32) container.
 
 ; RUN: llvm-spirv %s -o %t.spv --spirv-ext=+SPV_EXT_float8,+SPV_INTEL_float4,+SPV_INTEL_int4,+SPV_KHR_bfloat16
 ; RUN: llvm-spirv %t.spv -o %t.spt --to-text
@@ -21,16 +13,22 @@
 
 ; CHECK-SPIRV-DAG: Capability Float8EXT
 ; CHECK-SPIRV-DAG: Capability Float4E2M1INTEL
+; CHECK-SPIRV-DAG: Capability BFloat16TypeKHR
 ; CHECK-SPIRV-DAG: Extension "SPV_INTEL_float4"
 ; CHECK-SPIRV-DAG: Extension "SPV_EXT_float8"
+; CHECK-SPIRV-DAG: Extension "SPV_KHR_bfloat16"
 
 ; CHECK-SPIRV-DAG: Name [[#fp4e2m1_hf8_32:]] "fp4e2m1_hf8_32"
 ; CHECK-SPIRV-DAG: Name [[#fp4e2m1_hf8_16:]] "fp4e2m1_hf8_16"
 ; CHECK-SPIRV-DAG: Name [[#fp4e2m1_hf8_8:]] "fp4e2m1_hf8_8"
 ; CHECK-SPIRV-DAG: Name [[#fp4e2m1_hf8_v2xi8:]] "fp4e2m1_hf8_v2xi8"
 ; CHECK-SPIRV-DAG: Name [[#fp4e2m1_hf8_64:]] "fp4e2m1_hf8_64"
+; CHECK-SPIRV-DAG: Name [[#fp4e2m1_bf8_32:]] "fp4e2m1_bf8_32"
+; CHECK-SPIRV-DAG: Name [[#fp4e2m1_hf16_32:]] "fp4e2m1_hf16_32"
+; CHECK-SPIRV-DAG: Name [[#fp4e2m1_bf16_32:]] "fp4e2m1_bf16_32"
 ; CHECK-SPIRV-DAG: Name [[#hf16_fp4e2m1_32:]] "hf16_fp4e2m1_32"
 ; CHECK-SPIRV-DAG: Name [[#hf16_fp4e2m1_8:]] "hf16_fp4e2m1_8"
+; CHECK-SPIRV-DAG: Name [[#bf16_fp4e2m1_32:]] "bf16_fp4e2m1_32"
 
 ; CHECK-SPIRV-DAG: TypeInt [[#Int32Ty:]] 32 0
 ; CHECK-SPIRV-DAG: Constant [[#Int32Ty]] [[#Int32Const:]] 1
@@ -61,12 +59,20 @@
 ; CHECK-SPIRV-DAG: TypeVector [[#Float8E4M3Vec4Ty:]] [[#Float8E4M3Ty]] 4
 ; CHECK-SPIRV-DAG: TypeVector [[#Float8E4M3Vec2Ty:]] [[#Float8E4M3Ty]] 2
 
+; CHECK-SPIRV-DAG: TypeFloat [[#Float8E5M2Ty:]] 8 4215
+; CHECK-SPIRV-DAG: TypeVector [[#Float8E5M2Vec8Ty:]] [[#Float8E5M2Ty]] 8
+
 ; CHECK-SPIRV-DAG: TypeFloat [[#HFloat16Ty:]] 16 {{$}}
 ; CHECK-SPIRV-DAG: TypeVector [[#HFloat16Vec8Ty:]] [[#HFloat16Ty]] 8
 ; CHECK-SPIRV-DAG: TypeVector [[#HFloat16Vec2Ty:]] [[#HFloat16Ty]] 2
 ; CHECK-SPIRV-DAG: Constant [[#HFloat16Ty]] [[#HFloat16Const:]] 15360
 ; CHECK-SPIRV-DAG: ConstantComposite [[#HFloat16Vec8Ty]] [[#HFloat16Vec8Const:]] [[#HFloat16Const]] [[#HFloat16Const]] [[#HFloat16Const]] [[#HFloat16Const]] [[#HFloat16Const]] [[#HFloat16Const]] [[#HFloat16Const]] [[#HFloat16Const]]
 ; CHECK-SPIRV-DAG: ConstantComposite [[#HFloat16Vec2Ty]] [[#HFloat16Vec2Const:]] [[#HFloat16Const]] [[#HFloat16Const]]
+
+; CHECK-SPIRV-DAG: TypeFloat [[#BFloat16Ty:]] 16 0
+; CHECK-SPIRV-DAG: TypeVector [[#BFloat16Vec8Ty:]] [[#BFloat16Ty]] 8
+; CHECK-SPIRV-DAG: Constant [[#BFloat16Ty]] [[#BFloat16Const:]] 16256
+; CHECK-SPIRV-DAG: ConstantComposite [[#BFloat16Vec8Ty]] [[#BFloat16Vec8Const:]] [[#BFloat16Const]] [[#BFloat16Const]] [[#BFloat16Const]] [[#BFloat16Const]] [[#BFloat16Const]] [[#BFloat16Const]] [[#BFloat16Const]] [[#BFloat16Const]]
 
 target datalayout = "e-p:32:32-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024"
 target triple = "spir-unknown-unknown"
@@ -211,3 +217,84 @@ entry:
 }
 
 declare dso_local spir_func <16 x i8> @_Z38__builtin_spirv_ConvertE2M1ToE4M3INTELl(i64)
+
+; E2M1 to E5M2
+
+; CHECK-SPIRV: Function [[#]] [[#fp4e2m1_bf8_32]] [[#]]
+; CHECK-SPIRV: Bitcast [[#E2M1Vec8Ty]] [[#Cast1:]] [[#Int32Const]]
+; CHECK-SPIRV: FConvert [[#Float8E5M2Vec8Ty]] [[#Conv:]] [[#Cast1]]
+; CHECK-SPIRV: Bitcast [[#Int8Vec8Ty]] [[#Cast2:]] [[#Conv]]
+; CHECK-SPIRV: ReturnValue [[#Cast2]]
+
+; CHECK-LLVM-LABEL: fp4e2m1_bf8_32
+; CHECK-LLVM: %[[#Cast:]] = bitcast i32 1 to <8 x i4>
+; CHECK-LLVM: %[[#Call:]] = call <8 x i8> @_Z38__builtin_spirv_ConvertE2M1ToE5M2INTELDv8_i(<8 x i4> %[[#Cast]])
+; CHECK-LLVM: ret <8 x i8> %[[#Call]]
+
+define spir_func <8 x i8> @fp4e2m1_bf8_32() {
+entry:
+  %0 = call spir_func <8 x i8> @_Z38__builtin_spirv_ConvertE2M1ToE5M2INTELi(i32 1)
+  ret <8 x i8> %0
+}
+
+declare dso_local spir_func <8 x i8> @_Z38__builtin_spirv_ConvertE2M1ToE5M2INTELi(i32)
+
+; E2M1 to FP16
+
+; CHECK-SPIRV: Function [[#]] [[#fp4e2m1_hf16_32]] [[#]]
+; CHECK-SPIRV: Bitcast [[#E2M1Vec8Ty]] [[#Cast1:]] [[#Int32Const]]
+; CHECK-SPIRV: FConvert [[#HFloat16Vec8Ty]] [[#Conv:]] [[#Cast1]]
+; CHECK-SPIRV: ReturnValue [[#Conv]]
+
+; CHECK-LLVM-LABEL: fp4e2m1_hf16_32
+; CHECK-LLVM: %[[#Cast:]] = bitcast i32 1 to <8 x i4>
+; CHECK-LLVM: %[[#Call:]] = call <8 x half> @_Z38__builtin_spirv_ConvertE2M1ToFP16INTELDv8_i(<8 x i4> %[[#Cast]])
+; CHECK-LLVM: ret <8 x half> %[[#Call]]
+
+define spir_func <8 x half> @fp4e2m1_hf16_32() {
+entry:
+  %0 = call spir_func <8 x half> @_Z38__builtin_spirv_ConvertE2M1ToFP16INTELi(i32 1)
+  ret <8 x half> %0
+}
+
+declare dso_local spir_func <8 x half> @_Z38__builtin_spirv_ConvertE2M1ToFP16INTELi(i32)
+
+; E2M1 to BF16
+
+; CHECK-SPIRV: Function [[#]] [[#fp4e2m1_bf16_32]] [[#]]
+; CHECK-SPIRV: Bitcast [[#E2M1Vec8Ty]] [[#Cast1:]] [[#Int32Const]]
+; CHECK-SPIRV: FConvert [[#BFloat16Vec8Ty]] [[#Conv:]] [[#Cast1]]
+; CHECK-SPIRV: ReturnValue [[#Conv]]
+
+; CHECK-LLVM-LABEL: fp4e2m1_bf16_32
+; CHECK-LLVM: %[[#Cast:]] = bitcast i32 1 to <8 x i4>
+; CHECK-LLVM: %[[#Call:]] = call <8 x bfloat> @_Z38__builtin_spirv_ConvertE2M1ToBF16INTELDv8_i(<8 x i4> %[[#Cast]])
+; CHECK-LLVM: ret <8 x bfloat> %[[#Call]]
+
+define spir_func <8 x bfloat> @fp4e2m1_bf16_32() {
+entry:
+  %0 = call spir_func <8 x bfloat> @_Z38__builtin_spirv_ConvertE2M1ToBF16INTELi(i32 1)
+  ret <8 x bfloat> %0
+}
+
+declare dso_local spir_func <8 x bfloat> @_Z38__builtin_spirv_ConvertE2M1ToBF16INTELi(i32)
+
+; BF16 to E2M1
+
+; CHECK-SPIRV: Function [[#]] [[#bf16_fp4e2m1_32]] [[#]]
+; CHECK-SPIRV: FConvert [[#E2M1Vec8Ty]] [[#Conv:]] [[#BFloat16Vec8Const]]
+; CHECK-SPIRV: Bitcast [[#Int32Ty]] [[#Cast2:]] [[#Conv]]
+; CHECK-SPIRV: ReturnValue [[#Cast2]]
+
+; CHECK-LLVM-LABEL: bf16_fp4e2m1_32
+; CHECK-LLVM: %[[#Call:]] = call <8 x i4> @_Z38__builtin_spirv_ConvertBF16ToE2M1INTELDv8_DF16b(<8 x bfloat> splat (bfloat 0xR3F80))
+; CHECK-LLVM: %[[#Cast:]] = bitcast <8 x i4> %[[#Call]] to i32
+; CHECK-LLVM: ret i32 %[[#Cast]]
+
+define spir_func i32 @bf16_fp4e2m1_32() {
+entry:
+  %0 = call i32 @_Z38__builtin_spirv_ConvertBF16ToE2M1INTELDv8_DF16b(<8 x bfloat> <bfloat 1.0, bfloat 1.0, bfloat 1.0, bfloat 1.0, bfloat 1.0, bfloat 1.0, bfloat 1.0, bfloat 1.0>)
+  ret i32 %0
+}
+
+declare dso_local spir_func i32 @_Z38__builtin_spirv_ConvertBF16ToE2M1INTELDv8_DF16b(<8 x bfloat>)
