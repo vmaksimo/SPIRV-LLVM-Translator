@@ -1062,9 +1062,6 @@ Value *SPIRVToLLVM::transConvertInst(SPIRVValue *BV, Function *F,
     CO = Instruction::AddrSpaceCast;
     break;
   }
-  case OpSConvert:
-    CO = IsExt ? Instruction::SExt : Instruction::Trunc;
-    break;
   case OpUConvert:
     CO = IsExt ? Instruction::ZExt : Instruction::Trunc;
     break;
@@ -1073,6 +1070,7 @@ Value *SPIRVToLLVM::transConvertInst(SPIRVValue *BV, Function *F,
   case internal::OpStochasticRoundFToFINTEL:
   case internal::OpClampStochasticRoundFToFINTEL:
   case internal::OpClampStochasticRoundFToSINTEL:
+  case OpSConvert:
   case OpConvertSToF:
   case OpConvertFToS:
   case OpConvertUToF:
@@ -1141,6 +1139,10 @@ Value *SPIRVToLLVM::transConvertInst(SPIRVValue *BV, Function *F,
         FunctionCallee Func = M->getOrInsertFunction(MangledName, FTy);
         return CallInst::Create(Func, Ops, "", BB);
       }
+    }
+    if (OC == OpSConvert) {
+      CO = IsExt ? Instruction::SExt : Instruction::Trunc;
+      break;
     }
     // These conversions can be done without __builtin_spirv prefixed functions
     // as their operand and result types have native representation in LLVM IR.

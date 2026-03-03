@@ -288,9 +288,6 @@ entry:
 declare dso_local spir_func <8 x bfloat> @_Z38__builtin_spirv_ConvertInt4ToBF16INTELi(i32)
 
 ; Int4 to Int8
-; Note: OpSConvert from TypeInt4 to TypeInt8 round-trips as sext in LLVM
-; rather than a ConvertInt4ToInt8INTEL builtin call; this is a known
-; limitation of the reverse translator for this instruction.
 
 ; CHECK-SPIRV: Function [[#]] [[#int4_int8_32]] [[#]]
 ; CHECK-SPIRV: Bitcast [[#Int4Vec8Ty]] [[#Cast1:]] [[#Int32Const]]
@@ -299,7 +296,7 @@ declare dso_local spir_func <8 x bfloat> @_Z38__builtin_spirv_ConvertInt4ToBF16I
 
 ; CHECK-LLVM-LABEL: int4_int8_32
 ; CHECK-LLVM: %[[#Cast:]] = bitcast i32 1 to <8 x i4>
-; CHECK-LLVM: %[[#Conv:]] = sext <8 x i4> %[[#Cast]] to <8 x i8>
+; CHECK-LLVM: %[[#Conv:]] = call <8 x i8> @_Z38__builtin_spirv_ConvertInt4ToInt8INTELDv8_i(<8 x i4> %[[#Cast]])
 ; CHECK-LLVM: ret <8 x i8> %[[#Conv]]
 
 define spir_func <8 x i8> @int4_int8_32() {
