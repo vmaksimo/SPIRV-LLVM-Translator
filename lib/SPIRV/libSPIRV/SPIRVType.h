@@ -671,7 +671,7 @@ protected:
   }
   SPIRVWord getMinWordCount() const override { return FixedWC; }
   void setWordCount(SPIRVWord TheWC) override {
-    WordCount = TheWC;
+    SPIRVEntry::setWordCount(TheWC);
     Acc.resize(WordCount - FixedWC);
   }
 
@@ -1040,10 +1040,11 @@ protected:
     assert(OpCode == OC);
     assert(WordCount == FixedWC + (AccessKind ? 1 : 0));
   }
+  SPIRVWord getMinWordCount() const override { return FixedWC; }
   void setWordCount(SPIRVWord TheWC) override {
     if (TheWC > FixedWC)
       AccessKind = SPIRVAccessQualifierKind::AccessQualifierMax;
-    WordCount = TheWC;
+    SPIRVEntry::setWordCount(TheWC);
   }
 
 private:
