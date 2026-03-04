@@ -140,7 +140,6 @@ void SPIRVDecorate::encode(spv_ostream &O) const {
 
 void SPIRVDecorate::setWordCount(SPIRVWord Count) {
   WordCount = Count;
-  SPIRVCK(Count >= FixedWC, InvalidWordCount, "");
   Literals.resize(WordCount - FixedWC);
 }
 
@@ -179,7 +178,6 @@ void SPIRVDecorateId::encode(spv_ostream &O) const {
 
 void SPIRVDecorateId::setWordCount(SPIRVWord Count) {
   WordCount = Count;
-  SPIRVCK(Count >= FixedWC, InvalidWordCount, "");
   Literals.resize(WordCount - FixedWC);
 }
 
@@ -209,7 +207,6 @@ void SPIRVMemberDecorate::encode(spv_ostream &O) const {
 
 void SPIRVMemberDecorate::setWordCount(SPIRVWord Count) {
   WordCount = Count;
-  SPIRVCK(Count >= FixedWC, InvalidWordCount, "");
   Literals.resize(WordCount - FixedWC);
 }
 

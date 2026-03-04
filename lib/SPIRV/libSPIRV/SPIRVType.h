@@ -669,9 +669,9 @@ protected:
     assert(Desc.Format == 0);  // For OCL only
     assert(Acc.size() <= 1);
   }
+  SPIRVWord getMinWordCount() const override { return FixedWC; }
   void setWordCount(SPIRVWord TheWC) override {
     WordCount = TheWC;
-    SPIRVCK(TheWC >= FixedWC, InvalidWordCount, "");
     Acc.resize(WordCount - FixedWC);
   }
 
@@ -792,9 +792,9 @@ public:
   bool isPacked() const;
   void setPacked(bool Packed);
 
+  SPIRVWord getMinWordCount() const override { return FixedWC; }
   void setWordCount(SPIRVWord WordCount) override {
     SPIRVType::setWordCount(WordCount);
-    SPIRVCK(WordCount >= FixedWC, InvalidWordCount, "");
     MemberTypeIdVec.resize(WordCount - FixedWC);
   }
 
@@ -872,9 +872,9 @@ public:
 
 protected:
   _SPIRV_DEF_ENCDEC3(Id, ReturnType, ParamTypeIdVec)
+  SPIRVWord getMinWordCount() const override { return 3; }
   void setWordCount(SPIRVWord WordCount) override {
     SPIRVType::setWordCount(WordCount);
-    SPIRVCK(WordCount >= 3, InvalidWordCount, "");
     ParamTypeIdVec.resize(WordCount - 3);
   }
   void validate() const override {

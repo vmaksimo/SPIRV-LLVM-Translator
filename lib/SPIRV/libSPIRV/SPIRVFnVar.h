@@ -67,6 +67,7 @@ public:
   SPIRVExecutionModelKind getExecModel() const { return ExecModel; }
   std::string getName() const { return Name; }
   std::vector<SPIRVId> getVariables() const { return Variables; }
+  SPIRVWord getMinWordCount() const override { return FixedWC; }
 
 protected:
   void encode(spv_ostream &O) const override {
@@ -169,10 +170,11 @@ public:
     return getValues(Constituents);
   }
 
+  SPIRVWord getMinWordCount() const override { return FixedWordCount; }
+
 protected:
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
-    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     Constituents.resize(TheWordCount - FixedWordCount);
   }
   _SPIRV_DEF_ENCDEC3(Type, Id, Constituents)
@@ -250,11 +252,12 @@ public:
     return Res;
   }
 
+  SPIRVWord getMinWordCount() const override { return FixedWC; }
+
 protected:
   _SPIRV_DEF_ENCDEC4(Type, Id, Target, Features);
   void setWordCount(SPIRVWord WordCount) override {
     SPIRVEntry::setWordCount(WordCount);
-    SPIRVCK(WordCount >= FixedWC, InvalidWordCount, "");
     Features.resize(WordCount - FixedWC);
     NumWords = WordCount - FixedWC;
   }
@@ -383,6 +386,7 @@ public:
   SPIRVSpecConstantCapabilitiesINTEL() : SPIRVValue(OC), NumWords() {}
 
   std::vector<SPIRVWord> getCapabilities() const { return Capabilities; }
+  SPIRVWord getMinWordCount() const override { return FixedWC; }
   bool matchesDevice() {
     std::vector<SPIRVWord> DeviceCapabilities =
         getModule()->getFnVarCapabilities();
@@ -431,7 +435,6 @@ protected:
 
   void setWordCount(SPIRVWord WordCount) override {
     SPIRVEntry::setWordCount(WordCount);
-    SPIRVCK(WordCount >= FixedWC, InvalidWordCount, "");
     Capabilities.resize(WordCount - FixedWC);
     NumWords = WordCount - FixedWC;
   }

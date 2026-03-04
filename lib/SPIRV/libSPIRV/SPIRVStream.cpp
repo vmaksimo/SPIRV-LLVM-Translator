@@ -246,6 +246,8 @@ SPIRVEntry *SPIRVDecoder::getEntry() {
   if (isModuleScopeAllowedOpCode(OpCode) && !Scope) {
   } else
     Entry->setScope(Scope);
+  M.getErrorLog().checkError(WordCount >= Entry->getMinWordCount(),
+                             SPIRVEC_InvalidWordCount, "");
   Entry->setWordCount(WordCount);
   if (OpCode != OpLine)
     Entry->setLine(M.getCurrentLine());
