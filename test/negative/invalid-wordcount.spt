@@ -1,0 +1,16 @@
+; Tests that a SPIR-V binary whose instruction WordCount is below the minimum
+; required for that instruction is rejected with InvalidWordCount rather than
+; silently causing integer underflow when resizing variable-length operand arrays.
+;
+; In the .spt text format the word count is written explicitly as the first
+; token on each line.  OpDecorate requires at least 3 words (header, target,
+; decoration), so WordCount=1 on the last line is malformed.
+;
+; RUN: not llvm-spirv %s -to-binary -o %t.spv 2>&1 | FileCheck %s
+;
+; CHECK: InvalidWordCount:
+
+119734787 65536 0 6 0
+2 Capability Kernel
+3 MemoryModel 1 2
+1 Decorate 5 RelaxedPrecision
