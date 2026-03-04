@@ -436,6 +436,7 @@ public:
 
   void setWordCount(SPIRVWord WC) override {
     SPIRVEntryNoIdGeneric::setWordCount(WC);
+    SPIRVCK(WC >= FixedWC, InvalidWordCount, "");
     Targets.resize(WC - FixedWC);
   }
   virtual void decorateTargets() = 0;
