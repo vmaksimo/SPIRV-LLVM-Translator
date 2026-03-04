@@ -170,6 +170,7 @@ public:
 protected:
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     Constituents.resize(TheWordCount - FixedWordCount);
   }
   _SPIRV_DEF_ENCDEC3(Type, Id, Constituents)
@@ -251,6 +252,7 @@ protected:
   _SPIRV_DEF_ENCDEC4(Type, Id, Target, Features);
   void setWordCount(SPIRVWord WordCount) override {
     SPIRVEntry::setWordCount(WordCount);
+    SPIRVCK(WordCount >= FixedWC, InvalidWordCount, "");
     Features.resize(WordCount - FixedWC);
     NumWords = WordCount - FixedWC;
   }
@@ -427,6 +429,7 @@ protected:
 
   void setWordCount(SPIRVWord WordCount) override {
     SPIRVEntry::setWordCount(WordCount);
+    SPIRVCK(WordCount >= FixedWC, InvalidWordCount, "");
     Capabilities.resize(WordCount - FixedWC);
     NumWords = WordCount - FixedWC;
   }

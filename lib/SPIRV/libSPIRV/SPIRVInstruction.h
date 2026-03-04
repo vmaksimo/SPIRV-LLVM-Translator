@@ -521,6 +521,7 @@ protected:
   }
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= 4, InvalidWordCount, "");
     Initializer.resize(WordCount - 4);
   }
   _SPIRV_DEF_ENCDEC4(Type, Id, StorageClass, Initializer)
@@ -632,6 +633,7 @@ protected:
 
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= FixedWords, InvalidWordCount, "");
     MemoryAccess.resize(TheWordCount - FixedWords);
   }
   void encode(spv_ostream &O) const override {
@@ -687,6 +689,7 @@ public:
 protected:
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= FixedWords, InvalidWordCount, "");
     MemoryAccess.resize(TheWordCount - FixedWords);
   }
 
@@ -944,6 +947,7 @@ public:
 protected:
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= 4, InvalidWordCount, "");
     BranchWeights.resize(TheWordCount - 4);
   }
   _SPIRV_DEF_ENCDEC4(ConditionId, TrueLabelId, FalseLabelId, BranchWeights)
@@ -1014,6 +1018,7 @@ public:
   }
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     Pairs.resize(TheWordCount - FixedWordCount);
   }
   _SPIRV_DEF_ENCDEC3(Type, Id, Pairs)
@@ -1215,6 +1220,7 @@ public:
 
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     LoopControlParameters.resize(TheWordCount - FixedWordCount);
   }
   _SPIRV_DEF_ENCDEC4(MergeBlock, ContinueTarget, LoopControl,
@@ -1285,6 +1291,7 @@ public:
   }
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     Pairs.resize(TheWordCount - FixedWordCount);
   }
   _SPIRV_DEF_ENCDEC3(Select, Default, Pairs)
@@ -1827,6 +1834,7 @@ public:
 
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     LoopControlParameters.resize(TheWordCount - FixedWordCount);
   }
   _SPIRV_DEF_ENCDEC2(LoopControl, LoopControlParameters)
@@ -1879,6 +1887,7 @@ public:
   }
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     Args.resize(TheWordCount - FixedWordCount);
   }
   void validate() const override { SPIRVInstruction::validate(); }
@@ -2114,6 +2123,7 @@ public:
 protected:
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     Constituents.resize(TheWordCount - FixedWordCount);
   }
   _SPIRV_DEF_ENCDEC3(Type, Id, Constituents)
@@ -2268,6 +2278,7 @@ public:
 protected:
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= FixedWords, InvalidWordCount, "");
     MemoryAccess.resize(TheWordCount - FixedWords);
   }
 
@@ -2337,6 +2348,7 @@ public:
 protected:
   void setWordCount(SPIRVWord TheWordCount) override {
     SPIRVEntry::setWordCount(TheWordCount);
+    SPIRVCK(TheWordCount >= FixedWords, InvalidWordCount, "");
     MemoryAccess.resize(TheWordCount - FixedWords);
   }
 

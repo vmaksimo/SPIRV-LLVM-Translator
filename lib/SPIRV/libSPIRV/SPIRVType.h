@@ -671,6 +671,7 @@ protected:
   }
   void setWordCount(SPIRVWord TheWC) override {
     WordCount = TheWC;
+    SPIRVCK(TheWC >= FixedWC, InvalidWordCount, "");
     Acc.resize(WordCount - FixedWC);
   }
 
@@ -793,6 +794,7 @@ public:
 
   void setWordCount(SPIRVWord WordCount) override {
     SPIRVType::setWordCount(WordCount);
+    SPIRVCK(WordCount >= FixedWC, InvalidWordCount, "");
     MemberTypeIdVec.resize(WordCount - FixedWC);
   }
 
@@ -872,6 +874,7 @@ protected:
   _SPIRV_DEF_ENCDEC3(Id, ReturnType, ParamTypeIdVec)
   void setWordCount(SPIRVWord WordCount) override {
     SPIRVType::setWordCount(WordCount);
+    SPIRVCK(WordCount >= 3, InvalidWordCount, "");
     ParamTypeIdVec.resize(WordCount - 3);
   }
   void validate() const override {
