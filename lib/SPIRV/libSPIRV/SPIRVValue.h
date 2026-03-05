@@ -209,6 +209,7 @@ protected:
       getEncoder(O) << Word;
   }
   void setWordCount(SPIRVWord WordCount) override {
+    SPIRVCK(WordCount >= FixedWC, InvalidWordCount, "");
     SPIRVValue::setWordCount(WordCount);
     NumWords = WordCount - FixedWC;
   }
@@ -346,8 +347,8 @@ protected:
       getValue(I)->validate();
   }
 
-  SPIRVWord getMinWordCount() const override { return FixedWC; }
   void setWordCount(SPIRVWord WordCount) override {
+    SPIRVCK(WordCount >= FixedWC, InvalidWordCount, "");
     SPIRVEntry::setWordCount(WordCount);
     Elements.resize(WordCount - FixedWC);
   }

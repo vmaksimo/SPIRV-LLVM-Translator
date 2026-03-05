@@ -139,6 +139,7 @@ void SPIRVDecorate::encode(spv_ostream &O) const {
 }
 
 void SPIRVDecorate::setWordCount(SPIRVWord Count) {
+  SPIRVCK(Count >= FixedWC, InvalidWordCount, "");
   SPIRVEntry::setWordCount(Count);
   Literals.resize(WordCount - FixedWC);
 }
@@ -177,6 +178,7 @@ void SPIRVDecorateId::encode(spv_ostream &O) const {
 }
 
 void SPIRVDecorateId::setWordCount(SPIRVWord Count) {
+  SPIRVCK(Count >= FixedWC, InvalidWordCount, "");
   SPIRVEntry::setWordCount(Count);
   Literals.resize(WordCount - FixedWC);
 }
@@ -206,6 +208,7 @@ void SPIRVMemberDecorate::encode(spv_ostream &O) const {
 }
 
 void SPIRVMemberDecorate::setWordCount(SPIRVWord Count) {
+  SPIRVCK(Count >= FixedWC, InvalidWordCount, "");
   SPIRVEntry::setWordCount(Count);
   Literals.resize(WordCount - FixedWC);
 }

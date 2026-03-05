@@ -281,6 +281,8 @@ public:
     updateModuleVersion();
   }
   void setWordCount(SPIRVWord TheWordCount) override {
+    if (Module)
+      SPIRVCK(TheWordCount >= 1u + hasId() + hasType(), InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     auto NumOps = WordCount - 1;
     if (hasId())
@@ -386,7 +388,6 @@ public:
     this->initImpl(OC, HasId, WC, HasVariableWC, Literal1, Literal2, Literal3,
                    Literal4);
   }
-  SPIRVWord getMinWordCount() const override { return WC > 0 ? WC : 1; }
 };
 
 class SPIRVMemoryAccess {
@@ -520,8 +521,8 @@ protected:
     assert(Initializer.size() == 1 || Initializer.empty());
     assert(getType()->isTypePointer());
   }
-  SPIRVWord getMinWordCount() const override { return 4; }
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= 4, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     Initializer.resize(WordCount - 4);
   }
@@ -632,8 +633,8 @@ protected:
     setHasNoId();
   }
 
-  SPIRVWord getMinWordCount() const override { return FixedWords; }
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= FixedWords, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     MemoryAccess.resize(TheWordCount - FixedWords);
   }
@@ -688,8 +689,8 @@ public:
   SPIRVValue *getSrc() const { return Module->get<SPIRVValue>(PtrId); }
 
 protected:
-  SPIRVWord getMinWordCount() const override { return FixedWords; }
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= FixedWords, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     MemoryAccess.resize(TheWordCount - FixedWords);
   }
@@ -946,8 +947,8 @@ public:
   SPIRVLabel *getFalseLabel() const { return get<SPIRVLabel>(FalseLabelId); }
 
 protected:
-  SPIRVWord getMinWordCount() const override { return 4; }
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= 4, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     BranchWeights.resize(TheWordCount - 4);
   }
@@ -1017,8 +1018,8 @@ public:
            static_cast<SPIRVBasicBlock *>(BB));
     }
   }
-  SPIRVWord getMinWordCount() const override { return FixedWordCount; }
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     Pairs.resize(TheWordCount - FixedWordCount);
   }
@@ -1219,8 +1220,8 @@ public:
     return LoopControlParameters;
   }
 
-  SPIRVWord getMinWordCount() const override { return FixedWordCount; }
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     LoopControlParameters.resize(TheWordCount - FixedWordCount);
   }
@@ -1290,8 +1291,8 @@ public:
       Func(Literals, static_cast<SPIRVBasicBlock *>(BB));
     }
   }
-  SPIRVWord getMinWordCount() const override { return FixedWordCount; }
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     Pairs.resize(TheWordCount - FixedWordCount);
   }
@@ -1833,8 +1834,8 @@ public:
     return ExtensionID::SPV_INTEL_unstructured_loop_controls;
   }
 
-  SPIRVWord getMinWordCount() const override { return FixedWordCount; }
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     LoopControlParameters.resize(TheWordCount - FixedWordCount);
   }
@@ -1886,8 +1887,8 @@ public:
       ArgTypes.push_back(getValue(I)->getType());
     return ArgTypes;
   }
-  SPIRVWord getMinWordCount() const override { return FixedWordCount; }
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     Args.resize(TheWordCount - FixedWordCount);
   }
@@ -2121,10 +2122,9 @@ public:
     return getValues(Constituents);
   }
 
-  SPIRVWord getMinWordCount() const override { return FixedWordCount; }
-
 protected:
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= FixedWordCount, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     Constituents.resize(TheWordCount - FixedWordCount);
   }
@@ -2277,10 +2277,9 @@ public:
   SPIRVValue *getSource() { return getValue(Source); }
   SPIRVValue *getTarget() { return getValue(Target); }
 
-  SPIRVWord getMinWordCount() const override { return FixedWords; }
-
 protected:
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= FixedWords, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     MemoryAccess.resize(TheWordCount - FixedWords);
   }
@@ -2348,10 +2347,9 @@ public:
   SPIRVValue *getTarget() { return getValue(Target); }
   SPIRVValue *getSize() { return getValue(Size); }
 
-  SPIRVWord getMinWordCount() const override { return FixedWords; }
-
 protected:
   void setWordCount(SPIRVWord TheWordCount) override {
+    SPIRVCK(TheWordCount >= FixedWords, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWordCount);
     MemoryAccess.resize(TheWordCount - FixedWords);
   }

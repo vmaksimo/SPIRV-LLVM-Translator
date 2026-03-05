@@ -380,11 +380,6 @@ public:
   /// its variable sized member before decoding the remaining words.
   virtual void setWordCount(SPIRVWord TheWordCount);
 
-  /// Returns the minimum valid WordCount for this entry. Used in
-  /// SPIRVDecoder::getEntry() to reject malformed input before setWordCount()
-  /// is called, preventing unsigned underflow in variable-size member resizing.
-  virtual SPIRVWord getMinWordCount() const { return 1; }
-
   /// Create an empty SPIRV object by op code, e.g. OpTypeInt creates
   /// SPIRVTypeInt.
   static SPIRVEntry *create(Op);
@@ -551,7 +546,6 @@ public:
                   std::vector<SPIRVId> Variables);
   SPIRVEntryPoint() : SPIRVAnnotation(OpEntryPoint) {}
 
-  SPIRVWord getMinWordCount() const override { return FixedWC; }
   _SPIRV_DCL_ENCDEC
 protected:
   SPIRVExecutionModelKind ExecModel = ExecutionModelMax;

@@ -669,8 +669,8 @@ protected:
     assert(Desc.Format == 0);  // For OCL only
     assert(Acc.size() <= 1);
   }
-  SPIRVWord getMinWordCount() const override { return FixedWC; }
   void setWordCount(SPIRVWord TheWC) override {
+    SPIRVCK(TheWC >= FixedWC, InvalidWordCount, "");
     SPIRVEntry::setWordCount(TheWC);
     Acc.resize(WordCount - FixedWC);
   }
@@ -792,8 +792,8 @@ public:
   bool isPacked() const;
   void setPacked(bool Packed);
 
-  SPIRVWord getMinWordCount() const override { return FixedWC; }
   void setWordCount(SPIRVWord WordCount) override {
+    SPIRVCK(WordCount >= FixedWC, InvalidWordCount, "");
     SPIRVType::setWordCount(WordCount);
     MemberTypeIdVec.resize(WordCount - FixedWC);
   }
@@ -872,8 +872,8 @@ public:
 
 protected:
   _SPIRV_DEF_ENCDEC3(Id, ReturnType, ParamTypeIdVec)
-  SPIRVWord getMinWordCount() const override { return 3; }
   void setWordCount(SPIRVWord WordCount) override {
+    SPIRVCK(WordCount >= 3, InvalidWordCount, "");
     SPIRVType::setWordCount(WordCount);
     ParamTypeIdVec.resize(WordCount - 3);
   }
@@ -1040,8 +1040,8 @@ protected:
     assert(OpCode == OC);
     assert(WordCount == FixedWC + (AccessKind ? 1 : 0));
   }
-  SPIRVWord getMinWordCount() const override { return FixedWC; }
   void setWordCount(SPIRVWord TheWC) override {
+    SPIRVCK(TheWC >= FixedWC, InvalidWordCount, "");
     if (TheWC > FixedWC)
       AccessKind = SPIRVAccessQualifierKind::AccessQualifierMax;
     SPIRVEntry::setWordCount(TheWC);

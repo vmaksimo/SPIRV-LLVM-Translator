@@ -137,8 +137,6 @@ SPIRVDecoder SPIRVEntry::getDecoder(std::istream &I) {
 }
 
 void SPIRVEntry::setWordCount(SPIRVWord TheWordCount) {
-  if (Module)
-    SPIRVCK(TheWordCount >= getMinWordCount(), InvalidWordCount, "");
   WordCount = TheWordCount;
 }
 

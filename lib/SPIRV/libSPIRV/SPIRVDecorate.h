@@ -228,7 +228,6 @@ public:
 
   _SPIRV_DCL_ENCDEC
   void setWordCount(SPIRVWord) override;
-  SPIRVWord getMinWordCount() const override { return FixedWC; }
   void validate() const override {
     SPIRVDecorateGeneric::validate();
     assert(WordCount == Literals.size() + FixedWC);
@@ -259,7 +258,6 @@ public:
 
   _SPIRV_DCL_ENCDEC
   void setWordCount(SPIRVWord) override;
-  SPIRVWord getMinWordCount() const override { return FixedWC; }
   void validate() const override {
     SPIRVDecorateGeneric::validate();
     assert(WordCount == Literals.size() + FixedWC);
@@ -380,7 +378,6 @@ public:
 
   _SPIRV_DCL_ENCDEC
   void setWordCount(SPIRVWord) override;
-  SPIRVWord getMinWordCount() const override { return FixedWC; }
 
   void validate() const override {
     SPIRVDecorateGeneric::validate();
@@ -438,10 +435,10 @@ public:
       : SPIRVEntryNoIdGeneric(OC), DecorationGroup(nullptr) {}
 
   void setWordCount(SPIRVWord WC) override {
+    SPIRVCK(WC >= FixedWC, InvalidWordCount, "");
     SPIRVEntryNoIdGeneric::setWordCount(WC);
     Targets.resize(WC - FixedWC);
   }
-  SPIRVWord getMinWordCount() const override { return FixedWC; }
   virtual void decorateTargets() = 0;
   _SPIRV_DCL_ENCDEC
 protected:
