@@ -29,11 +29,11 @@
 target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024-n8:16:32:64"
 target triple = "spir64-unknown-unknown"
 
-; CHECK-LLVM: call spir_func <2 x bfloat> @_Z6vload2mPU3AS1KDF16b(i64 %offset, ptr addrspace(1) %ptr)
-; CHECK-LLVM: call spir_func void @_Z7vstore2Dv2_DF16bmPU3AS1DF16b(<2 x bfloat> %data, i64 %offset, ptr addrspace(1) %ptr)
+; CHECK-LLVM: call spir_func <2 x bfloat> @_Z6vload2mPU3AS1KDF16b(i64 %offset, bfloat addrspace(1)* %ptr)
+; CHECK-LLVM: call spir_func void @_Z7vstore2Dv2_DF16bmPU3AS1DF16b(<2 x bfloat> %data, i64 %offset, bfloat addrspace(1)* %ptr)
 
-; CHECK-SPV-IR: call spir_func <2 x bfloat> @_Z26__spirv_ocl_vloadn_RDF16b2mPU3AS1KDF16bi(i64 %offset, ptr addrspace(1) %ptr, i32 2)
-; CHECK-SPV-IR: call spir_func void @_Z19__spirv_ocl_vstorenDv2_DF16bmPU3AS1DF16b(<2 x bfloat> %data, i64 %offset, ptr addrspace(1) %ptr)
+; CHECK-SPV-IR: call spir_func <2 x bfloat> @_Z26__spirv_ocl_vloadn_RDF16b2mPU3AS1KDF16bi(i64 %offset, bfloat addrspace(1)* %ptr, i32 2)
+; CHECK-SPV-IR: call spir_func void @_Z19__spirv_ocl_vstorenDv2_DF16bmPU3AS1DF16b(<2 x bfloat> %data, i64 %offset, bfloat addrspace(1)* %ptr)
 
 define spir_func <2 x bfloat> @test_spirv_ocl_vload2(i64 %offset, ptr addrspace(1) %ptr) {
   %result = call spir_func <2 x bfloat> @_Z26__spirv_ocl_vloadn__RDF16blPU3AS1DF16bi(i64 %offset, ptr addrspace(1) %ptr, i32 2)

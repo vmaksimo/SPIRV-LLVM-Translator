@@ -779,7 +779,7 @@ static std::string demangleBuiltinOpenCLTypeName(StringRef MangledStructName) {
   return LlvmStructName;
 }
 
-void getParameterTypes(Function *F, SmallVectorImpl<StructType *> &ArgTys) {
+void getParameterTypes(Function *F, SmallVectorImpl<Type *> &ArgTys) {
   // If there's no mangled name, we can't do anything. Also, if there's no
   // parameters, do nothing.
   StringRef Name = F->getName();
@@ -799,7 +799,7 @@ void getParameterTypes(Function *F, SmallVectorImpl<StructType *> &ArgTys) {
       assert(!HasSret && &Arg == F->getArg(0) &&
              "sret parameter should only appear on the first argument");
       HasSret = true;
-      ArgTys.push_back(dyn_cast<StructType>(Ty));
+      ArgTys.push_back(Ty);
     } else {
       ArgTys.push_back(nullptr);
     }
@@ -840,8 +840,7 @@ void getParameterTypes(Function *F, SmallVectorImpl<StructType *> &ArgTys) {
   // words, the stuff between the parentheses if you ran C++ filt, including
   // the parentheses itself).
   ItaniumPartialDemangler Demangler;
-  std::string MangledName = F->getName().str();
-  if (Demangler.partialDemangle(MangledName.c_str()))
+  if (Demangler.partialDemangle(MangledName.data()))
     return;
   char *Buf = nullptr;
   size_t BufLen = 0;
@@ -867,7 +866,7 @@ void getParameterTypes(Function *F, SmallVectorImpl<StructType *> &ArgTys) {
     }
 
     for (StringRef Arg : ArgParams) {
-      StructType *Pointee = nullptr;
+      Type *Pointee = nullptr;
       if (Arg.endswith("*") && !Arg.endswith("**")) {
         // Strip off address space and other qualifiers.
         StringRef MangledStructName = Arg.split(' ').first;
@@ -885,6 +884,8 @@ void getParameterTypes(Function *F, SmallVectorImpl<StructType *> &ArgTys) {
           Pointee = getOrCreateOpaqueStructType(M, StructName);
         } else if (MangledStructName.startswith("opencl.")) {
           Pointee = getOrCreateOpaqueStructType(M, MangledStructName);
+        } else if (MangledStructName == "__bf16") {
+          Pointee = Type::getBFloatTy(M->getContext());
         }
       } else if (!Arg.contains(' ') && Arg.startswith("ocl_")) {
         std::string StructName = demangleBuiltinOpenCLTypeName(Arg);
@@ -894,6 +895,13 @@ void getParameterTypes(Function *F, SmallVectorImpl<StructType *> &ArgTys) {
     }
   }
   free(Buf);
+}
+
+void getParameterTypes(Function *F, SmallVectorImpl<StructType *> &ArgTys) {
+  SmallVector<Type *, 8> Tys;
+  getParameterTypes(F, Tys);
+  for (Type *T : Tys)
+    ArgTys.push_back(dyn_cast_or_null<StructType>(T));
 }
 
 // This is a transitional helper function to fill in mangling information for
