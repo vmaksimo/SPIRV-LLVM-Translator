@@ -51,7 +51,7 @@ attributes #1 = { nocallback nofree nosync nounwind speculatable willreturn memo
 !3325 = !{i32 4, i32 200000}
 !3329 = !{i32 2, !"Debug Info Version", i32 3}
 
-!3336 = distinct !DISubprogram(name: "gpu_genr70_jtype1", linkageName: "mod_jtype1_mp_gpu_genr70_jtype1_", scope: !3337, file: !52, line: 5, type: !6, scopeLine: 5, spFlags: DISPFlagDefinition, unit: !51)
+!3336 = distinct !DISubprogram(name: "gpu_genr70_jtype1", linkageName: "mod_jtype1_mp_gpu_genr70_jtype1_", scope: !52, file: !52, line: 5, type: !6, scopeLine: 5, spFlags: DISPFlagDefinition, unit: !51)
 !3337 = !DIModule(scope: null, name: "mod_jtype1", file: !52, line: 2)
 !3406 = !DILocalVariable(name: "k", scope: !3336, file: !52, line: 40, type: !15)
 !3409 = !DILocalVariable(name: "jj", scope: !3336, file: !52, line: 40, type: !15)
