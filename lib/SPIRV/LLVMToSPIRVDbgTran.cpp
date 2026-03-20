@@ -1348,8 +1348,17 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgFuncDefinition(SPIRVValue *FuncDef,
   SPIRVBasicBlock *BB = F->getNumBasicBlock() ? F->getBasicBlock(0) : nullptr;
   SPIRVId ExtSetId = BM->getExtInstSetId(BM->getDebugInfoEIS());
 
+  // DebugFunctionDefinition must be inserted after all OpVariable instructions
+  // in the first block (SPIR-V spec requires OpVariables to come first).
+  SPIRVInstruction *InsertBefore = nullptr;
+  for (size_t I = 0; I < BB->getNumInst(); ++I) {
+    if (BB->getInst(I)->getOpCode() != OpVariable) {
+      InsertBefore = BB->getInst(I);
+      break;
+    }
+  }
   return BM->addExtInst(getVoidTy(), ExtSetId, SPIRVDebug::FunctionDefinition,
-                        Ops, BB, BB->getInst(0));
+                        Ops, BB, InsertBefore);
 }
 
 SPIRVEntry *LLVMToSPIRVDbgTran::transDbgEntryPoint(const DISubprogram *Func,
