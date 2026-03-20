@@ -1213,22 +1213,10 @@ LLVMToSPIRVDbgTran::transDbgGlobalVariable(const DIGlobalVariable *GV) {
   if (DIDerivedType *StaticMember = GV->getStaticDataMemberDeclaration())
     Ops.push_back(transDbgEntry(StaticMember)->getId());
 
-  // Check if Ops[VariableIdx] has no information
-  if (isNonSemanticDebugInfo() && Ops[VariableIdx] == getDebugInfoNoneId()) {
-    // Check if GV has an associated GVE with a non-empty DIExpression.
-    // The non-empty DIExpression gives the initial value of the GV.
-    for (const DIGlobalVariableExpression *GVE : DIF.global_variables()) {
-      if ( // GVE matches GV
-          GVE->getVariable() == GV &&
-          // DIExpression is non-empty
-          GVE->getExpression()->getNumElements()) {
-        // Repurpose VariableIdx operand to hold the initial value held in the
-        // GVE's DIExpression
-        Ops[VariableIdx] = transDbgExpression(GVE->getExpression())->getId();
-        break;
-      }
-    }
-  }
+  // Note: when no corresponding OpVariable exists, Ops[VariableIdx] stays as
+  // DebugInfoNone. A DebugExpression must not be placed in the Variable operand
+  // as only OpVariable, OpConstant, OpSpecConstant, and DebugInfoNone are valid
+  // per the NonSemantic.Shader.DebugInfo spec.
 
   if (isNonSemanticDebugInfo())
     transformToConstant(Ops, {LineIdx, ColumnIdx, FlagsIdx});
