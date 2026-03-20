@@ -1,6 +1,6 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc --spirv-debug-info-version=nonsemantic-shader-100 -spirv-text -o %t.spt
-; RUN: FileCheck %s --input-file %t.spt --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-100
+; RUN: FileCheck %s --input-file %t.spt --check-prefix=CHECK-SPIRV
 ; RUN: llvm-spirv %t.bc  --spirv-debug-info-version=nonsemantic-shader-100 -o %t.spv
 ; RUN: spirv-val %t.spv
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
@@ -8,7 +8,7 @@
 ; RUN: FileCheck %s --input-file %t.rev.ll --check-prefix CHECK-LLVM
 
 ; RUN: llvm-spirv %t.bc --spirv-debug-info-version=nonsemantic-shader-200 -spirv-text -o %t.spt
-; RUN: FileCheck %s --input-file %t.spt --check-prefixes=CHECK-SPIRV,CHECK-SPIRV-200
+; RUN: FileCheck %s --input-file %t.spt --check-prefix=CHECK-SPIRV
 ; RUN: llvm-spirv %t.bc  --spirv-debug-info-version=nonsemantic-shader-200 -o %t.spv
 ; RUN: spirv-val %t.spv
 ; RUN: llvm-spirv -r %t.spv -o %t.rev.bc
@@ -28,9 +28,7 @@
 ; CHECK-SPIRV-SAME-COUNT-262130: A
 ; CHECK-SPIRV: String [[#Str3:]] "A
 ; CHECK-SPIRV-SAME-COUNT-5755: A
-; CHECK-SPIRV-100: DebugSource [[#]] [[#Str]]
-; CHECK-SPIRV-200: [[#NONE:]] [[#]] DebugInfoNone
-; CHECK-SPIRV-200: DebugSource [[#]] [[#NONE]] [[#NONE]] [[#Str]]
+; CHECK-SPIRV: DebugSource [[#]] [[#Str]]
 ; CHECK-SPIRV: DebugSourceContinued [[#Str2]]
 ; CHECK-SPIRV: DebugSourceContinued [[#Str3]]
 

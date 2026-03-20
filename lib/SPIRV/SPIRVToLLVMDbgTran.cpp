@@ -1787,11 +1787,12 @@ DIFile *SPIRVToLLVMDbgTran::getFile(const SPIRVId SourceId) {
   }
 
   std::optional<DIFile::ChecksumInfo<StringRef>> CS;
+  // In all NonSemantic formats, Text (when present) is at index 1.
   SPIRVWord StrIdx = SourceArgs[TextIdx];
   if (Source->getExtSetKind() == SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
-    if (SourceArgs.size() >= MaxOperandCount - 1) {
-      // 2 optional parameters are ChecksumKind and ChecksumValue - they should
-      // go together
+    // .200 format: File [Text [ChecksumKind ChecksumValue]]
+    // Checksum is only present when all 4 operands are given.
+    if (SourceArgs.size() == MaxOperandCount) {
       if (!getDbgInst<SPIRVDebug::DebugInfoNone>(SourceArgs[ChecksumKind]) &&
           !getDbgInst<SPIRVDebug::DebugInfoNone>(SourceArgs[ChecksumValue])) {
         llvm::DIFile::ChecksumKind Kind = SPIRV::DbgChecksumKindMap::rmap(
@@ -1803,14 +1804,6 @@ DIFile *SPIRVToLLVMDbgTran::getFile(const SPIRVId SourceId) {
         CS.emplace(Kind, Checksum.substr(0, ChecksumEndPos));
       }
     }
-
-    // Among optional parameters - text is always the last one (either 1st or
-    // 3rd)
-    if (SourceArgs.size() == MaxOperandCount ||
-        SourceArgs.size() == MaxOperandCount - 2)
-      StrIdx = SourceArgs[TextNonSemIdx];
-    else
-      StrIdx = SPIRVID_INVALID;
   }
 
   return getDIFile(getString(SourceArgs[FileIdx]), CS,

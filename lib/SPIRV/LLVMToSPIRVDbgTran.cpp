@@ -1470,6 +1470,14 @@ SPIRVExtInst *LLVMToSPIRVDbgTran::getSource(const T *DIEntry) {
   Ops[FileIdx] = BM->getString(FileName)->getId();
   DIFile *F = DIEntry ? DIEntry->getFile() : nullptr;
 
+  // For NonSemantic.Shader.DebugInfo.200 the operand order is:
+  //   DebugSource File [Text] [ChecksumKind ChecksumValue]
+  // Text must come before the optional checksum fields. Defer checksum
+  // operands so they can be appended after Text.
+  bool Is200 =
+      BM->getDebugInfoEIS() == SPIRVEIS_NonSemantic_Shader_DebugInfo_200;
+  SPIRVWordVec ChecksumOps;
+
   if (F && F->getRawChecksum()) {
     auto CheckSum = F->getChecksum().value();
 
@@ -1477,16 +1485,15 @@ SPIRVExtInst *LLVMToSPIRVDbgTran::getSource(const T *DIEntry) {
       Ops.push_back(BM->getString("//__" + CheckSum.getKindAsString().str() +
                                   ":" + CheckSum.Value.str())
                         ->getId());
-    else if (BM->getDebugInfoEIS() ==
-             SPIRVEIS_NonSemantic_Shader_DebugInfo_200) {
+    else if (Is200) {
       SPIRVDebug::FileChecksumKind ChecksumKind =
           SPIRV::DbgChecksumKindMap::map(CheckSum.Kind);
 
-      Ops.push_back(
+      ChecksumOps.push_back(
           BM->addIntegerConstant(static_cast<SPIRVTypeInt *>(getInt32Ty()),
                                  ChecksumKind)
               ->getId());
-      Ops.push_back(BM->getString(CheckSum.Value.str())->getId());
+      ChecksumOps.push_back(BM->getString(CheckSum.Value.str())->getId());
     }
   }
 
@@ -1497,12 +1504,10 @@ SPIRVExtInst *LLVMToSPIRVDbgTran::getSource(const T *DIEntry) {
     constexpr size_t MaxStrSize = MaxNumWords * 4 - 1;
     const size_t NumWords = getSizeInWords(Str);
 
-    if (BM->getDebugInfoEIS() == SPIRVEIS_NonSemantic_Shader_DebugInfo_200 &&
-        Ops.size() == MinOperandCount) {
-      Ops.push_back(getDebugInfoNoneId());
-      Ops.push_back(getDebugInfoNoneId());
-    }
     Ops.push_back(BM->getString(Str.substr(0, MaxStrSize))->getId());
+    // Append checksum after Text for .200.
+    for (SPIRVWord CW : ChecksumOps)
+      Ops.push_back(CW);
     SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
         BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
     FileMap[FileName] = Source;
@@ -1522,6 +1527,9 @@ SPIRVExtInst *LLVMToSPIRVDbgTran::getSource(const T *DIEntry) {
     return Source;
   }
 
+  // No source text: append deferred checksum operands (if any) now.
+  for (SPIRVWord CW : ChecksumOps)
+    Ops.push_back(CW);
   SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(
       BM->addDebugInfo(SPIRVDebug::Source, getVoidTy(), Ops));
   FileMap[FileName] = Source;

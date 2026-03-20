@@ -318,10 +318,10 @@ namespace Source {
 enum {
   FileIdx         = 0,
   TextIdx         = 1,
-  // For NonSemantic.Shader.DebugInfo.200
-  ChecksumKind    = 1,
-  ChecksumValue   = 2,
-  TextNonSemIdx   = 3,
+  // For NonSemantic.Shader.DebugInfo.200: File [Text [ChecksumKind ChecksumValue]]
+  // Text is at position 1 (same as TextIdx) and checksum follows after text.
+  ChecksumKind    = 2,
+  ChecksumValue   = 3,
   MinOperandCount = 1,
   MaxOperandCount = 4
 };
