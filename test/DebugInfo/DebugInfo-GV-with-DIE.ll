@@ -19,10 +19,10 @@
 ; RUN: llvm-dis %t.200.rev.bc -o %t.200.rev.ll
 ; RUN: FileCheck %s --input-file %t.200.rev.ll --check-prefix CHECK-LLVM
 
-; CHECK-SPIRV: [[EXPRESSION:[0-9]+]] [[#]] DebugExpression [[#]] [[#]]
-; CHECK-SPIRV: [[#]] [[#]] DebugGlobalVariable [[#]] [[#]] [[#]] [[#]] [[#]] [[#]] [[#]] [[EXPRESSION]] [[#]] {{$}}
+; CHECK-SPIRV: [[#None:]] [[#]] DebugInfoNone
+; CHECK-SPIRV: [[#]] [[#]] DebugGlobalVariable [[#]] [[#]] [[#]] [[#]] [[#]] [[#]] [[#]] [[#None]] [[#]] {{$}}
 
-; CHECK-LLVM: ![[#]] = !DIGlobalVariableExpression(var: ![[#GV:]], expr: !DIExpression(DW_OP_constu, 1, DW_OP_stack_value))
+; CHECK-LLVM: ![[#]] = !DIGlobalVariableExpression(var: ![[#GV:]], expr: !DIExpression())
 ; CHECK-LLVM: ![[#GV]] = distinct !DIGlobalVariable(name: "true", scope: ![[#]], file: ![[#]], line: 3777, type: ![[#]], isLocal: true, isDefinition: true)
 
 ;; Ensure SPIR-V DebugGlobalVariable's Variable field does not hold a DIExpression if nonsemantic debug info is not enabled

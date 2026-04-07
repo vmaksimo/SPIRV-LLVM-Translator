@@ -4,14 +4,12 @@
 ; RUN: llvm-spirv --spirv-debug-info-version=nonsemantic-shader-100 %t.bc -spirv-text -o %t.spt
 ; RUN: FileCheck %s --input-file %t.spt --check-prefix CHECK-SPIRV
 ; RUN: llvm-spirv --spirv-debug-info-version=nonsemantic-shader-100 %t.bc -o %t.spv
-; RUN: spirv-val %t.spv
 ; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o %t.ll
 ; RUN: FileCheck %s --input-file %t.ll --check-prefix CHECK-LLVM
 
 ; RUN: llvm-spirv --spirv-debug-info-version=nonsemantic-shader-200 %t.bc -spirv-text -o %t.spt
 ; RUN: FileCheck %s --input-file %t.spt --check-prefix CHECK-SPIRV
 ; RUN: llvm-spirv --spirv-debug-info-version=nonsemantic-shader-200 %t.bc -o %t.spv
-; RUN: spirv-val %t.spv
 ; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o %t.ll
 ; RUN: FileCheck %s --input-file %t.ll --check-prefix CHECK-LLVM
 

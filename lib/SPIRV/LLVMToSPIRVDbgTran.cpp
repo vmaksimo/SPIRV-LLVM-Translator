@@ -1527,7 +1527,10 @@ SPIRVExtInst *LLVMToSPIRVDbgTran::getSource(const T *DIEntry) {
     return Source;
   }
 
-  // No source text: append deferred checksum operands (if any) now.
+  // No source text: per spec, ChecksumKind/ChecksumValue must follow Text,
+  // so insert a DebugInfoNone placeholder for Text when checksum is present.
+  if (!ChecksumOps.empty())
+    Ops.push_back(getDebugInfoNoneId());
   for (SPIRVWord CW : ChecksumOps)
     Ops.push_back(CW);
   SPIRVExtInst *Source = static_cast<SPIRVExtInst *>(

@@ -31,7 +31,7 @@ target triple = "spir64-unknown-unknown"
 ; CHECK-SPIRV-200: TypeInt [[#TypeInt32:]] 32
 ; 0 means MD5
 ; CHECK-SPIRV-200: Constant [[#TypeInt32]] [[#Kind:]] 0
-; CHECK-SPIRV-200: DebugSource [[#]] [[#Kind]] [[#Val]] [[#Source]]
+; CHECK-SPIRV-200: DebugSource [[#]] [[#Source]] [[#Kind]] [[#Val]]
 
 !0 = !{i32 2, !"Debug Info Version", i32 3}
 !1 = distinct !DICompileUnit(language: DW_LANG_C_plus_plus_14, file: !2, producer: "spirv", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !3, imports: !3)
