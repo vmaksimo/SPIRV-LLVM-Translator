@@ -28,19 +28,18 @@
 ; RUN: llvm-dis %t.rev.bc -o %t.rev.ll
 ; RUN: FileCheck %s --input-file %t.rev.ll --check-prefix CHECK-LLVM
 
-; CHECK-SPIRV: String [[#Str_C:]] "C"
-; CHECK-SPIRV: String [[#Str_B:]] "B"
-; CHECK-SPIRV: String [[#Str_A:]] "A"
+; CHECK-SPIRV-DAG: String [[#Str_C:]] "C"
+; CHECK-SPIRV-DAG: String [[#Str_B:]] "B"
+; CHECK-SPIRV-DAG: String [[#Str_A:]] "A"
 
-; CHECK-SPIRV: [[#Class_A:]] [[#]] DebugTypeComposite [[#Str_A]]
+; CHECK-SPIRV-DAG: [[#Class_A:]] [[#]] DebugTypeComposite [[#Str_A]]
+; CHECK-SPIRV-DAG: [[#Class_B:]] [[#]] DebugTypeComposite [[#Str_B]]
+; CHECK-SPIRV-DAG: [[#Class_C:]] [[#]] DebugTypeComposite [[#Str_C]]
 
-; CHECK-SPIRV-OCL: [[#B_inherits_A:]] [[#]] DebugTypeInheritance [[#Class_B:]] [[#Class_A]] [[#]] [[#]] [[#]] {{$}}
-; CHECK-SPIRV-NONSEM: [[#B_inherits_A:]] [[#]] DebugTypeInheritance [[#Class_A]] [[#]] [[#]] [[#]] {{$}}
-; CHECK-SPIRV: [[#Class_B:]] [[#]] DebugTypeComposite [[#Str_B]] {{.*}} [[#B_inherits_A]]
-
-; CHECK-SPIRV-OCL: [[#C_inherits_B:]] [[#]] DebugTypeInheritance [[#Class_C:]] [[#Class_B]] [[#]] [[#]] [[#]] {{$}}
-; CHECK-SPIRV-NONSEM: [[#C_inherits_B:]] [[#]] DebugTypeInheritance [[#Class_B]] [[#]] [[#]] [[#]] {{$}}
-; CHECK-SPIRV: [[#Class_C:]] [[#]] DebugTypeComposite [[#Str_C]] {{.*}} [[#C_inherits_B]]
+; CHECK-SPIRV-OCL: [[#]] [[#]] DebugTypeInheritance [[#Class_B]] [[#Class_A]] [[#]] [[#]] [[#]] {{$}}
+; CHECK-SPIRV-OCL: [[#]] [[#]] DebugTypeInheritance [[#Class_C]] [[#Class_B]] [[#]] [[#]] [[#]] {{$}}
+; CHECK-SPIRV-NONSEM: [[#]] [[#]] DebugTypeInheritance [[#Class_A]] [[#]] [[#]] [[#]] {{$}}
+; CHECK-SPIRV-NONSEM: [[#]] [[#]] DebugTypeInheritance [[#Class_B]] [[#]] [[#]] [[#]] {{$}}
 
 ; CHECK-LLVM: ![[#Class_C:]] = distinct !DICompositeType(tag: DW_TAG_class_type, name: "C"{{.*}}identifier: "_ZTS1C")
 ; CHECK-LLVM: !DIDerivedType(tag: DW_TAG_inheritance, scope: ![[#Class_C]], baseType: ![[#Class_B:]]

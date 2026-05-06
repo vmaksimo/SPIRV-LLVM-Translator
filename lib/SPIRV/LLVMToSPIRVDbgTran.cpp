@@ -962,9 +962,6 @@ LLVMToSPIRVDbgTran::transDbgCompositeType(const DICompositeType *CT) {
   using namespace SPIRVDebug::Operand::TypeComposite;
   SPIRVWordVec Ops(MinOperandCount);
 
-  SPIRVForward *Tmp = BM->addForward(nullptr);
-  MDMap.insert(std::make_pair(CT, Tmp));
-
   auto Tag = static_cast<dwarf::Tag>(CT->getTag());
   SPIRVId UniqId = getDebugInfoNoneId();
   StringRef Identifier = CT->getIdentifier();
@@ -982,14 +979,21 @@ LLVMToSPIRVDbgTran::transDbgCompositeType(const DICompositeType *CT) {
   Ops[SizeIdx] = SPIRVWriter->transValue(Size, nullptr)->getId();
   Ops[FlagsIdx] = transDebugFlags(CT);
 
+  if (isNonSemanticDebugInfo())
+    transformToConstant(Ops, {TagIdx, LineIdx, ColumnIdx, FlagsIdx});
+
+  // Emit DebugTypeComposite before translating its members so that any member
+  // or inheritance instruction that back-references this type (e.g.
+  // DebugTypeInheritance.Child) sees a defined ID in the serialised stream.
+  // Members are appended after the fact via setArguments.
+  SPIRVEntry *Res =
+      BM->addDebugInfo(SPIRVDebug::TypeComposite, getVoidTy(), Ops);
+  MDMap[CT] = Res;
+
   for (DINode *N : CT->getElements()) {
     Ops.push_back(transDbgEntry(N)->getId());
   }
-
-  if (isNonSemanticDebugInfo())
-    transformToConstant(Ops, {TagIdx, LineIdx, ColumnIdx, FlagsIdx});
-  SPIRVEntry *Res =
-      BM->addDebugInfo(SPIRVDebug::TypeComposite, getVoidTy(), Ops);
+  static_cast<SPIRVExtInst *>(Res)->setArguments(Ops);
 
   // Translate template parameters.
   if (DITemplateParameterArray TP = CT->getTemplateParams()) {
@@ -1000,9 +1004,8 @@ LLVMToSPIRVDbgTran::transDbgCompositeType(const DICompositeType *CT) {
       Args[I + 1] = transDbgEntry(TP[I])->getId();
     }
     Res = BM->addDebugInfo(SPIRVDebug::TypeTemplate, getVoidTy(), Args);
+    MDMap[CT] = Res;
   }
-  BM->replaceForward(Tmp, Res);
-  MDMap[CT] = Res;
   return Res;
 }
 
