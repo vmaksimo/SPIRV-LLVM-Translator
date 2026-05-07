@@ -982,17 +982,24 @@ LLVMToSPIRVDbgTran::transDbgCompositeType(const DICompositeType *CT) {
   if (isNonSemanticDebugInfo())
     transformToConstant(Ops, {TagIdx, LineIdx, ColumnIdx, FlagsIdx});
 
-  // Emit DebugTypeComposite before translating its members so that any member
-  // or inheritance instruction that back-references this type (e.g.
-  // DebugTypeInheritance.Child) sees a defined ID in the serialised stream.
-  // Members are appended after the fact via setArguments.
+  // A forward placeholder in MDMap breaks any recursive entry from a member or
+  // sibling type that calls transDbgEntry(scope) back to this composite.
+  SPIRVForward *Tmp = BM->addForward(nullptr);
+  MDMap.insert(std::make_pair(CT, Tmp));
+
+  // Emit DebugTypeComposite before translating its members so that
+  // DebugTypeInheritance.Child (OCL-100/legacy) and other instructions that
+  // reference the composite (e.g. DebugTypePointer) see a defined ID in the
+  // serialised stream. The OCL-100 spec explicitly allows DebugTypeComposite
+  // Members to be forward references, so we patch the member list in
+  // afterwards via setArguments once all elements have been translated.
   SPIRVEntry *Res =
       BM->addDebugInfo(SPIRVDebug::TypeComposite, getVoidTy(), Ops);
+  BM->replaceForward(Tmp, Res);
   MDMap[CT] = Res;
 
-  for (DINode *N : CT->getElements()) {
+  for (DINode *N : CT->getElements())
     Ops.push_back(transDbgEntry(N)->getId());
-  }
   static_cast<SPIRVExtInst *>(Res)->setArguments(Ops);
 
   // Translate template parameters.
@@ -1000,9 +1007,8 @@ LLVMToSPIRVDbgTran::transDbgCompositeType(const DICompositeType *CT) {
     const unsigned int NumTParams = TP.size();
     SPIRVWordVec Args(1 + NumTParams);
     Args[0] = Res->getId();
-    for (unsigned int I = 0; I < NumTParams; ++I) {
+    for (unsigned int I = 0; I < NumTParams; ++I)
       Args[I + 1] = transDbgEntry(TP[I])->getId();
-    }
     Res = BM->addDebugInfo(SPIRVDebug::TypeTemplate, getVoidTy(), Args);
     MDMap[CT] = Res;
   }
