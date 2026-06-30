@@ -1388,6 +1388,17 @@ SPIRVValue *LLVMToSPIRVBase::transConstantUse(Constant *C,
   return BM->addUnaryInst(OpBitcast, ExpectedType, Trans, nullptr);
 }
 
+SPIRVValue *LLVMToSPIRVBase::transConstantConstituent(Constant *C,
+                                                      SPIRVType *ExpectedType) {
+  SPIRVValue *Trans = transConstantUse(C, ExpectedType);
+  // A variable is not a constant, so it cannot be a constituent of a constant
+  // composite directly. Wrap it so the composite refers to a constant.
+  Op OC = Trans->getOpCode();
+  if (OC == OpVariable || OC == OpUntypedVariableKHR)
+    return BM->addUnaryInst(OpBitcast, Trans->getType(), Trans, nullptr);
+  return Trans;
+}
+
 SPIRVValue *LLVMToSPIRVBase::transConstant(Value *V) {
   SPIRVType *ExpectedType = transScavengedType(V);
   if (isa<ConstantPointerNull>(V))
@@ -1452,7 +1463,7 @@ SPIRVValue *LLVMToSPIRVBase::transConstant(Value *V) {
     SPIRVType *InnerTy = ExpectedType->getArrayElementType();
     std::vector<SPIRVValue *> BV;
     for (auto I = ConstA->op_begin(), E = ConstA->op_end(); I != E; ++I)
-      BV.push_back(transConstantUse(cast<Constant>(*I), InnerTy));
+      BV.push_back(transConstantConstituent(cast<Constant>(*I), InnerTy));
     return BM->addCompositeConstant(ExpectedType, BV);
   }
 
@@ -1468,7 +1479,7 @@ SPIRVValue *LLVMToSPIRVBase::transConstant(Value *V) {
     SPIRVType *InnerTy = ExpectedType->getScalarType();
     std::vector<SPIRVValue *> BV;
     for (auto I = ConstV->op_begin(), E = ConstV->op_end(); I != E; ++I)
-      BV.push_back(transConstantUse(cast<Constant>(*I), InnerTy));
+      BV.push_back(transConstantConstituent(cast<Constant>(*I), InnerTy));
     return BM->addCompositeConstant(ExpectedType, BV);
   }
 
@@ -1509,7 +1520,7 @@ SPIRVValue *LLVMToSPIRVBase::transConstant(Value *V) {
     std::vector<SPIRVValue *> BV;
     for (auto I = ConstV->op_begin(), E = ConstV->op_end(); I != E; ++I) {
       SPIRVType *InnerTy = ExpectedType->getStructMemberType(BV.size());
-      BV.push_back(transConstantUse(cast<Constant>(*I), InnerTy));
+      BV.push_back(transConstantConstituent(cast<Constant>(*I), InnerTy));
     }
     return BM->addCompositeConstant(ExpectedType, BV);
   }

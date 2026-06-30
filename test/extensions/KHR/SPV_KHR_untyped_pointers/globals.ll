@@ -2,8 +2,8 @@
 
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_KHR_untyped_pointers -o %t.spv
-; TODO: enable back once spirv-tools are updated and allow untyped access chain as OpSpecConstantOp operand.
-; R/UN: spirv-val %t.spv
+; TODO: enable once SPIRV-Tools allows untyped access chains in OpSpecConstantOp.
+; RUNx: spirv-val %t.spv
 ; RUN: llvm-spirv %t.bc --spirv-ext=+SPV_KHR_untyped_pointers -spirv-text -o %t.spt
 ; RUN: FileCheck < %t.spt %s --check-prefix=CHECK-SPIRV
 
@@ -41,7 +41,12 @@ target triple = "spir-unknown-unknown"
 ; CHECK-SPIRV: UntypedVariableKHR [[#PTRTY]] [[#VARB:]] 5 [[#I32]]
 ; CHECK-SPIRV: UntypedVariableKHR [[#PTRTY]] [[#VARC:]] 5 [[#PTRTY]] [[#VARA]]
 ; CHECK-SPIRV: UntypedVariableKHR [[#LOCALPTRTY]] [[#VARD:]] 4 [[#PTRTY]]
-; CHECK-SPIRV: Variable [[#ARRAYPTRTY]] [[#VARE:]] 5
+; A variable is not a constant, so each pointer constituent of the array
+; initializer is wrapped before forming the SpecConstantComposite.
+; CHECK-SPIRV: SpecConstantOp [[#PTRTY]] [[#WRAPA:]] {{[0-9]+}} [[#VARA]]
+; CHECK-SPIRV: SpecConstantOp [[#PTRTY]] [[#WRAPB:]] {{[0-9]+}} [[#VARB]]
+; CHECK-SPIRV: SpecConstantComposite [[#ARRAYTY]] [[#COMPE:]] [[#WRAPA]] [[#WRAPB]]
+; CHECK-SPIRV: Variable [[#ARRAYPTRTY]] [[#VARE:]] 5 [[#COMPE]]
 ; CHECK-SPIRV: Variable [[#ARRAY3PTRTY]] [[#VARF:]] 5
 ; CHECK-SPIRV: SpecConstantOp [[#PTRTY]] [[#SPECCONST:]] 4424 [[#ARRAY3TY]] [[#VARF]] [[#CONST0_I64]] [[#CONST1_I64]] [[#CONST2_I64]] [[#CONST3_I64]]
 ; CHECK-SPIRV: UntypedVariableKHR [[#PTRTY]] [[#VARG:]] 5 [[#PTRTY]] [[#SPECCONST]]

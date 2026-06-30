@@ -156,6 +156,9 @@ public:
   /// Translate a reference to a constant in a constant expression. This may
   /// involve inserting extra bitcasts to correct type issues.
   SPIRVValue *transConstantUse(Constant *V, SPIRVType *ExpectedType);
+  /// Translate a constituent of a constant composite, wrapping a variable
+  /// operand so the composite refers to a constant.
+  SPIRVValue *transConstantConstituent(Constant *V, SPIRVType *ExpectedType);
   SPIRVValue *transValue(Value *V, SPIRVBasicBlock *BB,
                          bool CreateForward = true,
                          FuncTransMode FuncTrans = FuncTransMode::Decl);

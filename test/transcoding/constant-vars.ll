@@ -47,10 +47,10 @@ target triple = "spir-unknown-unknown"
 
 ; CHECK-SPIRV: 5 SpecConstantOp [[AS1]] [[I64ARRC2:[0-9]+]] 124 [[I64ARR]]
 ; CHECK-SPIRV-TYPED-PTR: 5 SpecConstantOp [[AS1]] [[STRUCTC:[0-9]+]] 124 [[STRUCT]]
+; CHECK-SPIRV-UNTYPED-PTR: 5 SpecConstantOp [[AS1]] [[STRUCTC:[0-9]+]] 124 [[STRUCT]]
 ; CHECK-SPIRV-TYPED-PTR: 7 SpecConstantOp {{[0-9]+}} [[GEP:[0-9]+]] 67 [[I64ARR]]
 ; CHECK-SPIRV-UNTYPED-PTR: 8 SpecConstantOp {{[0-9]+}} [[GEP:[0-9]+]] 4423 [[#]] [[I64ARR]]
-; CHECK-SPIRV-TYPED-PTR: 6 SpecConstantComposite [[ARRAYTY]] [[ARRAY_INIT:[0-9]+]] [[I64ARRC2]] [[STRUCTC]] [[GEP]]
-; CHECK-SPIRV-UNTYPED-PTR: 6 SpecConstantComposite [[ARRAYTY]] [[ARRAY_INIT:[0-9]+]] [[I64ARRC2]] [[STRUCT]] [[GEP]]
+; CHECK-SPIRV: 6 SpecConstantComposite [[ARRAYTY]] [[ARRAY_INIT:[0-9]+]] [[I64ARRC2]] [[STRUCTC]] [[GEP]]
 ; CHECK-SPIRV: 5 Variable {{[0-9]+}} [[ARRAY:[0-9]+]] 5 [[ARRAY_INIT]]
 
 ; CHECK-LLVM: %structtype = type { ptr addrspace(2), ptr addrspace(1) }
