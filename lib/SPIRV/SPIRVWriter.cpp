@@ -67,6 +67,7 @@
 #include "VectorComputeUtil.h"
 
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Analysis/LoopAnalysisManager.h"
 #include "llvm/Analysis/LoopInfo.h"
@@ -81,6 +82,7 @@
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Operator.h"
+#include "llvm/IR/ProfDataUtils.h"
 #include "llvm/IR/TypedPointerType.h"
 #include "llvm/Pass.h"
 #include "llvm/Passes/PassBuilder.h"
@@ -2609,9 +2611,17 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
     if (SuccessorTrue == SuccessorFalse)
       return mapValue(V, BM->addBranchInst(SuccessorTrue, BB));
 
-    return mapValue(
-        V, BM->addBranchConditionalInst(transValue(Branch->getCondition(), BB),
-                                        SuccessorTrue, SuccessorFalse, BB));
+    std::vector<SPIRVWord> BranchWeights;
+    uint64_t TrueWeight = 0, FalseWeight = 0;
+    if (extractBranchWeights(*Branch, TrueWeight, FalseWeight)) {
+      SmallVector<uint32_t> Fitted =
+          downscaleWeights({TrueWeight, FalseWeight});
+      BranchWeights.assign(Fitted.begin(), Fitted.end());
+    }
+
+    return mapValue(V, BM->addBranchConditionalInst(
+                           transValue(Branch->getCondition(), BB),
+                           SuccessorTrue, SuccessorFalse, BB, BranchWeights));
   }
 
   if (auto *Branch = dyn_cast<UncondBrInst>(V)) {
