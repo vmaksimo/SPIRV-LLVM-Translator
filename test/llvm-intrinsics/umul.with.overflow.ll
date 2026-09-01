@@ -21,9 +21,13 @@ target triple = "spir"
 define dso_local spir_func void @_Z4foo8hhPh(i8 zeroext %a, i8 zeroext %b, ptr captures(none) %c) local_unnamed_addr #0 {
 entry:
   ; CHECK-LLVM: call spir_func void @_Z20__spirv_UMulExtendedhh(ptr sret(%[[STRUCT8]]) %{{.*}}, i8 %a, i8 %b)
-  ; CHECK-SPIRV: UMulExtended [[#]] [[#]] [[#]] [[#]]
-  ; CHECK-SPIRV: CompositeExtract [[#]] [[#HI:]] [[#]] 1
-  ; CHECK-SPIRV: INotEqual [[#]] [[#]] [[#HI]] [[#]]
+  ; CHECK-SPIRV: Constant [[#]] [[#ZERO8:]] 0
+  ; CHECK-SPIRV: Function
+  ; CHECK-SPIRV: UMulExtended [[#]] [[#MUL:]] [[#]] [[#]]
+  ; CHECK-SPIRV: Store [[#PTR:]] [[#MUL]]
+  ; CHECK-SPIRV: Load [[#]] [[#LOADED:]] [[#PTR]]
+  ; CHECK-SPIRV: CompositeExtract [[#]] [[#HI:]] [[#LOADED]] 1
+  ; CHECK-SPIRV: INotEqual [[#]] [[#]] [[#HI]] [[#ZERO8]]
   %umul = tail call { i8, i1 } @llvm.umul.with.overflow.i8(i8 %a, i8 %b)
   %cmp = extractvalue { i8, i1 } %umul, 1
   %umul.value = extractvalue { i8, i1 } %umul, 0
