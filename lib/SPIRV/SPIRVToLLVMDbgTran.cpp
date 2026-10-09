@@ -258,8 +258,7 @@ SPIRVToLLVMDbgTran::transCompilationUnit(const SPIRVExtInst *DebugInst,
         DebugInst->getExtSetKind() == SPIRVEIS_NonSemantic_Shader_DebugInfo_100
             ? CompilerVersion
             : getString(Ops[ProducerIdx]),
-        false, Flags, 0, StoragePath,
-        DICompileUnit::DebugEmissionKind::FullDebug, BuildIdentifier);
+        false, Flags, 0, StoragePath, getEmissionKind(), BuildIdentifier);
     if (InvalidSourceLang) {
       appendToSourceLangLiteral(CompileUnit, OriginalSourceLang);
     }
@@ -270,7 +269,8 @@ SPIRVToLLVMDbgTran::transCompilationUnit(const SPIRVExtInst *DebugInst,
   // info by default
   auto Producer = findModuleProducer();
   auto *CompileUnit = BuilderMap[DebugInst->getId()]->createCompileUnit(
-      SourceLang, getFile(Ops[SourceIdx]), Producer, false, Flags, 0);
+      SourceLang, getFile(Ops[SourceIdx]), Producer, false, Flags, 0, "",
+      getEmissionKind());
   if (InvalidSourceLang) {
     appendToSourceLangLiteral(CompileUnit, OriginalSourceLang);
   }
@@ -1906,6 +1906,34 @@ SPIRVToLLVMDbgTran::SplitFileName::SplitFileName(const std::string &FileName) {
     BaseName = FileName;
     Path = ".";
   }
+}
+
+DICompileUnit::DebugEmissionKind SPIRVToLLVMDbgTran::getEmissionKind() {
+  if (EmissionKind)
+    return *EmissionKind;
+
+  // The emission kind has no DebugCompilationUnit operand in any DebugInfo
+  // spec version and is recorded in an OpModuleProcessed string instead.
+  // SPIR-V without that string describes full debug information, which is also
+  // what a module whose compilation units disagree is described as, so that no
+  // debug information is dropped.
+  std::optional<DICompileUnit::DebugEmissionKind> Recorded;
+  for (const auto &I : BM->getModuleProcessedVec()) {
+    const std::string Processed = I->getProcessStr();
+    StringRef Str(Processed);
+    if (!Str.consume_front(SPIRVDebug::EmissionKindPrefix))
+      continue;
+    std::optional<DICompileUnit::DebugEmissionKind> Kind =
+        DICompileUnit::getEmissionKind(Str);
+    if (!Kind || (Recorded && *Recorded != *Kind)) {
+      Recorded = DICompileUnit::DebugEmissionKind::FullDebug;
+      break;
+    }
+    Recorded = Kind;
+  }
+
+  EmissionKind = Recorded.value_or(DICompileUnit::DebugEmissionKind::FullDebug);
+  return *EmissionKind;
 }
 
 std::string SPIRVToLLVMDbgTran::findModuleProducer() {
