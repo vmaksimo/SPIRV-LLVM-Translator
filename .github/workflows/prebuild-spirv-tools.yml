@@ -1,7 +1,8 @@
 # This workflow builds SPIRV-Tools from main once per day and caches the
-# install tree. The build- and test-workflows only restore from this cache
-# (via restore-keys prefix match), so this workflow owns the freshness of
-# the tools.
+# install tree. On main, the build- and test-workflows only restore from this
+# cache (via restore-keys prefix match), so this workflow owns the freshness
+# of the tools. Release branches build a pinned SPIRV-Tools release instead,
+# so this workflow only runs on main.
 #
 # workflow_dispatch is provided for manual refresh when a SPIRV-Tools fix
 # needs to be picked up before the next scheduled run, or to bootstrap the
@@ -19,6 +20,7 @@ env:
 jobs:
   prebuild:
     name: Build and cache SPIRV-Tools main
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
       - name: Get current date for SPIRV-Tools cache key
