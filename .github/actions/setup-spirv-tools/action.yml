@@ -1,0 +1,57 @@
+# Installs SPIRV-Tools into install-dir.
+#
+# On main, restores the nightly SPIRV-Tools main build cached by the
+# prebuild-spirv-tools workflow. On release branches, builds and caches the
+# SPIRV-Tools release given by the tag input instead: set its default to the
+# latest SPIRV-Tools release when creating the branch.
+name: Set up SPIRV-Tools
+description: Restore or build SPIRV-Tools for the translator tests
+
+inputs:
+  install-dir:
+    description: Install prefix for SPIRV-Tools
+    required: true
+  tag:
+    description: SPIRV-Tools release tag used on release branches
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Restore SPIRV-Tools main cache
+      # The primary key never matches (no one saves it); restore-keys pulls
+      # the most recent prebuild entry.
+      if: (github.base_ref || github.ref_name) == 'main'
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ inputs.install-dir }}
+        key: spirv-tools-main-latest
+        restore-keys: spirv-tools-main-
+    - name: Cache SPIRV-Tools ${{ inputs.tag }}
+      if: (github.base_ref || github.ref_name) != 'main'
+      id: spirv-tools-cache
+      uses: actions/cache@v5
+      with:
+        path: ${{ inputs.install-dir }}
+        key: spirv-tools-${{ inputs.tag }}
+    - name: Build and install SPIRV-Tools ${{ inputs.tag }}
+      if: (github.base_ref || github.ref_name) != 'main' && steps.spirv-tools-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        if [ -z "${{ inputs.tag }}" ]; then
+          echo "::error::Set the tag input of setup-spirv-tools to a SPIRV-Tools release tag on ${{ github.base_ref || github.ref_name }}"
+          exit 1
+        fi
+        git clone --depth=1 --branch ${{ inputs.tag }} https://github.com/KhronosGroup/SPIRV-Tools SPIRV-Tools
+        python3 SPIRV-Tools/utils/git-sync-deps
+        cmake -S SPIRV-Tools -B SPIRV-Tools/build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=${{ inputs.install-dir }} \
+          -DSPIRV_SKIP_TESTS=ON \
+          -G "Unix Makefiles"
+        make -C SPIRV-Tools/build install -j$(nproc)
+    - name: Check SPIRV-Tools version
+      if: (github.base_ref || github.ref_name) != 'main'
+      shell: bash
+      run: |
+        ${{ inputs.install-dir }}/bin/spirv-val --version | grep "^SPIRV-Tools ${{ inputs.tag }} "
