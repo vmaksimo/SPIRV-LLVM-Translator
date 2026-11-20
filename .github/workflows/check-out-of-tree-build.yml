@@ -75,19 +75,14 @@ jobs:
           # Linux systems in GitHub Actions already have older versions of clang
           # pre-installed. Make sure to override these with the relevant version.
           sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ env.LLVM_VERSION }} 1000
-      - name: Restore SPIRV-Tools cache
-        # The prebuild-spirv-tools workflow owns populating this cache.
-        # The primary key never matches (no one saves it); restore-keys
-        # pulls the most recent prebuild entry.
-        uses: actions/cache/restore@v5
-        with:
-          path: ${{ env.SPIRV_TOOLS_INSTALL }}
-          key: spirv-tools-main-latest
-          restore-keys: spirv-tools-main-
       - name:  Checkout the translator sources
         uses: actions/checkout@v5
         with:
           path: SPIRV-LLVM-Translator
+      - name: Set up SPIRV-Tools
+        uses: ./SPIRV-LLVM-Translator/.github/actions/setup-spirv-tools
+        with:
+          install-dir: ${{ env.SPIRV_TOOLS_INSTALL }}
       - name:  Get tag for SPIR-V Headers
         id: spirv-headers-tag
         run: |
